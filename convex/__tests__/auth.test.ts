@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest"
 import {
   isFirstAdminBootstrapAttempt,
   normalizePasswordSignInError,
-} from "../auth-helpers"
+} from "../auth_helpers"
 
 describe("normalizePasswordSignInError", () => {
   it("normalizes invalid secret errors", () => {

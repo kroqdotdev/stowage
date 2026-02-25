@@ -2,11 +2,21 @@ import { expect, test, type Page } from "@playwright/test"
 
 type Landing = "login" | "setup"
 
+function getLeafPathSegment(urlString: string) {
+  const segments = new URL(urlString).pathname.split("/").filter(Boolean)
+  return segments.at(-1) ?? ""
+}
+
 async function getUnauthenticatedLanding(page: Page): Promise<Landing> {
   await page.goto("/dashboard")
-  await page.waitForURL(/\/(login|setup)$/, { timeout: 15_000 })
-  const path = new URL(page.url()).pathname
-  if (path.endsWith("/setup")) {
+  await page.waitForURL(
+    (url) => {
+      const leaf = url.pathname.split("/").filter(Boolean).at(-1)
+      return leaf === "login" || leaf === "setup"
+    },
+    { timeout: 15_000 },
+  )
+  if (getLeafPathSegment(page.url()) === "setup") {
     return "setup"
   }
   return "login"
@@ -39,20 +49,20 @@ test.describe.serial("auth flow", () => {
     const landing = await getUnauthenticatedLanding(page)
 
     await page.goto("/")
-    await expect(page).toHaveURL(new RegExp(`/${landing}$`))
+    await expect.poll(() => getLeafPathSegment(page.url())).toBe(landing)
 
     if (landing === "setup") {
       await expect(page.getByRole("heading", { name: "Set up Stowage" })).toBeVisible()
 
       await page.goto("/login")
-      await expect(page).toHaveURL(/\/setup$/)
+      await expect.poll(() => getLeafPathSegment(page.url())).toBe("setup")
       return
     }
 
     await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible()
 
     await page.goto("/setup")
-    await expect(page).toHaveURL(/\/login$/)
+    await expect.poll(() => getLeafPathSegment(page.url())).toBe("login")
 
     const email = `playwright-invalid-${Date.now()}@example.com`
     await page.getByLabel("Email").fill(email)
@@ -75,17 +85,21 @@ test.describe.serial("auth flow", () => {
     const landing = await getUnauthenticatedLanding(page)
     test.skip(landing !== "login", "Positive login flow requires setup to be complete")
 
-    await expect(page).toHaveURL(/\/login$/)
+    await expect.poll(() => getLeafPathSegment(page.url())).toBe("login")
     await page.getByLabel("Email").fill(email!)
     await page.getByLabel("Password").fill(password!)
 
     await expectNoLocalAuthProxyRequests(page, async () => {
       await page.getByRole("button", { name: "Sign in" }).click()
-      await page.waitForURL(/\/dashboard$/, { timeout: 20_000 })
+      await page.waitForURL((url) => getLeafPathSegment(url.toString()) === "dashboard", {
+        timeout: 20_000,
+      })
     })
 
     await page.getByLabel("Open user menu").click()
     await page.getByRole("menuitem", { name: "Log out" }).click()
-    await page.waitForURL(/\/login$/, { timeout: 15_000 })
+    await page.waitForURL((url) => getLeafPathSegment(url.toString()) === "login", {
+      timeout: 15_000,
+    })
   })
 })

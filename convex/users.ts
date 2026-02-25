@@ -22,7 +22,7 @@ import {
   requireValidEmail,
   requireValidName,
   requireValidPassword,
-} from "./users-helpers"
+} from "./users_helpers"
 
 const roleValidator = v.union(v.literal("admin"), v.literal("user"))
 

@@ -21,4 +21,32 @@ export default defineSchema({
     .index("email", ["email"])
     .index("phone", ["phone"])
     .index("by_role", ["role"]),
+  categories: defineTable({
+    name: v.string(),
+    normalizedName: v.string(),
+    prefix: v.union(v.string(), v.null()),
+    description: v.union(v.string(), v.null()),
+    color: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_normalized_name", ["normalizedName"]),
+  tags: defineTable({
+    name: v.string(),
+    normalizedName: v.string(),
+    color: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_normalized_name", ["normalizedName"]),
+  locations: defineTable({
+    name: v.string(),
+    normalizedName: v.string(),
+    parentId: v.union(v.id("locations"), v.null()),
+    description: v.union(v.string(), v.null()),
+    path: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_parentId", ["parentId"])
+    .index("by_parentId_and_normalizedName", ["parentId", "normalizedName"]),
+  // `assetTags` is added in the assets phase when the `assets` table exists.
 })

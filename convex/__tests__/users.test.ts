@@ -4,7 +4,7 @@ import {
   requireValidEmail,
   requireValidName,
   requireValidPassword,
-} from "../users-helpers"
+} from "../users_helpers"
 
 describe("users helpers", () => {
   it("normalizes emails", () => {

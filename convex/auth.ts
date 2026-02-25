@@ -5,7 +5,7 @@ import { Scrypt } from "lucia"
 import {
   isFirstAdminBootstrapAttempt,
   normalizePasswordSignInError,
-} from "./auth-helpers"
+} from "./auth_helpers"
 
 function normalizeEmail(value: unknown) {
   if (typeof value !== "string") {

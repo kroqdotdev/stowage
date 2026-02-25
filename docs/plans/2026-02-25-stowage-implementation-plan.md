@@ -376,7 +376,7 @@
 - `/locations` page: hierarchical tree view with add/edit/delete, parent-child relationships, breadcrumb paths
 - Reusable CRUD patterns (table component, create/edit dialogs) used across all entity pages
 
-### Task 3.1: Add schema for categories, tags, locations
+### Task 3.1 [completed]: Add schema for categories, tags, locations
 
 **Files:**
 - Modify: `convex/schema.ts` (add categories, tags, locations, assetTags tables)
@@ -389,7 +389,9 @@
 5. Run dev to sync schema
 6. Commit: "feat: add categories, tags, locations to Convex schema"
 
-### Task 3.2: Build categories page
+Implementation note: `assetTags` was deferred to the later assets phase because the `assets` table does not exist yet in Phase 3. Categories, tags, and locations schema additions were completed.
+
+### Task 3.2 [completed]: Build categories page
 
 **Files:**
 - Create: `convex/categories.ts` (list, create, update, delete)
@@ -406,7 +408,7 @@
 7. Test: create, edit, delete categories
 8. Commit: "feat: add categories CRUD page"
 
-### Task 3.3: Build tags page
+### Task 3.3 [completed]: Build tags page
 
 **Files:**
 - Create: `convex/tags.ts` (list, create, update, delete)
@@ -420,7 +422,7 @@
 5. Test: create, edit, delete tags
 6. Commit: "feat: add tags CRUD page"
 
-### Task 3.4: Build locations page with tree view
+### Task 3.4 [completed]: Build locations page with tree view
 
 **Files:**
 - Create: `convex/locations.ts` (list, create, update, delete, move, getChildren, getPath)
@@ -446,7 +448,7 @@
 6. Test: create nested hierarchy 3 levels deep, edit, move, delete
 7. Commit: "feat: add locations page with hierarchical tree view"
 
-### Task 3.5: Phase 3 tests
+### Task 3.5 [completed]: Phase 3 tests
 
 **Files:**
 - Create: `convex/__tests__/categories.test.ts`
