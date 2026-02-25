@@ -1,0 +1,48 @@
+import { describe, it, expect, vi } from "vitest";
+import { render, screen } from "@testing-library/react";
+
+// Mock next/navigation
+vi.mock("next/navigation", () => ({
+  usePathname: () => "/dashboard",
+}));
+
+// Mock next-themes
+vi.mock("next-themes", () => ({
+  useTheme: () => ({ theme: "light", setTheme: vi.fn() }),
+  ThemeProvider: ({ children }: { children: React.ReactNode }) => children,
+}));
+
+// Mock use-mobile hook
+vi.mock("@/hooks/use-mobile", () => ({
+  useIsMobile: () => false,
+}));
+
+import { AppShell } from "@/components/layout/app-shell";
+
+describe("AppShell", () => {
+  it("renders children content", () => {
+    render(
+      <AppShell>
+        <div data-testid="child-content">Hello Stowage</div>
+      </AppShell>,
+    );
+    expect(screen.getByTestId("child-content")).toBeInTheDocument();
+    expect(screen.getByText("Hello Stowage")).toBeInTheDocument();
+  });
+
+  it("renders sidebar and topbar together", () => {
+    render(
+      <AppShell>
+        <div>Content</div>
+      </AppShell>,
+    );
+    // Sidebar brand (may appear multiple times due to desktop + mobile)
+    const brands = screen.getAllByText("Stowage");
+    expect(brands.length).toBeGreaterThanOrEqual(1);
+    // Topbar search
+    const inputs = screen.getAllByPlaceholderText("Search assets...");
+    expect(inputs.length).toBeGreaterThanOrEqual(1);
+    // Child content
+    expect(screen.getByText("Content")).toBeInTheDocument();
+  });
+});
