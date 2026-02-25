@@ -1,0 +1,5 @@
+procs:
+  next:
+    cmd: ["pnpm", "run", "dev:next"]
+  convex:
+    cmd: ["npx", "convex", "dev"]
