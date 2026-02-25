@@ -1,10 +1,14 @@
-export default function SetupPage() {
-  return (
-    <div className="w-full max-w-sm">
-      <h1 className="text-2xl font-semibold tracking-tight">Set up Stowage</h1>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Create your administrator account to get started.
-      </p>
-    </div>
-  );
+import { redirect } from "next/navigation"
+import { SetupForm } from "@/components/auth/setup-form"
+import { getServerRouteAuthState } from "@/lib/server-auth"
+import { getSetupPageRedirect } from "@/lib/auth-route-logic"
+
+export default async function SetupPage() {
+  const state = await getServerRouteAuthState()
+  const redirectTo = getSetupPageRedirect(state)
+  if (redirectTo) {
+    redirect(redirectTo)
+  }
+
+  return <SetupForm />
 }

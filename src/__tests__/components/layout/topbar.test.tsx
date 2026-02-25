@@ -4,6 +4,7 @@ import { render, screen } from "@testing-library/react";
 // Mock next/navigation
 vi.mock("next/navigation", () => ({
   usePathname: () => "/dashboard",
+  useRouter: () => ({ replace: vi.fn() }),
 }));
 
 // Mock next-themes
@@ -15,6 +16,18 @@ vi.mock("next-themes", () => ({
 // Mock use-mobile hook
 vi.mock("@/hooks/use-mobile", () => ({
   useIsMobile: () => false,
+}));
+
+vi.mock("convex/react", () => ({
+  useConvexAuth: () => ({ isAuthenticated: true, isLoading: false }),
+  useQuery: () => ({
+    name: "Alex Admin",
+    email: "alex@example.com",
+  }),
+}));
+
+vi.mock("@convex-dev/auth/react", () => ({
+  useAuthActions: () => ({ signOut: vi.fn(), signIn: vi.fn() }),
 }));
 
 import { SidebarProvider } from "@/components/ui/sidebar";
@@ -43,7 +56,7 @@ describe("Topbar", () => {
 
   it("renders the user menu button", () => {
     renderWithProviders();
-    const menus = screen.getAllByText("User menu");
+    const menus = screen.getAllByLabelText("Open user menu");
     expect(menus.length).toBeGreaterThanOrEqual(1);
   });
 
