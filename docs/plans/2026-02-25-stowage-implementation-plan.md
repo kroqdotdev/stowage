@@ -219,7 +219,7 @@
 - User avatar + dropdown in topbar (profile, logout)
 - Password change for logged-in users
 
-### Task 2.1: Configure Convex Auth
+### Task 2.1 [completed]: Configure Convex Auth
 
 **Files:**
 - Create: `convex/auth.config.ts`
@@ -239,7 +239,7 @@
 7. Run `pnpm dev` to verify Convex syncs schema
 8. Commit: "feat: configure Convex Auth with email/password"
 
-### Task 2.2: Build first-run setup page
+### Task 2.2 [completed]: Build first-run setup page
 
 **Files:**
 - Create: `convex/users.ts` (queries and mutations: checkFirstRun, createFirstAdmin)
@@ -256,7 +256,7 @@
 7. Test: visit /setup on fresh DB, create admin, verify redirect
 8. Commit: "feat: add first-run admin setup page"
 
-### Task 2.3: Build login page
+### Task 2.3 [completed]: Build login page
 
 **Files:**
 - Modify: `src/app/(auth)/login/page.tsx`
@@ -270,7 +270,7 @@
 6. Test: log in with admin credentials, verify redirect
 7. Commit: "feat: add login page"
 
-### Task 2.4: Protect routes with auth middleware
+### Task 2.4 [completed]: Protect routes with auth middleware
 
 **Files:**
 - Create: `src/middleware.ts` or auth check in `(app)/layout.tsx`
@@ -284,7 +284,7 @@
 5. Test: visit /dashboard unauthenticated, verify redirect to /login
 6. Commit: "feat: protect app routes with auth checks"
 
-### Task 2.5: Wire up topbar user menu
+### Task 2.5 [completed]: Wire up topbar user menu
 
 **Files:**
 - Modify: `src/components/layout/topbar.tsx`
@@ -298,7 +298,7 @@
 5. Test: verify user name shows, logout works
 6. Commit: "feat: add user menu to topbar with logout"
 
-### Task 2.6: Build user management in settings
+### Task 2.6 [completed]: Build user management in settings
 
 **Files:**
 - Modify: `src/app/(app)/settings/page.tsx`
@@ -313,7 +313,7 @@
 6. Test: create a second user as admin, verify it appears in list
 7. Commit: "feat: add user management to settings page"
 
-### Task 2.7: Password change
+### Task 2.7 [completed]: Password change
 
 **Files:**
 - Modify: `src/app/(app)/settings/page.tsx` (add "Change Password" section)
@@ -326,7 +326,7 @@
 4. Test: change password, log out, log in with new password
 5. Commit: "feat: add password change to settings"
 
-### Task 2.8: Phase 2 tests
+### Task 2.8 [completed]: Phase 2 tests
 
 **Files:**
 - Create: `convex/__tests__/users.test.ts`

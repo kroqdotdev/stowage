@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ConvexClientProvider } from "@/app/ConvexClientProvider";
 import { ThemeProvider } from "@/components/theme-provider";
+import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import "./globals.css";
 
@@ -40,7 +41,10 @@ export default async function RootLayout({
       >
         <ConvexClientProvider convexUrl={convexUrl}>
           <ThemeProvider>
-            <TooltipProvider>{children}</TooltipProvider>
+            <TooltipProvider>
+              {children}
+              <Toaster richColors closeButton />
+            </TooltipProvider>
           </ThemeProvider>
         </ConvexClientProvider>
       </body>

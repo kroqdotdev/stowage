@@ -18,6 +18,11 @@ import {
   type MutationCtx,
   type QueryCtx,
 } from "./_generated/server"
+import {
+  requireValidEmail,
+  requireValidName,
+  requireValidPassword,
+} from "./users-helpers"
 
 const roleValidator = v.union(v.literal("admin"), v.literal("user"))
 
@@ -39,33 +44,6 @@ type UserSummary = {
   role: "admin" | "user"
   createdBy: Id<"users"> | null
   createdAt: number
-}
-
-function normalizeEmail(email: string) {
-  return email.trim().toLowerCase()
-}
-
-function requireValidEmail(email: string) {
-  const normalized = normalizeEmail(email)
-  if (!normalized || !normalized.includes("@")) {
-    throw new ConvexError("Enter a valid email address")
-  }
-  return normalized
-}
-
-function requireValidName(name: string) {
-  const trimmed = name.trim()
-  if (!trimmed) {
-    throw new ConvexError("Name is required")
-  }
-  return trimmed
-}
-
-function requireValidPassword(password: string) {
-  if (password.length < 8) {
-    throw new ConvexError("Password must be at least 8 characters")
-  }
-  return password
 }
 
 function toUserSummary(
