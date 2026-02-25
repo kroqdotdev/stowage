@@ -10,6 +10,13 @@ import {
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
+const TREE_INDENT_PX = 20
+const TREE_BASE_LEFT_PX = 10
+const TREE_CONNECTOR_OFFSET_PX = 10
+const TREE_CONNECTOR_ELBOW_WIDTH_PX = 14
+const TREE_CONNECTOR_ELBOW_HEIGHT_PX = 12
+const TREE_CONNECTOR_ANCHOR_Y_PX = 22
+
 export type LocationTreeItem = {
   _id: string
   name: string
@@ -94,20 +101,63 @@ export function LocationTree({
     )
   }
 
-  function renderNode(node: LocationTreeItem, depth: number): React.ReactNode {
+  function renderNode(
+    node: LocationTreeItem,
+    depth: number,
+    isLastSibling = false,
+  ): React.ReactNode {
     const children = childrenByParent.get(node._id) ?? []
     const hasChildren = children.length > 0
     const isExpanded = expandedIds.has(node._id)
     const isSelected = selectedId === node._id
+    const rowPaddingLeft = depth * TREE_INDENT_PX + TREE_BASE_LEFT_PX
+    const connectorLeft = rowPaddingLeft - TREE_CONNECTOR_OFFSET_PX
 
     return (
-      <li key={node._id} className="space-y-1">
+      <li key={node._id} className="relative space-y-1">
+        {depth > 0 ? (
+          <>
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute z-0 w-px bg-muted-foreground/55"
+              style={{
+                left: `${connectorLeft}px`,
+                top: 0,
+                height: `${TREE_CONNECTOR_ANCHOR_Y_PX - TREE_CONNECTOR_ELBOW_HEIGHT_PX}px`,
+              }}
+            />
+
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute z-0 rounded-bl-md border-l border-b border-muted-foreground/60"
+              style={{
+                left: `${connectorLeft}px`,
+                top: `${TREE_CONNECTOR_ANCHOR_Y_PX - TREE_CONNECTOR_ELBOW_HEIGHT_PX}px`,
+                width: `${TREE_CONNECTOR_ELBOW_WIDTH_PX}px`,
+                height: `${TREE_CONNECTOR_ELBOW_HEIGHT_PX}px`,
+              }}
+            />
+
+            {!isLastSibling ? (
+              <span
+                aria-hidden="true"
+                className="pointer-events-none absolute z-0 w-px bg-muted-foreground/55"
+                style={{
+                  left: `${connectorLeft}px`,
+                  top: `${TREE_CONNECTOR_ANCHOR_Y_PX}px`,
+                  bottom: 0,
+                }}
+              />
+            ) : null}
+          </>
+        ) : null}
+
         <div
           className={cn(
-            "group rounded-lg border border-transparent px-2 py-2 transition",
+            "group relative z-10 rounded-lg border border-transparent bg-background/70 px-2 py-2 transition",
             isSelected ? "border-border bg-accent/35" : "hover:bg-muted/35",
           )}
-          style={{ paddingLeft: `${depth * 16 + 8}px` }}
+          style={{ paddingLeft: `${rowPaddingLeft}px` }}
         >
           <div className="flex items-start gap-2">
             <button
@@ -179,11 +229,19 @@ export function LocationTree({
         </div>
 
         {hasChildren && isExpanded ? (
-          <ul className="space-y-1">{children.map((child) => renderNode(child, depth + 1))}</ul>
+          <ul className="space-y-1">
+            {children.map((child, index) =>
+              renderNode(child, depth + 1, index === children.length - 1),
+            )}
+          </ul>
         ) : null}
       </li>
     )
   }
 
-  return <ul className="space-y-1">{roots.map((root) => renderNode(root, 0))}</ul>
+  return (
+    <ul className="space-y-1">
+      {roots.map((root, index) => renderNode(root, 0, index === roots.length - 1))}
+    </ul>
+  )
 }
