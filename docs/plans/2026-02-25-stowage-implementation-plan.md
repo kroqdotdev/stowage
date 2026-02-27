@@ -613,7 +613,7 @@ Implementation note: added `appSettings` schema and `convex/appSettings.ts` so a
 - Asset delete with confirmation
 - Status management (change status from detail page)
 
-### Task 5.1: Add assets schema and core Convex functions
+### Task 5.1 [completed]: Add assets schema and core Convex functions
 
 **Files:**
 - Modify: `convex/schema.ts` (add assets table)
@@ -634,7 +634,7 @@ Implementation note: added `appSettings` schema and `convex/appSettings.ts` so a
    - `getAssetTags` — query: returns tag objects for an asset
 4. Commit: "feat: add assets schema and Convex functions"
 
-### Task 5.2: Build asset list page
+### Task 5.2 [completed]: Build asset list page
 
 **Files:**
 - Modify: `src/app/(app)/assets/page.tsx`
@@ -654,7 +654,7 @@ Implementation note: added `appSettings` schema and `convex/appSettings.ts` so a
 9. Test: verify filters work in combination, sorting works
 10. Commit: "feat: add asset list page with filtering and sorting"
 
-### Task 5.3: Build asset create/edit form
+### Task 5.3 [completed]: Build asset create/edit form
 
 **Files:**
 - Modify: `src/app/(app)/assets/new/page.tsx`
@@ -679,7 +679,7 @@ Implementation note: added `appSettings` schema and `convex/appSettings.ts` so a
 5. Test: create asset with all fields, edit it, verify values persist
 6. Commit: "feat: add asset create and edit forms"
 
-### Task 5.4: Build asset detail page
+### Task 5.4 [completed]: Build asset detail page
 
 **Files:**
 - Modify: `src/app/(app)/assets/[id]/page.tsx`
@@ -699,7 +699,7 @@ Implementation note: added `appSettings` schema and `convex/appSettings.ts` so a
 6. Test: navigate from list to detail, verify all data displays correctly
 7. Commit: "feat: add asset detail page"
 
-### Task 5.5: Phase 5 tests
+### Task 5.5 [completed]: Phase 5 tests
 
 **Files:**
 - Create: `convex/__tests__/assets.test.ts`
@@ -760,7 +760,7 @@ Implementation note: added `appSettings` schema and `convex/appSettings.ts` so a
 - File download and delete
 - File type icons for non-image attachments (PDF, doc, etc.)
 
-### Task 6.1: Add attachments schema and Convex functions
+### Task 6.1 [completed]: Add attachments schema and Convex functions
 
 **Files:**
 - Modify: `convex/schema.ts` (add attachments table)
@@ -776,7 +776,7 @@ Implementation note: added `appSettings` schema and `convex/appSettings.ts` so a
    - `getAttachmentUrl` — query: returns serving URL for a storageId
 3. Commit: "feat: add attachments schema and Convex functions"
 
-### Task 6.2: Build file upload and attachment list components
+### Task 6.2 [completed]: Build file upload and attachment list components
 
 **Files:**
 - Create: `src/components/attachments/file-upload-zone.tsx`
@@ -801,7 +801,7 @@ Implementation note: added `appSettings` schema and `convex/appSettings.ts` so a
 6. Test: upload images and PDFs, verify thumbnails, download, delete
 7. Commit: "feat: add file upload and attachment display to assets"
 
-### Task 6.3: Phase 6 tests
+### Task 6.3 [completed]: Phase 6 tests
 
 **Files:**
 - Create: `convex/__tests__/attachments.test.ts`

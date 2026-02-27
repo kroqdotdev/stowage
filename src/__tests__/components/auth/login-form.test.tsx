@@ -83,4 +83,19 @@ describe("LoginForm", () => {
       "Invalid email or password",
     )
   })
+
+  it("shows invalid credentials when signIn returns no session", async () => {
+    const user = userEvent.setup()
+    signInMock.mockResolvedValueOnce({ signingIn: false })
+
+    render(<LoginForm />)
+
+    await user.type(screen.getByLabelText("Email"), "admin@example.com")
+    await user.type(screen.getByLabelText("Password"), "bad-password")
+    await user.click(screen.getByRole("button", { name: "Sign in" }))
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Invalid email or password",
+    )
+  })
 })

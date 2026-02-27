@@ -3,6 +3,26 @@ import { defineSchema, defineTable } from "convex/server"
 import { v } from "convex/values"
 
 const roleValidator = v.union(v.literal("admin"), v.literal("user"))
+const assetStatusValidator = v.union(
+  v.literal("active"),
+  v.literal("in_storage"),
+  v.literal("under_repair"),
+  v.literal("retired"),
+  v.literal("disposed"),
+)
+const attachmentStatusValidator = v.union(
+  v.literal("pending"),
+  v.literal("processing"),
+  v.literal("ready"),
+  v.literal("failed"),
+)
+const attachmentKindValidator = v.union(
+  v.literal("image"),
+  v.literal("pdf"),
+  v.literal("office"),
+)
+const customFieldValueValidator = v.union(v.string(), v.number(), v.boolean(), v.null())
+const customFieldValuesValidator = v.record(v.string(), customFieldValueValidator)
 
 export default defineSchema({
   ...authTables,
@@ -76,5 +96,54 @@ export default defineSchema({
     updatedAt: v.number(),
     updatedBy: v.id("users"),
   }).index("by_key", ["key"]),
-  // `assetTags` is added in the assets phase when the `assets` table exists.
+  assets: defineTable({
+    name: v.string(),
+    normalizedName: v.string(),
+    assetTag: v.string(),
+    status: assetStatusValidator,
+    categoryId: v.union(v.id("categories"), v.null()),
+    locationId: v.union(v.id("locations"), v.null()),
+    notes: v.union(v.string(), v.null()),
+    customFieldValues: customFieldValuesValidator,
+    createdBy: v.id("users"),
+    updatedBy: v.id("users"),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_assetTag", ["assetTag"])
+    .index("by_createdAt", ["createdAt"])
+    .index("by_categoryId", ["categoryId"])
+    .index("by_status", ["status"])
+    .index("by_locationId", ["locationId"])
+    .index("by_normalizedName", ["normalizedName"]),
+  assetTags: defineTable({
+    assetId: v.id("assets"),
+    tagId: v.id("tags"),
+    createdBy: v.id("users"),
+    createdAt: v.number(),
+  })
+    .index("by_assetId", ["assetId"])
+    .index("by_tagId", ["tagId"])
+    .index("by_assetId_and_tagId", ["assetId", "tagId"]),
+  attachments: defineTable({
+    assetId: v.id("assets"),
+    storageId: v.id("_storage"),
+    originalStorageId: v.union(v.id("_storage"), v.null()),
+    fileName: v.string(),
+    fileType: v.string(),
+    fileExtension: v.string(),
+    fileKind: attachmentKindValidator,
+    fileSizeOriginal: v.number(),
+    fileSizeOptimized: v.union(v.number(), v.null()),
+    status: attachmentStatusValidator,
+    optimizationAttempts: v.number(),
+    optimizationError: v.union(v.string(), v.null()),
+    uploadedBy: v.id("users"),
+    uploadedAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_assetId", ["assetId"])
+    .index("by_assetId_and_uploadedAt", ["assetId", "uploadedAt"])
+    .index("by_status", ["status"])
+    .index("by_assetId_and_status", ["assetId", "status"]),
 })

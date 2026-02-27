@@ -46,7 +46,7 @@ export function LoginForm() {
       })
 
       if (!result.signingIn) {
-        setError("Sign in failed. Please try again.")
+        setError("Invalid email or password")
       }
     } catch (caught) {
       setError(getLoginErrorMessage(caught))

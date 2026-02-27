@@ -135,7 +135,15 @@ export const deleteTag = mutation({
       throw new ConvexError("Tag not found")
     }
 
-    // Asset tag referential guard is added in the assets phase.
+    const linkedAssetTag = await ctx.db
+      .query("assetTags")
+      .withIndex("by_tagId", (q) => q.eq("tagId", args.tagId))
+      .first()
+
+    if (linkedAssetTag) {
+      throw new ConvexError("Cannot delete a tag that is assigned to assets")
+    }
+
     await ctx.db.delete(args.tagId)
     return null
   },

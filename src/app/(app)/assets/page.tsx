@@ -1,12 +1,14 @@
-import { PageHeader } from "@/components/layout/page-header";
+import { AssetsPageClient } from "@/components/assets/assets-page-client"
+import { PageHeader } from "@/components/layout/page-header"
 
 export default function AssetsPage() {
   return (
-    <div>
+    <div className="space-y-6">
       <PageHeader
         title="Assets"
-        description="Manage your tracked assets."
+        description="Track, filter, and manage your inventory."
       />
+      <AssetsPageClient />
     </div>
-  );
+  )
 }

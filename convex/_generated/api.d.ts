@@ -9,6 +9,12 @@
  */
 
 import type * as appSettings from "../appSettings.js";
+import type * as assetTags from "../assetTags.js";
+import type * as assets from "../assets.js";
+import type * as assets_helpers from "../assets_helpers.js";
+import type * as attachments from "../attachments.js";
+import type * as attachmentsProcessing from "../attachmentsProcessing.js";
+import type * as attachments_helpers from "../attachments_helpers.js";
 import type * as auth from "../auth.js";
 import type * as auth_helpers from "../auth_helpers.js";
 import type * as authz from "../authz.js";
@@ -31,6 +37,12 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   appSettings: typeof appSettings;
+  assetTags: typeof assetTags;
+  assets: typeof assets;
+  assets_helpers: typeof assets_helpers;
+  attachments: typeof attachments;
+  attachmentsProcessing: typeof attachmentsProcessing;
+  attachments_helpers: typeof attachments_helpers;
   auth: typeof auth;
   auth_helpers: typeof auth_helpers;
   authz: typeof authz;

@@ -5,14 +5,16 @@ import { PageHeader } from "@/components/layout/page-header";
 describe("PageHeader", () => {
   it("renders the title", () => {
     render(<PageHeader title="Dashboard" />);
-    expect(screen.getByText("Dashboard")).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Dashboard" }),
+    ).toBeInTheDocument();
   });
 
   it("renders the description when provided", () => {
     render(
       <PageHeader title="Assets" description="Manage your tracked assets." />,
     );
-    expect(screen.getByText("Assets")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Assets" })).toBeInTheDocument();
     expect(
       screen.getByText("Manage your tracked assets."),
     ).toBeInTheDocument();
@@ -20,7 +22,9 @@ describe("PageHeader", () => {
 
   it("does not render a description when not provided", () => {
     const { container } = render(<PageHeader title="Settings" />);
-    expect(screen.getByText("Settings")).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Settings" }),
+    ).toBeInTheDocument();
     expect(container.querySelector("p")).toBeNull();
   });
 });

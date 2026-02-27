@@ -302,7 +302,15 @@ export const deleteLocation = mutation({
       throw new ConvexError("Delete child locations first")
     }
 
-    // Asset referential guard is added in the assets phase when the `assets` table exists.
+    const linkedAsset = await ctx.db
+      .query("assets")
+      .withIndex("by_locationId", (q) => q.eq("locationId", location._id))
+      .first()
+
+    if (linkedAsset) {
+      throw new ConvexError("Cannot delete a location that is assigned to assets")
+    }
+
     await ctx.db.delete(location._id)
     return null
   },

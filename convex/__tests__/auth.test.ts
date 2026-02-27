@@ -1,20 +1,24 @@
 import { describe, expect, it } from "vitest"
 import {
+  INVALID_CREDENTIALS,
   isFirstAdminBootstrapAttempt,
   normalizePasswordSignInError,
 } from "../auth_helpers"
 
 describe("normalizePasswordSignInError", () => {
-  it("normalizes invalid secret errors", () => {
+  it("maps invalid secret errors to handled invalid-credentials status", () => {
     const normalized = normalizePasswordSignInError(new Error("InvalidSecret"))
-    expect(normalized).toBeInstanceOf(Error)
-    expect((normalized as Error).message).toBe("Invalid credentials")
+    expect(normalized).toBe(INVALID_CREDENTIALS)
   })
 
-  it("normalizes invalid account id errors", () => {
+  it("maps invalid account id errors to handled invalid-credentials status", () => {
     const normalized = normalizePasswordSignInError(new Error("InvalidAccountId"))
-    expect(normalized).toBeInstanceOf(Error)
-    expect((normalized as Error).message).toBe("Invalid credentials")
+    expect(normalized).toBe(INVALID_CREDENTIALS)
+  })
+
+  it("maps invalid credentials errors to handled invalid-credentials status", () => {
+    const normalized = normalizePasswordSignInError(new Error("Invalid credentials"))
+    expect(normalized).toBe(INVALID_CREDENTIALS)
   })
 
   it("normalizes rate limit errors", () => {

@@ -3,6 +3,7 @@ import { convexAuth, retrieveAccount } from "@convex-dev/auth/server"
 import { ConvexError } from "convex/values"
 import { Scrypt } from "lucia"
 import {
+  INVALID_CREDENTIALS,
   isFirstAdminBootstrapAttempt,
   normalizePasswordSignInError,
 } from "./auth_helpers"
@@ -49,12 +50,16 @@ const passwordProvider = ConvexCredentials({
       })
 
       if (!retrieved) {
-        throw new Error("Invalid credentials")
+        return null
       }
 
       return { userId: retrieved.user._id }
     } catch (error) {
-      throw normalizePasswordSignInError(error)
+      const normalizedError = normalizePasswordSignInError(error)
+      if (normalizedError === INVALID_CREDENTIALS) {
+        return null
+      }
+      throw normalizedError
     }
   },
   crypto: {

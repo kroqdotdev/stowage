@@ -4,13 +4,19 @@ type PasswordAuthCallbackArgs = {
   profile: Record<string, unknown>
 }
 
+export const INVALID_CREDENTIALS = "INVALID_CREDENTIALS" as const
+
 export function normalizePasswordSignInError(error: unknown) {
   if (!(error instanceof Error)) {
     return error
   }
 
-  if (error.message === "InvalidSecret" || error.message === "InvalidAccountId") {
-    return new Error("Invalid credentials")
+  if (
+    error.message === "InvalidSecret" ||
+    error.message === "InvalidAccountId" ||
+    error.message === "Invalid credentials"
+  ) {
+    return INVALID_CREDENTIALS
   }
 
   if (error.message === "TooManyFailedAttempts") {

@@ -169,7 +169,15 @@ export const deleteCategory = mutation({
       throw new ConvexError("Category not found")
     }
 
-    // Asset referential guard is added in the assets phase when the `assets` table exists.
+    const linkedAsset = await ctx.db
+      .query("assets")
+      .withIndex("by_categoryId", (q) => q.eq("categoryId", args.categoryId))
+      .first()
+
+    if (linkedAsset) {
+      throw new ConvexError("Cannot delete a category that is assigned to assets")
+    }
+
     await ctx.db.delete(args.categoryId)
     return null
   },
