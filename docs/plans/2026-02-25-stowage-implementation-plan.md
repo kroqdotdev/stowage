@@ -50,9 +50,10 @@
 | 4 | Custom Field Definitions | Phase 3 |
 | 5 | Asset Management | Phase 4 |
 | 6 | File Attachments | Phase 5 |
-| 7 | Service Lifecycle | Phase 5 |
-| 8 | Label System | Phase 5 |
-| 9 | Dashboard & Global Search | Phase 5, 7 |
+| 7 | Preventive Service Scheduling | Phase 6 |
+| 8 | Service Lifecycle | Phase 7 |
+| 9 | Label System | Phase 5 |
+| 10 | Dashboard & Global Search | Phase 5, 8 |
 
 ---
 
@@ -694,7 +695,7 @@ Implementation note: added `appSettings` schema and `convex/appSettings.ts` so a
 2. Status badge component: colored badge per status (e.g. green=active, yellow=under_repair, gray=retired)
 3. Quick status change: dropdown on detail page to change status directly
 4. Delete button with confirmation dialog
-5. "Print Label" button (placeholder for Phase 8)
+5. "Print Label" button (placeholder for Phase 9)
 6. Test: navigate from list to detail, verify all data displays correctly
 7. Commit: "feat: add asset detail page"
 
@@ -832,129 +833,265 @@ Implementation note: added `appSettings` schema and `convex/appSettings.ts` so a
 
 ---
 
-## Phase 7: Service Lifecycle
+## Phase 7: Preventive Service Scheduling
 
-> **START OF PHASE:** Run `/brainstorming` to validate the service lifecycle UX with the user. Confirm: service record form fields, recurring interval configuration, how upcoming/overdue services are displayed, service provider management placement.
+> **START OF PHASE:** Run `/brainstorming` to validate the schedule model and UX with the user. Confirm: interval units, reminder lead handling, dashboard 7-day preview behavior, and services sub-tab information architecture.
 >
-> **UI WORK:** Use `/ui-ux-pro-max` with flat-design style, light and dark mode for service record forms, service history timeline, upcoming services list, and the services overview page.
+> **IMPLEMENTATION QUALITY:** Use `/vercel-react-best-practices` for React/Next.js rendering, data flow, and bundle decisions. Use `/convex` (especially `convex-best-practices` and `convex-security-check`) for function structure, validation, indexing, and authorization.
 >
-> **TEXT:** Use `/writing-clearly-and-concisely` for service-related labels, date formatting, cost display, and overdue/upcoming status language.
+> **UI WORK:** Use `/ui-ux-pro-max` with flat-design style, light and dark mode for asset form schedule inputs, services list, and calendar sub-tab.
+>
+> **TEXT:** Use `/writing-clearly-and-concisely` for labels, helper text, reminder phrasing, and due-date status messages.
 
 ### What this phase delivers
 
-- Convex schema: serviceProviders, serviceRecords tables
-- Service provider management (simple CRUD in settings or standalone)
-- Service record creation on asset detail page
-- Service history timeline on asset detail
-- Recurring service auto-scheduling (next date computed from interval)
-- `/services` page: list of upcoming and overdue services across all assets
-- Overdue service highlighting
+- Global admin toggle: `serviceSchedulingEnabled` (default enabled)
+- Optional per-asset schedule config: next due date, interval value/unit, reminder lead value/unit
+- `serviceSchedules` domain model in Convex (separate from `assets`)
+- `/services` list sorted by nearest due date (overdue naturally first)
+- `/services/calendar` sub-tab month view
+- Dashboard 7-day due-date preview card
 
-### Task 7.1: Add service schema and Convex functions
+### Task 7.1: Add service scheduling schema and Convex functions
 
 **Files:**
-- Modify: `convex/schema.ts` (add serviceProviders, serviceRecords)
-- Create: `convex/serviceProviders.ts` (CRUD)
-- Create: `convex/serviceRecords.ts` (CRUD, upcoming, overdue)
+- Modify: `convex/schema.ts` (add `serviceSchedules`; extend `appSettings`)
+- Create: `convex/serviceSchedules.ts` (CRUD + list/range queries)
+- Create: `convex/service_schedule_helpers.ts` (date and interval validation helpers)
 
 **Steps:**
-1. Add tables to schema per design doc
-2. Write serviceProviders functions: list, create, update, delete
-3. Write serviceRecords functions:
-   - `createServiceRecord` — mutation: creates record, if recurringIntervalDays set, auto-computes nextServiceDate
-   - `listServiceRecords` — query: by assetId, sorted by date desc
-   - `getUpcomingServices` — query: all records where nextServiceDate > now, sorted by nextServiceDate asc
-   - `getOverdueServices` — query: all records where nextServiceDate < now and nextServiceDate is not null
+1. Add `serviceSchedules` table with fields:
+   - `assetId`, `nextServiceDate` (`YYYY-MM-DD`), `intervalValue`, `intervalUnit`, `reminderLeadValue`, `reminderLeadUnit`, `createdAt`, `updatedAt`, `createdBy`, `updatedBy`
+2. Add indexes:
+   - `by_assetId` (for single-schedule per asset enforcement)
+   - `by_nextServiceDate` (for list/calendar/dashboard range queries)
+3. Extend `appSettings` with `serviceSchedulingEnabled` defaulting to `true`.
+4. Implement functions:
+   - `getScheduleByAssetId`
+   - `upsertSchedule`
+   - `deleteSchedule`
+   - `listScheduledAssets` (sorted by due date asc)
+   - `listCalendarMonth`
+   - `listUpcomingServiceDueInDays`
+5. Add strict validators and structured `ConvexError` codes (`SCHEDULING_DISABLED`, `INVALID_DATE`, `INVALID_INTERVAL`, `FORBIDDEN`, `ASSET_NOT_FOUND`).
+6. Commit: "feat: add preventive service scheduling schema and Convex functions"
+
+### Task 7.2: Add admin scheduling toggle in settings
+
+**Files:**
+- Modify: `convex/appSettings.ts` (read/write scheduling toggle)
+- Modify: `src/components/settings/regional-settings-section.tsx` OR create `src/components/settings/service-scheduling-settings-section.tsx`
+- Modify: `src/components/settings/settings-page-client.tsx`
+
+**Steps:**
+1. Add admin UI control for `serviceSchedulingEnabled` (default on).
+2. Show concise helper text describing effect on asset forms and services planner views.
+3. Persist toggle through Convex mutation with optimistic pending state and toast outcomes.
+4. Guard schedule write mutations when toggle is off.
+5. Commit: "feat: add admin toggle for service scheduling"
+
+### Task 7.3: Add optional schedule inputs to asset create/edit flows
+
+**Files:**
+- Modify: `src/components/assets/asset-form.tsx`
+- Create: `src/components/assets/service-schedule-fields.tsx`
+- Modify: `src/app/(app)/assets/new/page.tsx`
+- Modify: `src/app/(app)/assets/[id]/edit/page.tsx`
+
+**Steps:**
+1. Add optional scheduling fields:
+   - next service date
+   - interval value + unit (`days|weeks|months|years`)
+   - reminder lead value + unit
+2. Render these fields only when global scheduling toggle is enabled.
+3. On create/edit save:
+   - call `upsertSchedule` when schedule data provided
+   - call `deleteSchedule` when schedule is cleared on edit
+4. Validate client-side for immediate feedback; rely on backend as source of truth.
+5. Commit: "feat: add optional asset service schedule inputs"
+
+### Task 7.4: Build services list + calendar sub-tab and dashboard 7-day preview
+
+**Files:**
+- Modify: `src/app/(app)/services/page.tsx`
+- Create: `src/app/(app)/services/calendar/page.tsx`
+- Create: `src/components/services/services-nav-tabs.tsx`
+- Create: `src/components/services/services-scheduled-list.tsx`
+- Create: `src/components/services/services-calendar-month.tsx`
+- Modify: `src/app/(app)/dashboard/page.tsx`
+- Create: `src/components/dashboard/upcoming-service-due-7-day-card.tsx`
+
+**Steps:**
+1. Add Services sub-tab navigation for list and calendar routes.
+2. Build `/services` scheduled list:
+   - includes only assets with schedule
+   - default sort: nearest due date first
+   - status badges (`overdue`, `due soon`, `scheduled`)
+3. Build `/services/calendar` month view plotting due dates by day.
+4. Add dashboard 7-day preview card using due dates (not reminder dates).
+5. Keep range queries index-backed and avoid query waterfalls in UI composition.
+6. Commit: "feat: add services scheduling list, calendar sub-tab, and dashboard due preview"
+
+### Task 7.5: Phase 7 tests
+
+**Files:**
+- Create: `convex/__tests__/serviceSchedules.test.ts`
+- Create: `src/__tests__/components/assets/service-schedule-fields.test.tsx`
+- Create: `src/__tests__/components/services/services-scheduled-list.test.tsx`
+- Create: `src/__tests__/components/services/services-calendar-month.test.tsx`
+- Create: `src/__tests__/components/settings/service-scheduling-settings-section.test.tsx`
+- Create: `e2e/service-scheduling.spec.ts`
+
+**Tests to write:**
+1. **Convex `serviceSchedules` unit tests:**
+   - create/update/delete by `assetId`
+   - reject invalid interval/unit/date
+   - reject writes when scheduling toggle is disabled
+   - `listScheduledAssets` sorted ascending by `nextServiceDate`
+   - `listUpcomingServiceDueInDays` returns only range-matching records
+   - `listCalendarMonth` returns month-bounded schedules
+2. **Component tests:**
+   - schedule fields render conditionally from toggle
+   - validation and submit behavior for interval/reminder/date
+   - services list default sorting and status chips
+   - calendar day rendering and asset links
+3. **E2E tests:**
+   - toggle on/off in admin settings and verify UI behavior
+   - create asset with schedule and verify `/services` + `/services/calendar` visibility
+   - verify dashboard 7-day due preview updates
+4. Run `pnpm test && pnpm test:e2e` — all pass
+5. Run `pnpm typecheck && pnpm lint` — clean
+6. Commit: "test: add Phase 7 preventive service scheduling tests"
+
+> **PHASE COMPLETE GATE:** Before moving to Phase 8, verify: all Phase 1–7 tests pass (`pnpm test && pnpm test:e2e`), `pnpm typecheck && pnpm lint` are clean, and scheduling works end-to-end (admin toggle, asset schedule inputs, services list/calendar sub-tab, dashboard 7-day due preview). Mark all Phase 7 tasks as `completed` in the task list using `TaskUpdate`. Only then proceed.
+
+---
+
+## Phase 8: Service Lifecycle
+
+> **START OF PHASE:** Run `/brainstorming` to validate the service lifecycle UX with the user. Confirm: service record form fields, completion flow from scheduled items, provider management placement, and history/detail requirements.
+>
+> **IMPLEMENTATION QUALITY:** Use `/vercel-react-best-practices` for React/Next.js rendering and interaction flow. Use `/convex` (especially `convex-best-practices` and `convex-security-check`) for authorization boundaries, mutation design, and data consistency between service records and schedules.
+>
+> **UI WORK:** Use `/ui-ux-pro-max` with flat-design style, light and dark mode for service record forms, history timeline, and service completion actions.
+>
+> **TEXT:** Use `/writing-clearly-and-concisely` for service-related labels, date formatting, cost display, and overdue/completed status language.
+
+### What this phase delivers
+
+- Convex schema: `serviceProviders`, `serviceRecords`
+- Service provider management (simple CRUD in settings or standalone)
+- Service record creation/edit/delete on asset detail
+- Service history timeline on asset detail
+- Scheduled completion flow that advances `serviceSchedules.nextServiceDate` from interval config
+- `/services` list/calendar enhancements for execution (log service, last-service context, overdue clarity)
+
+### Task 8.1: Add service lifecycle schema and Convex functions
+
+**Files:**
+- Modify: `convex/schema.ts` (add `serviceProviders`, `serviceRecords`)
+- Create: `convex/serviceProviders.ts` (CRUD)
+- Create: `convex/serviceRecords.ts` (CRUD + completion workflow)
+- Modify: `convex/serviceSchedules.ts` (internal helper for schedule advancement)
+
+**Steps:**
+1. Add `serviceProviders` and `serviceRecords` tables to schema per design doc.
+2. Write `serviceProviders` functions: list, create, update, delete.
+3. Write `serviceRecords` functions:
+   - `createServiceRecord` — mutation: create a historical service entry
+   - `listServiceRecords` — query: by `assetId`, sorted by service date desc
    - `updateServiceRecord` — mutation
    - `deleteServiceRecord` — mutation
-4. Commit: "feat: add service providers and records schema and functions"
+   - `completeScheduledService` — mutation: create service record and advance `serviceSchedules.nextServiceDate` using configured interval
+4. Add structured errors for completion edge cases (`SCHEDULE_NOT_FOUND`, `INVALID_SERVICE_DATE`, `FORBIDDEN`).
+5. Commit: "feat: add service providers and service record lifecycle functions"
 
-### Task 7.2: Build service provider management
+### Task 8.2: Build service provider management
 
 **Files:**
 - Modify: `src/app/(app)/settings/page.tsx` (add Service Providers section) OR create dedicated page
 
 **Steps:**
-1. Add "Service Providers" section to settings page (or as a section accessible from services page)
-2. Table: provider name, email, phone
-3. Add/edit dialog, delete with confirmation
-4. Test: CRUD service providers
+1. Add "Service Providers" section to settings page (or a dedicated services-provider route).
+2. Table: provider name, email, phone.
+3. Add/edit dialog, delete with confirmation.
+4. Test: CRUD service providers.
 5. Commit: "feat: add service provider management"
 
-### Task 7.3: Build service history on asset detail
+### Task 8.3: Build service history on asset detail
 
 **Files:**
 - Create: `src/components/services/service-record-form.tsx`
 - Create: `src/components/services/service-history.tsx`
-- Modify: `src/app/(app)/assets/[id]/page.tsx` (add Service History tab)
+- Modify: `src/app/(app)/assets/[id]/page.tsx` (add Service History tab/section)
 
 **Steps:**
 1. Build service record form dialog:
    - Date picker
    - Description textarea
    - Cost input (currency)
-   - Provider dropdown (from serviceProviders)
+   - Provider dropdown (from `serviceProviders`)
    - Performed by (current user auto-filled, or dropdown)
-   - Recurring: toggle + interval days input
-2. Build service history component: timeline/list of past services, newest first
-3. Each record shows: date, description, cost, provider, who performed it
-4. If recurring: show "Next service: [date]" badge
-5. Wire into asset detail page as tab
-6. Test: add service records, verify history displays, recurring dates compute
-7. Commit: "feat: add service history to asset detail page"
+2. Build service history component: timeline/list of past services, newest first.
+3. Each record shows: date, description, cost, provider, who performed it.
+4. If asset has a schedule, show current next due date and quick action to log completion.
+5. Wire into asset detail page as tab or section.
+6. Test: add/edit/delete service records and verify timeline updates.
+7. Commit: "feat: add asset service history and record form"
 
-### Task 7.4: Build services overview page
+### Task 8.4: Enhance services planner with execution actions
 
 **Files:**
 - Modify: `src/app/(app)/services/page.tsx`
+- Modify: `src/app/(app)/services/calendar/page.tsx`
+- Modify: `src/components/services/services-scheduled-list.tsx`
+- Modify: `src/components/services/services-calendar-month.tsx`
+- Create: `src/components/services/log-service-dialog.tsx`
 
 **Steps:**
-1. Two sections: "Overdue" (red highlight) and "Upcoming" (sorted by date)
-2. Each item shows: asset name + tag (link), service description, due date, provider
-3. Overdue items show how many days overdue
-4. Upcoming items show days until due
-5. Filter by time range (next 7 days, 30 days, 90 days, all)
-6. Test: create services with various dates, verify overdue/upcoming sorting
-7. Commit: "feat: add services overview page with overdue and upcoming views"
+1. Add "Log service" actions on scheduled items in list and calendar views.
+2. Use `completeScheduledService` to create history records directly from planner rows.
+3. After completion, refresh planner data and show advanced next due date immediately.
+4. Add execution context to rows/cards: last service date, provider, and days overdue.
+5. Keep data loading query-driven and avoid query waterfalls.
+6. Commit: "feat: add service execution actions to services planner"
 
-### Task 7.5: Phase 7 tests
+### Task 8.5: Phase 8 tests
 
 **Files:**
 - Create: `convex/__tests__/serviceProviders.test.ts`
 - Create: `convex/__tests__/serviceRecords.test.ts`
 - Create: `src/__tests__/components/services/service-record-form.test.tsx`
 - Create: `src/__tests__/components/services/service-history.test.tsx`
-- Create: `e2e/services.spec.ts`
+- Create: `src/__tests__/components/services/log-service-dialog.test.tsx`
+- Create: `e2e/services-lifecycle.spec.ts`
 
 **Tests to write:**
 1. **Convex `serviceProviders` unit tests:**
-   - CRUD: create, list, update, delete — standard pattern
-   - `deleteServiceProvider` rejects if referenced by existing service records (or nullifies reference)
+   - CRUD: create, list, update, delete.
+   - `deleteServiceProvider` rejects if referenced by existing service records (or nullifies reference by explicit design).
 2. **Convex `serviceRecords` unit tests:**
-   - `createServiceRecord` saves all fields correctly
-   - `createServiceRecord` with recurringIntervalDays computes correct nextServiceDate (date + interval)
-   - `listServiceRecords` returns records for correct asset, sorted by date desc
-   - `getUpcomingServices` returns only records with nextServiceDate in the future, sorted asc
-   - `getOverdueServices` returns only records with nextServiceDate in the past
-   - Edge case: record with no nextServiceDate does not appear in upcoming or overdue
-   - Edge case: record with nextServiceDate = today appears in upcoming, not overdue
+   - `createServiceRecord` saves all fields correctly.
+   - `listServiceRecords` returns records for correct asset, sorted by date desc.
+   - `completeScheduledService` creates a record and advances schedule date using interval configuration.
+   - `completeScheduledService` rejects when no schedule exists.
 3. **Component tests:**
-   - ServiceRecordForm: renders all fields, recurring toggle shows/hides interval input, validates required fields
-   - ServiceHistory: renders timeline of records, shows "Next service" badge for recurring, empty state
+   - ServiceRecordForm: renders all fields and validates required inputs.
+   - ServiceHistory: renders timeline and supports empty state.
+   - LogServiceDialog: submits completion and handles mutation error states.
 4. **E2E tests:**
-   - Add a service record to an asset, verify it appears in service history
-   - Add a recurring service (every 30 days), verify next service date is computed and displayed
-   - Visit /services page, verify upcoming and overdue sections populate correctly
-   - Create an overdue service, verify it shows with red highlighting and days-overdue count
+   - Create asset with schedule, log completion from `/services`, verify next due date advances.
+   - Add manual service record from asset detail, verify history timeline updates.
+   - Mark an overdue scheduled item as completed and verify overdue state clears.
 5. Run `pnpm test && pnpm test:e2e` — all pass
 6. Run `pnpm typecheck && pnpm lint` — clean
-7. Commit: "test: add Phase 7 service lifecycle tests"
+7. Commit: "test: add Phase 8 service lifecycle tests"
 
-> **PHASE COMPLETE GATE:** Before moving to Phase 8, verify: all Phase 1–7 tests pass (`pnpm test && pnpm test:e2e`), `pnpm typecheck && pnpm lint` are clean, and the full service lifecycle works (providers CRUD, service records with recurring dates, upcoming/overdue views on both asset detail and services page). Mark all Phase 7 tasks as `completed` in the task list using `TaskUpdate`. Only then proceed.
+> **PHASE COMPLETE GATE:** Before moving to Phase 9, verify: all Phase 1–8 tests pass (`pnpm test && pnpm test:e2e`), `pnpm typecheck && pnpm lint` are clean, and the service lifecycle works end-to-end (providers CRUD, service history on assets, and scheduled completion that advances next due dates). Mark all Phase 8 tasks as `completed` in the task list using `TaskUpdate`. Only then proceed.
 
 ---
 
-## Phase 8: Label System
+## Phase 9: Label System
 
 > **START OF PHASE:** Run `/brainstorming` to validate the label system approach with the user. Confirm: template designer interaction model (drag vs form-based positioning), default template layouts for both label sizes (35x12mm and 57x32mm), barcode vs data matrix preference per size, print dialog behavior.
 >
@@ -971,7 +1108,7 @@ Implementation note: added `appSettings` schema and `convex/appSettings.ts` so a
 - Print flow: single asset or batch from asset list
 - CSS @media print for pixel-perfect thermal label output
 
-### Task 8.1: Add label templates schema and install bwip-js
+### Task 9.1: Add label templates schema and install bwip-js
 
 **Files:**
 - Modify: `convex/schema.ts` (add labelTemplates)
@@ -993,7 +1130,7 @@ Implementation note: added `appSettings` schema and `convex/appSettings.ts` so a
    - 57x32mm: asset name (top, bold), asset tag (middle), location (below tag), data matrix (right side)
 5. Commit: "feat: add label templates schema and install bwip-js"
 
-### Task 8.2: Build barcode/data matrix renderer component
+### Task 9.2: Build barcode/data matrix renderer component
 
 **Files:**
 - Create: `src/components/labels/barcode-renderer.tsx`
@@ -1005,7 +1142,7 @@ Implementation note: added `appSettings` schema and `convex/appSettings.ts` so a
 4. Test: render both barcode types with sample data, verify SVG output
 5. Commit: "feat: add barcode and data matrix renderer component"
 
-### Task 8.3: Build label template designer
+### Task 9.3: Build label template designer
 
 **Files:**
 - Modify: `src/app/(app)/labels/page.tsx`
@@ -1031,7 +1168,7 @@ Implementation note: added `appSettings` schema and `convex/appSettings.ts` so a
 7. Test: create a template with various elements, save, reload, verify positions persist
 8. Commit: "feat: add label template designer"
 
-### Task 8.4: Build label preview and print flow
+### Task 9.4: Build label preview and print flow
 
 **Files:**
 - Create: `src/components/labels/label-preview.tsx`
@@ -1056,7 +1193,7 @@ Implementation note: added `appSettings` schema and `convex/appSettings.ts` so a
 5. Test: print preview with real asset, verify dimensions match label stock
 6. Commit: "feat: add label preview and print flow"
 
-### Task 8.5: Phase 8 tests
+### Task 9.5: Phase 9 tests
 
 **Files:**
 - Create: `convex/__tests__/labelTemplates.test.ts`
@@ -1087,13 +1224,13 @@ Implementation note: added `appSettings` schema and `convex/appSettings.ts` so a
    - Verify print preview dimensions match template size (35x12mm or 57x32mm)
 5. Run `pnpm test && pnpm test:e2e` — all pass
 6. Run `pnpm typecheck && pnpm lint` — clean
-7. Commit: "test: add Phase 8 label system tests"
+7. Commit: "test: add Phase 9 label system tests"
 
-> **PHASE COMPLETE GATE:** Before moving to Phase 9, verify: all Phase 1–8 tests pass (`pnpm test && pnpm test:e2e`), `pnpm typecheck && pnpm lint` are clean, and the label system works end-to-end (template designer saves/loads, barcode renders, print preview shows correct dimensions for both 35x12mm and 57x32mm, batch print from asset list). Mark all Phase 8 tasks as `completed` in the task list using `TaskUpdate`. Only then proceed.
+> **PHASE COMPLETE GATE:** Before moving to Phase 10, verify: all Phase 1–9 tests pass (`pnpm test && pnpm test:e2e`), `pnpm typecheck && pnpm lint` are clean, and the label system works end-to-end (template designer saves/loads, barcode renders, print preview shows correct dimensions for both 35x12mm and 57x32mm, batch print from asset list). Mark all Phase 9 tasks as `completed` in the task list using `TaskUpdate`. Only then proceed.
 
 ---
 
-## Phase 9: Dashboard & Global Search
+## Phase 10: Dashboard & Global Search
 
 > **START OF PHASE:** Run `/brainstorming` to validate the dashboard layout and search behavior with the user. Confirm: which stats/widgets to show, search results display format, search scope.
 >
@@ -1107,7 +1244,7 @@ Implementation note: added `appSettings` schema and `convex/appSettings.ts` so a
 - Global search in topbar (searches assets by name, tag, notes)
 - Search results dropdown with quick navigation
 
-### Task 9.1: Build dashboard page
+### Task 10.1: Build dashboard page
 
 **Files:**
 - Modify: `src/app/(app)/dashboard/page.tsx`
@@ -1128,7 +1265,7 @@ Implementation note: added `appSettings` schema and `convex/appSettings.ts` so a
 6. Test: add several assets with different statuses, verify counts
 7. Commit: "feat: add dashboard with stats, recent assets, and services widget"
 
-### Task 9.2: Build global search
+### Task 10.2: Build global search
 
 **Files:**
 - Modify: `src/components/layout/topbar.tsx` (wire search input)
@@ -1148,7 +1285,7 @@ Implementation note: added `appSettings` schema and `convex/appSettings.ts` so a
 4. Test: search by name, tag, partial match, verify navigation
 5. Commit: "feat: add global search with command palette"
 
-### Task 9.3: Final polish and root redirect
+### Task 10.3: Final polish and root redirect
 
 **Files:**
 - Modify: `src/app/page.tsx` (redirect to /dashboard or /login)
@@ -1161,7 +1298,7 @@ Implementation note: added `appSettings` schema and `convex/appSettings.ts` so a
 4. Verify responsive layout works on mobile for all pages
 5. Commit: "feat: finalize routing and responsive polish"
 
-### Task 9.4: Phase 9 tests
+### Task 10.4: Phase 10 tests
 
 **Files:**
 - Create: `convex/__tests__/dashboard.test.ts`
@@ -1196,9 +1333,9 @@ Implementation note: added `appSettings` schema and `convex/appSettings.ts` so a
    - Root `/` redirects to dashboard when authenticated, to login when not
 5. Run `pnpm test && pnpm test:e2e` — all pass
 6. Run `pnpm typecheck && pnpm lint` — clean
-7. Commit: "test: add Phase 9 dashboard and global search tests"
+7. Commit: "test: add Phase 10 dashboard and global search tests"
 
-### Task 9.5: Full regression test run
+### Task 10.5: Full regression test run
 
 **Steps:**
 1. Run complete test suite: `pnpm test:all`
@@ -1207,15 +1344,17 @@ Implementation note: added `appSettings` schema and `convex/appSettings.ts` so a
 4. Run `pnpm typecheck && pnpm lint` — clean
 5. Commit any fixes: "fix: resolve cross-phase test regressions"
 
-> **PHASE COMPLETE GATE — FINAL:** Verify: the entire test suite passes (`pnpm test:all`), `pnpm typecheck && pnpm lint` are clean, and every feature works end-to-end (auth, assets, categories, tags, locations, custom fields, attachments, services, labels, dashboard, search). Mark all Phase 9 tasks as `completed` in the task list using `TaskUpdate`. Mark the entire project as complete. Celebrate.
+> **PHASE COMPLETE GATE — FINAL:** Verify: the entire test suite passes (`pnpm test:all`), `pnpm typecheck && pnpm lint` are clean, and every feature works end-to-end (auth, assets, categories, tags, locations, custom fields, attachments, services, labels, dashboard, search). Mark all Phase 10 tasks as `completed` in the task list using `TaskUpdate`. Mark the entire project as complete. Celebrate.
 
 ---
 
 ## Execution Notes
 
 - Each phase is independently functional — after completing a phase, the app works with that feature set
-- Phases 6, 7, 8 can be worked on in parallel after Phase 5 (they all depend on assets existing but not on each other)
-- Phase 9 depends on Phase 7 for the services widget but can be started after Phase 5 with a placeholder for services
+- Phase 6 (file attachments) is intentionally placed before service work so assets support evidence/docs before service execution flows
+- Phases 7 and 8 should be executed back-to-back: Phase 7 owns scheduling/planning and Phase 8 owns execution/history on top of that model
+- Phase 9 can be developed independently after Phase 5 because the label system does not depend on service modules
+- Phase 10 depends on Phase 8 for execution-aware service widgets and on Phase 7 for scheduler-backed due-date data, but dashboard scaffolding can start after Phase 5 with placeholders
 - Commit frequently within each phase at the boundaries indicated
 - Run `pnpm typecheck` and `pnpm lint` before each commit
 - **Testing is mandatory at the end of every phase.** A phase is not complete until its test task passes. Run the full test suite (`pnpm test:all`) after each phase to catch regressions early.
