@@ -7,6 +7,9 @@ import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { api, type Id } from "@/lib/convex-api"
+import { getConvexUiMessage } from "@/lib/convex-errors"
+import { formatDateFromTimestamp, type AppDateFormat } from "@/lib/date-format"
+import { useAppDateFormat } from "@/lib/use-app-date-format"
 
 type CreateUserFormState = {
   name: string
@@ -22,22 +25,12 @@ const INITIAL_CREATE_USER_FORM: CreateUserFormState = {
   role: "user",
 }
 
-function formatCreatedDate(timestamp: number) {
-  return new Intl.DateTimeFormat(undefined, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  }).format(timestamp)
+function formatCreatedDate(timestamp: number, format: AppDateFormat) {
+  return formatDateFromTimestamp(timestamp, format)
 }
 
 function normalizeErrorMessage(error: unknown, fallback: string) {
-  if (error instanceof Error && error.message) {
-    if (error.message.includes("Server Error")) {
-      return fallback
-    }
-    return error.message
-  }
-  return fallback
+  return getConvexUiMessage(error, fallback)
 }
 
 function normalizeRoleUpdateErrorMessage(error: unknown) {
@@ -55,6 +48,7 @@ export function UserManagementSection({
 }: {
   currentUserId: Id<"users">
 }) {
+  const dateFormat = useAppDateFormat()
   const users = useQuery(api.users.listUsers, {})
   const createUser = useAction(api.users.createUser)
   const updateUserRole = useMutation(api.users.updateUserRole)
@@ -224,7 +218,7 @@ export function UserManagementSection({
                       </select>
                     </td>
                     <td className="px-3 py-2 text-muted-foreground">
-                      {formatCreatedDate(user.createdAt)}
+                      {formatCreatedDate(user.createdAt, dateFormat)}
                     </td>
                     <td className="px-3 py-2 text-right">
                       <Button
@@ -356,5 +350,5 @@ export function UserManagementSection({
 }
 
 export function __testOnly__formatCreatedDate(timestamp: number) {
-  return formatCreatedDate(timestamp)
+  return formatCreatedDate(timestamp, "DD-MM-YYYY")
 }

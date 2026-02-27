@@ -17,6 +17,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { api } from "@/lib/convex-api"
+import { formatDateFromTimestamp } from "@/lib/date-format"
+import { useAppDateFormat } from "@/lib/use-app-date-format"
 
 function toDraft(location: LocationTreeItem) {
   return {
@@ -24,14 +26,6 @@ function toDraft(location: LocationTreeItem) {
     parentId: location.parentId,
     description: location.description ?? "",
   }
-}
-
-function formatTimestamp(timestamp: number) {
-  return new Intl.DateTimeFormat(undefined, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  }).format(timestamp)
 }
 
 function getAncestorIds(
@@ -63,6 +57,7 @@ function buildLocationPathPreview(
 }
 
 export function LocationsPageClient() {
+  const dateFormat = useAppDateFormat()
   const currentUser = useQuery(api.users.getCurrentUser, {})
   const locations = useQuery(api.locations.listLocations, {})
   const createLocation = useMutation(api.locations.createLocation)
@@ -423,10 +418,16 @@ export function LocationsPageClient() {
 
             <div className="grid gap-2 rounded-md border border-border/60 bg-muted/15 px-3 py-2 text-xs text-muted-foreground">
               <div>
-                Created: <span className="text-foreground">{formatTimestamp(selectedLocation.createdAt)}</span>
+                Created:{" "}
+                <span className="text-foreground">
+                  {formatDateFromTimestamp(selectedLocation.createdAt, dateFormat)}
+                </span>
               </div>
               <div>
-                Updated: <span className="text-foreground">{formatTimestamp(selectedLocation.updatedAt)}</span>
+                Updated:{" "}
+                <span className="text-foreground">
+                  {formatDateFromTimestamp(selectedLocation.updatedAt, dateFormat)}
+                </span>
               </div>
             </div>
 

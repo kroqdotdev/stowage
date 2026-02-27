@@ -501,11 +501,13 @@ Implementation note: `assetTags` was deferred to the later assets phase because 
 - Field type configuration (dropdown options, required toggle)
 - Reusable dynamic field renderer component (used later in asset forms)
 
-### Task 4.1: Add schema and Convex functions for custom fields
+### Task 4.1 [completed]: Add schema and Convex functions for custom fields
 
 **Files:**
 - Modify: `convex/schema.ts` (add customFieldDefinitions)
 - Create: `convex/customFields.ts` (list, create, update, delete, reorder)
+
+Implementation note: added `appSettings` schema and `convex/appSettings.ts` so admins can control the global date display format (`DD-MM-YYYY` default with `MM-DD-YYYY` and `YYYY-MM-DD` options), matching validated Phase 4 requirements.
 
 **Steps:**
 1. Add `customFieldDefinitions` table to schema: name, fieldType, options, required, sortOrder
@@ -517,7 +519,7 @@ Implementation note: `assetTags` was deferred to the later assets phase because 
    - `reorderFieldDefinitions` — accepts array of IDs in new order, updates sortOrder
 3. Commit: "feat: add custom field definitions schema and functions"
 
-### Task 4.2: Build fields management page
+### Task 4.2 [completed]: Build fields management page
 
 **Files:**
 - Modify: `src/app/(app)/fields/page.tsx`
@@ -536,7 +538,7 @@ Implementation note: `assetTags` was deferred to the later assets phase because 
 6. Test: create one of each field type, reorder them, edit, delete
 7. Commit: "feat: add custom field definitions management page"
 
-### Task 4.3: Build dynamic field renderer component
+### Task 4.3 [completed]: Build dynamic field renderer component
 
 **Files:**
 - Create: `src/components/fields/dynamic-field.tsx`
@@ -556,7 +558,7 @@ Implementation note: `assetTags` was deferred to the later assets phase because 
 4. Test: render each field type in a test page, verify input/display
 5. Commit: "feat: add dynamic field renderer components"
 
-### Task 4.4: Phase 4 tests
+### Task 4.4 [completed]: Phase 4 tests
 
 **Files:**
 - Create: `convex/__tests__/customFields.test.ts`

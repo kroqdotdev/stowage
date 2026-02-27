@@ -6,7 +6,7 @@ export default function SettingsPage() {
     <div className="space-y-6">
       <PageHeader
         title="Settings"
-        description="Manage users, roles, and account security."
+        description="Manage regional preferences, users, roles, and account security."
       />
       <SettingsPageClient />
     </div>

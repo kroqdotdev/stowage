@@ -48,5 +48,33 @@ export default defineSchema({
   })
     .index("by_parentId", ["parentId"])
     .index("by_parentId_and_normalizedName", ["parentId", "normalizedName"]),
+  customFieldDefinitions: defineTable({
+    name: v.string(),
+    fieldType: v.union(
+      v.literal("text"),
+      v.literal("number"),
+      v.literal("date"),
+      v.literal("dropdown"),
+      v.literal("checkbox"),
+      v.literal("url"),
+      v.literal("currency"),
+    ),
+    options: v.array(v.string()),
+    required: v.boolean(),
+    sortOrder: v.number(),
+    usageCount: v.number(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_sortOrder", ["sortOrder"]),
+  appSettings: defineTable({
+    key: v.literal("global"),
+    dateFormat: v.union(
+      v.literal("DD-MM-YYYY"),
+      v.literal("MM-DD-YYYY"),
+      v.literal("YYYY-MM-DD"),
+    ),
+    updatedAt: v.number(),
+    updatedBy: v.id("users"),
+  }).index("by_key", ["key"]),
   // `assetTags` is added in the assets phase when the `assets` table exists.
 })

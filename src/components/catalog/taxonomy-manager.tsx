@@ -18,6 +18,8 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
+import { formatDateFromTimestamp } from "@/lib/date-format"
+import { useAppDateFormat } from "@/lib/use-app-date-format"
 
 export type TaxonomyFormValues = {
   name: string
@@ -40,14 +42,6 @@ type CategoryRow = TaxonomyRowBase & {
 }
 
 type TagRow = TaxonomyRowBase
-
-function formatUpdatedDate(timestamp: number) {
-  return new Intl.DateTimeFormat(undefined, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  }).format(timestamp)
-}
 
 function normalizeForm(values: TaxonomyFormValues, variant: "categories" | "tags") {
   return {
@@ -87,6 +81,7 @@ export function TaxonomyManager({
   onUpdate: (id: string, values: TaxonomyFormValues) => Promise<void>
   onDelete: (id: string) => Promise<void>
 }) {
+  const dateFormat = useAppDateFormat()
   const singular = variant === "categories" ? "category" : "tag"
   const singularTitle = variant === "categories" ? "Category" : "Tag"
   const pluralTitle = variant === "categories" ? "Categories" : "Tags"
@@ -241,7 +236,9 @@ export function TaxonomyManager({
                       </td>
                     </>
                   ) : null}
-                  <td className="px-3 py-2 text-muted-foreground">{formatUpdatedDate(row.updatedAt)}</td>
+                  <td className="px-3 py-2 text-muted-foreground">
+                    {formatDateFromTimestamp(row.updatedAt, dateFormat)}
+                  </td>
                   <td className="px-3 py-2 text-right">
                     {canManage ? (
                       <DropdownMenu>

@@ -2,6 +2,7 @@
 
 import { useQuery } from "convex/react"
 import { PasswordChangeSection } from "@/components/settings/password-change-section"
+import { RegionalSettingsSection } from "@/components/settings/regional-settings-section"
 import { UserManagementSection } from "@/components/settings/user-management-section"
 import { api } from "@/lib/convex-api"
 
@@ -31,7 +32,10 @@ export function SettingsPageClient() {
   return (
     <div className="space-y-6">
       {currentUser.role === "admin" ? (
-        <UserManagementSection currentUserId={currentUser._id} />
+        <>
+          <RegionalSettingsSection />
+          <UserManagementSection currentUserId={currentUser._id} />
+        </>
       ) : (
         <section className="rounded-xl border border-border/70 bg-background p-5 shadow-sm">
           <h2 className="text-lg font-semibold tracking-tight">User management</h2>
