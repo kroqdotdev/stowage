@@ -107,28 +107,31 @@ export function LocationTree({
           <div
             className={cn(
               "group rounded-lg px-2 py-2 transition",
-              isSelected ? "bg-muted/22" : "hover:bg-muted/14",
+              isSelected ? "bg-muted/50 dark:bg-muted/55" : "hover:bg-muted/35",
             )}
           >
             <div className="flex items-start gap-2">
-              <button
-                type="button"
-                className={cn(
-                  "mt-0.5 inline-flex h-6 w-6 items-center justify-center rounded-md border border-transparent text-muted-foreground",
-                  hasChildren
-                    ? "cursor-pointer hover:border-border/60 hover:bg-background/80"
-                    : "pointer-events-none opacity-30",
-                )}
-                onClick={() => hasChildren && onToggleExpand(node._id)}
-                aria-label={hasChildren ? (isExpanded ? "Collapse" : "Expand") : "No children"}
-                aria-hidden={!hasChildren}
-              >
-                {hasChildren ? (
-                  isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />
-                ) : (
+              {hasChildren ? (
+                <button
+                  type="button"
+                  className="mt-0.5 inline-flex h-6 w-6 cursor-pointer items-center justify-center rounded-md border border-transparent text-muted-foreground hover:border-border/60 hover:bg-background/80"
+                  onClick={() => onToggleExpand(node._id)}
+                  aria-label={isExpanded ? "Collapse" : "Expand"}
+                >
+                  {isExpanded ? (
+                    <ChevronDown className="h-4 w-4" />
+                  ) : (
+                    <ChevronRight className="h-4 w-4" />
+                  )}
+                </button>
+              ) : (
+                <span
+                  aria-hidden="true"
+                  className="mt-0.5 inline-flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground/35"
+                >
                   <span className="h-4 w-4" />
-                )}
-              </button>
+                </span>
+              )}
 
               <button
                 type="button"
