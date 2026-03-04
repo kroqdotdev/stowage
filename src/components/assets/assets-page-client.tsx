@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { startTransition, useDeferredValue, useMemo, useState } from "react";
-import { Plus } from "lucide-react";
+import { Package, Plus, Printer, X } from "lucide-react";
 import { useQuery } from "convex/react";
 import {
   AssetFilters,
@@ -19,6 +19,7 @@ import type {
   AssetListItem,
 } from "@/components/assets/types";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
 import { api } from "@/lib/convex-api";
 
 const DEFAULT_FILTERS: AssetFiltersState = {
@@ -53,6 +54,13 @@ export function AssetsPageClient() {
 
   const loading = assets === undefined || filterOptions === undefined;
   const rows = useMemo(() => (assets ?? []) as AssetListItem[], [assets]);
+  const hasFilters =
+    Boolean(deferredSearch.trim()) ||
+    filters.categoryId !== null ||
+    filters.status !== null ||
+    filters.locationId !== null ||
+    filters.tagIds.length > 0;
+  const showEmptyState = !loading && rows.length === 0 && !hasFilters;
   const options = (filterOptions ?? {
     categories: [],
     locations: [],
@@ -124,6 +132,22 @@ export function AssetsPageClient() {
         }}
       />
 
+      {showEmptyState ? (
+        <EmptyState
+          icon={Package}
+          title="No assets found"
+          description="Get started by adding your first asset."
+          action={
+            <Button asChild className="cursor-pointer">
+              <Link href="/assets/new">
+                <Plus className="h-4 w-4" />
+                Add asset
+              </Link>
+            </Button>
+          }
+        />
+      ) : null}
+
       <AssetTable
         rows={rows}
         loading={loading}
@@ -151,21 +175,44 @@ export function AssetsPageClient() {
           setSelectedIds(new Set(rows.map((row) => row._id as string)));
         }}
         onRowOpen={(assetId) => router.push(`/assets/${assetId}`)}
+        onRowEdit={(assetId) => router.push(`/assets/${assetId}/edit`)}
       />
 
-      <div className="rounded-lg border border-border/60 bg-muted/15 px-3 py-2 text-xs text-muted-foreground">
-        {selectedCount === 0 ? (
-          <span>Select assets for future batch label actions.</span>
-        ) : (
-          <span>
-            {selectedCount} selected:{" "}
-            {selectedAssetNames.slice(0, 3).join(", ")}
-            {selectedAssetNames.length > 3
-              ? ` +${selectedAssetNames.length - 3} more`
-              : ""}
-          </span>
-        )}
-      </div>
+      {selectedCount > 0 ? (
+        <div className="sticky bottom-4 z-10 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/70 bg-background px-4 py-3 shadow-lg">
+          <div className="text-sm">
+            <span className="font-medium">{selectedCount} selected</span>
+            <span className="ml-2 text-muted-foreground">
+              {selectedAssetNames.slice(0, 3).join(", ")}
+              {selectedAssetNames.length > 3
+                ? ` +${selectedAssetNames.length - 3} more`
+                : ""}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="cursor-pointer"
+              disabled
+            >
+              <Printer className="h-4 w-4" />
+              Print labels
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="cursor-pointer"
+              onClick={() => setSelectedIds(new Set())}
+            >
+              <X className="h-4 w-4" />
+              Clear selection
+            </Button>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

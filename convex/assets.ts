@@ -1290,6 +1290,67 @@ export const getAssetFilterOptions = query({
   },
 });
 
+export const getDashboardStats = query({
+  args: {},
+  returns: v.object({
+    totalAssets: v.number(),
+    totalCategories: v.number(),
+    totalLocations: v.number(),
+    statusBreakdown: v.array(
+      v.object({ status: assetStatusValidator, count: v.number() }),
+    ),
+    recentAssets: v.array(
+      v.object({
+        _id: v.id("assets"),
+        name: v.string(),
+        assetTag: v.string(),
+        status: assetStatusValidator,
+        createdAt: v.number(),
+      }),
+    ),
+  }),
+  handler: async (ctx) => {
+    await requireAuthenticatedUser(ctx);
+
+    const [allAssets, categories, locations] = await Promise.all([
+      ctx.db.query("assets").collect() as Promise<AssetRow[]>,
+      ctx.db.query("categories").collect(),
+      ctx.db.query("locations").collect(),
+    ]);
+
+    const statusCounts = new Map<AssetStatus, number>();
+    for (const asset of allAssets) {
+      statusCounts.set(asset.status, (statusCounts.get(asset.status) ?? 0) + 1);
+    }
+
+    const statusBreakdown = ASSET_STATUSES.filter((s) =>
+      statusCounts.has(s),
+    ).map((status) => ({
+      status,
+      count: statusCounts.get(status) ?? 0,
+    }));
+
+    const recentAssets = allAssets
+      .sort((a, b) => b.createdAt - a.createdAt)
+      .slice(0, 5)
+      .map((asset) => ({
+        _id: asset._id,
+        name: asset.name,
+        assetTag: asset.assetTag,
+        status: asset.status,
+        createdAt: asset.createdAt,
+      }));
+
+    return {
+      totalAssets: allAssets.length,
+      totalCategories: categories.length,
+      totalLocations: locations.length,
+      statusBreakdown,
+      recentAssets,
+    };
+  },
+});
+
 export const getAssetTagIds = query({
   args: {
     assetId: v.id("assets"),

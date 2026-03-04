@@ -1,8 +1,24 @@
 "use client";
 
-import { ArrowDownUp, ArrowUp, ArrowDown } from "lucide-react";
+import {
+  ArrowDownUp,
+  ArrowUp,
+  ArrowDown,
+  CheckSquare,
+  Eye,
+  Pencil,
+  Square,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu";
 import { StatusBadge } from "@/components/assets/status-badge";
 import type { AssetListItem } from "@/components/assets/types";
 import { formatDateFromTimestamp } from "@/lib/date-format";
@@ -69,6 +85,7 @@ export function AssetTable({
   onSelectRow,
   onSelectAll,
   onRowOpen,
+  onRowEdit,
 }: {
   rows: AssetListItem[];
   loading: boolean;
@@ -79,6 +96,7 @@ export function AssetTable({
   onSelectRow: (assetId: string, checked: boolean) => void;
   onSelectAll: (checked: boolean) => void;
   onRowOpen: (assetId: string) => void;
+  onRowEdit?: (assetId: string) => void;
 }) {
   const dateFormat = useAppDateFormat();
   const allSelected =
@@ -90,11 +108,10 @@ export function AssetTable({
         <thead className="bg-muted/35 text-left">
           <tr>
             <th className="w-10 px-3 py-2">
-              <input
-                type="checkbox"
+              <Checkbox
                 aria-label="Select all assets"
                 checked={allSelected}
-                onChange={(event) => onSelectAll(event.target.checked)}
+                onCheckedChange={(checked) => onSelectAll(checked === true)}
                 disabled={rows.length === 0}
               />
             </th>
@@ -162,73 +179,98 @@ export function AssetTable({
               const selected = selectedIds.has(asset._id);
 
               return (
-                <tr
-                  key={asset._id}
-                  className="cursor-pointer border-t border-border/50 transition hover:bg-muted/25 focus-visible:bg-muted/25"
-                  onClick={() => onRowOpen(asset._id)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter" || event.key === " ") {
-                      event.preventDefault();
-                      onRowOpen(asset._id);
-                    }
-                  }}
-                  tabIndex={0}
-                >
-                  <td
-                    className="px-3 py-2"
-                    onClick={(event) => event.stopPropagation()}
-                  >
-                    <input
-                      type="checkbox"
-                      aria-label={`Select ${asset.name}`}
-                      checked={selected}
-                      onChange={(event) =>
-                        onSelectRow(asset._id, event.target.checked)
-                      }
-                    />
-                  </td>
-                  <td className="px-3 py-2 font-mono text-xs font-semibold tracking-wide text-muted-foreground">
-                    {asset.assetTag}
-                  </td>
-                  <td className="px-3 py-2">
-                    <div className="font-medium">{asset.name}</div>
-                    {asset.tagNames.length > 0 ? (
-                      <div className="mt-1 flex flex-wrap gap-1">
-                        {asset.tagNames.slice(0, 2).map((tagName) => (
-                          <Badge
-                            key={tagName}
-                            className="border border-border/70 bg-muted/20 text-[10px]"
-                          >
-                            {tagName}
-                          </Badge>
-                        ))}
-                        {asset.tagNames.length > 2 ? (
-                          <Badge className="border border-border/70 bg-muted/20 text-[10px]">
-                            +{asset.tagNames.length - 2}
-                          </Badge>
+                <ContextMenu key={asset._id}>
+                  <ContextMenuTrigger asChild>
+                    <tr
+                      className="cursor-pointer border-t border-border/50 transition hover:bg-muted/25 focus-visible:bg-muted/25"
+                      onClick={() => onRowOpen(asset._id)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
+                          onRowOpen(asset._id);
+                        }
+                      }}
+                      tabIndex={0}
+                    >
+                      <td
+                        className="px-3 py-2"
+                        onClick={(event) => event.stopPropagation()}
+                      >
+                        <Checkbox
+                          aria-label={`Select ${asset.name}`}
+                          checked={selected}
+                          onCheckedChange={(checked) =>
+                            onSelectRow(asset._id, checked === true)
+                          }
+                        />
+                      </td>
+                      <td className="px-3 py-2 font-mono text-xs font-semibold tracking-wide text-muted-foreground">
+                        {asset.assetTag}
+                      </td>
+                      <td className="px-3 py-2">
+                        <div className="font-medium">{asset.name}</div>
+                        {asset.tagNames.length > 0 ? (
+                          <div className="mt-1 flex flex-wrap gap-1">
+                            {asset.tagNames.slice(0, 2).map((tagName) => (
+                              <Badge
+                                key={tagName}
+                                className="border border-border/70 bg-muted/20 text-[10px]"
+                              >
+                                {tagName}
+                              </Badge>
+                            ))}
+                            {asset.tagNames.length > 2 ? (
+                              <Badge className="border border-border/70 bg-muted/20 text-[10px]">
+                                +{asset.tagNames.length - 2}
+                              </Badge>
+                            ) : null}
+                          </div>
                         ) : null}
-                      </div>
+                      </td>
+                      <td className="px-3 py-2">
+                        {asset.categoryName ? (
+                          <Badge className="border border-border/60 bg-muted/20 text-xs">
+                            {asset.categoryName}
+                          </Badge>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                      </td>
+                      <td className="px-3 py-2">
+                        <StatusBadge status={asset.status} />
+                      </td>
+                      <td className="px-3 py-2 text-muted-foreground">
+                        {asset.locationPath ?? "—"}
+                      </td>
+                      <td className="px-3 py-2 text-right text-muted-foreground">
+                        {formatDateFromTimestamp(asset.createdAt, dateFormat)}
+                      </td>
+                    </tr>
+                  </ContextMenuTrigger>
+                  <ContextMenuContent>
+                    <ContextMenuItem onClick={() => onRowOpen(asset._id)}>
+                      <Eye className="h-4 w-4" />
+                      View details
+                    </ContextMenuItem>
+                    {onRowEdit ? (
+                      <ContextMenuItem onClick={() => onRowEdit(asset._id)}>
+                        <Pencil className="h-4 w-4" />
+                        Edit
+                      </ContextMenuItem>
                     ) : null}
-                  </td>
-                  <td className="px-3 py-2">
-                    {asset.categoryName ? (
-                      <Badge className="border border-border/60 bg-muted/20 text-xs">
-                        {asset.categoryName}
-                      </Badge>
-                    ) : (
-                      <span className="text-muted-foreground">—</span>
-                    )}
-                  </td>
-                  <td className="px-3 py-2">
-                    <StatusBadge status={asset.status} />
-                  </td>
-                  <td className="px-3 py-2 text-muted-foreground">
-                    {asset.locationPath ?? "—"}
-                  </td>
-                  <td className="px-3 py-2 text-right text-muted-foreground">
-                    {formatDateFromTimestamp(asset.createdAt, dateFormat)}
-                  </td>
-                </tr>
+                    <ContextMenuSeparator />
+                    <ContextMenuItem
+                      onClick={() => onSelectRow(asset._id, !selected)}
+                    >
+                      {selected ? (
+                        <Square className="h-4 w-4" />
+                      ) : (
+                        <CheckSquare className="h-4 w-4" />
+                      )}
+                      {selected ? "Deselect" : "Select"}
+                    </ContextMenuItem>
+                  </ContextMenuContent>
+                </ContextMenu>
               );
             })
           )}

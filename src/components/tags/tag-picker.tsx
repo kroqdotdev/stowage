@@ -2,6 +2,7 @@
 
 import type { Id } from "@/lib/convex-api";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 
 export type TagPickerOption = {
   _id: Id<"tags">;
@@ -45,13 +46,12 @@ export function TagPicker({
 
             return (
               <label key={tag._id} className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
+                <Checkbox
                   checked={checked}
                   disabled={disabled}
-                  onChange={(event) =>
+                  onCheckedChange={(nextChecked) =>
                     onChange(
-                      event.target.checked
+                      nextChecked === true
                         ? addTagId(value, tag._id)
                         : removeTagId(value, tag._id),
                     )

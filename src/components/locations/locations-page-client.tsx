@@ -22,7 +22,19 @@ import {
 } from "@/components/locations/location-tree";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { api } from "@/lib/convex-api";
 import { formatDateFromTimestamp } from "@/lib/date-format";
 import { useAppDateFormat } from "@/lib/use-app-date-format";
@@ -307,7 +319,7 @@ export function LocationsPageClient() {
 
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(320px,0.85fr)]">
-      <section className="rounded-xl border border-border/70 bg-background p-5 shadow-sm">
+      <section className="flex max-h-[calc(100dvh-14rem)] flex-col rounded-xl border border-border/70 bg-background p-5 shadow-sm">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="space-y-1">
             <h2 className="text-lg font-semibold tracking-tight">
@@ -335,7 +347,7 @@ export function LocationsPageClient() {
           ) : null}
         </div>
 
-        <div className="mt-4">
+        <div className="mt-4 min-h-0 flex-1 overflow-y-auto">
           {loading ? (
             <div className="rounded-lg border border-border/60 px-4 py-8 text-center text-sm text-muted-foreground">
               Loading locations...
@@ -358,7 +370,7 @@ export function LocationsPageClient() {
         </div>
       </section>
 
-      <section className="rounded-xl border border-border/70 bg-background p-5 shadow-sm">
+      <section className="max-h-[calc(100dvh-14rem)] overflow-y-auto rounded-xl border border-border/70 bg-background p-5 shadow-sm">
         {!selectedLocation || !panelDraft ? (
           <div className="flex h-full min-h-72 flex-col items-start justify-center gap-3 rounded-lg border border-dashed border-border/60 bg-muted/20 p-6">
             <div className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-background px-3 py-1 text-xs font-medium text-muted-foreground">
@@ -413,34 +425,34 @@ export function LocationsPageClient() {
             </div>
 
             <div className="space-y-1.5">
-              <label htmlFor="location-parent" className="text-sm font-medium">
-                Parent location
-              </label>
-              <select
-                id="location-parent"
-                className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm disabled:cursor-not-allowed disabled:opacity-50"
-                value={panelDraft.parentId ?? ""}
-                onChange={(event) =>
+              <label className="text-sm font-medium">Parent location</label>
+              <Select
+                value={panelDraft.parentId ?? "__none__"}
+                onValueChange={(value) =>
                   setPanelDraft((prev) =>
                     prev
                       ? {
                           ...prev,
-                          parentId: event.target.value
-                            ? event.target.value
-                            : null,
+                          parentId:
+                            value === "__none__" ? null : value,
                         }
                       : prev,
                   )
                 }
                 disabled={!canManage || saving}
               >
-                <option value="">No parent (root)</option>
-                {parentOptions.map((location) => (
-                  <option key={location._id} value={location._id}>
-                    {location.path}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="No parent (root)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">No parent (root)</SelectItem>
+                  {parentOptions.map((location) => (
+                    <SelectItem key={location._id} value={location._id}>
+                      {location.path}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-1.5">
@@ -495,41 +507,56 @@ export function LocationsPageClient() {
 
             {canManage ? (
               <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
-                <Button
-                  type="button"
-                  variant="destructive"
-                  className="cursor-pointer"
-                  onClick={() => setDeleteId(selectedLocation._id)}
-                  disabled={saving || deleting}
-                >
-                  <Trash2 className="h-4 w-4" />
-                  Delete
-                </Button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      className="cursor-pointer"
+                      onClick={() => setDeleteId(selectedLocation._id)}
+                      disabled={saving || deleting}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      Delete
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Delete this location</TooltipContent>
+                </Tooltip>
 
                 <div className="flex flex-wrap items-center gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="cursor-pointer"
-                    onClick={() => setPanelDraft(toDraft(selectedLocation))}
-                    disabled={saving || deleting || !hasPanelChanges}
-                  >
-                    <RefreshCw className="h-4 w-4" />
-                    Reset
-                  </Button>
-                  <Button
-                    type="button"
-                    className="cursor-pointer"
-                    onClick={() => void handleSavePanel()}
-                    disabled={saving || deleting || !hasPanelChanges}
-                  >
-                    {saving ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Save className="h-4 w-4" />
-                    )}
-                    {saving ? "Saving..." : "Save changes"}
-                  </Button>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="cursor-pointer"
+                        onClick={() => setPanelDraft(toDraft(selectedLocation))}
+                        disabled={saving || deleting || !hasPanelChanges}
+                      >
+                        <RefreshCw className="h-4 w-4" />
+                        Reset
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Discard unsaved changes</TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        type="button"
+                        className="cursor-pointer"
+                        onClick={() => void handleSavePanel()}
+                        disabled={saving || deleting || !hasPanelChanges}
+                      >
+                        {saving ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Save className="h-4 w-4" />
+                        )}
+                        {saving ? "Saving..." : "Save changes"}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Save location changes</TooltipContent>
+                  </Tooltip>
                 </div>
               </div>
             ) : (

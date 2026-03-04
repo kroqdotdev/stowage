@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery } from "convex/react";
+import { FeaturesSection } from "@/components/settings/features-section";
 import { PasswordChangeSection } from "@/components/settings/password-change-section";
 import { RegionalSettingsSection } from "@/components/settings/regional-settings-section";
 import { UserManagementSection } from "@/components/settings/user-management-section";
@@ -34,15 +35,16 @@ export function SettingsPageClient() {
       {currentUser.role === "admin" ? (
         <>
           <RegionalSettingsSection />
+          <FeaturesSection />
           <UserManagementSection currentUserId={currentUser._id} />
         </>
       ) : (
         <section className="rounded-xl border border-border/70 bg-background p-5 shadow-sm">
           <h2 className="text-lg font-semibold tracking-tight">
-            User management
+            Administration
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Only admins can create users or change roles.
+            Only admins can manage date format, features, and users.
           </p>
         </section>
       )}

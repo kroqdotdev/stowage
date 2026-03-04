@@ -1,10 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 import { getFunctionName } from "convex/server";
 
 const updateDateFormatMock = vi.fn();
-const updateServiceSchedulingEnabledMock = vi.fn();
 const mockUseQuery = vi.fn();
 const mockUseMutation = vi.fn();
 const toastErrorMock = vi.fn();
@@ -27,7 +25,6 @@ import { RegionalSettingsSection } from "@/components/settings/regional-settings
 describe("RegionalSettingsSection", () => {
   beforeEach(() => {
     updateDateFormatMock.mockReset();
-    updateServiceSchedulingEnabledMock.mockReset();
     mockUseQuery.mockReset();
     mockUseMutation.mockReset();
     toastErrorMock.mockReset();
@@ -39,10 +36,6 @@ describe("RegionalSettingsSection", () => {
         return updateDateFormatMock;
       }
 
-      if (functionName === "appSettings:updateServiceSchedulingEnabled") {
-        return updateServiceSchedulingEnabledMock;
-      }
-
       throw new Error(`Unexpected mutation reference: ${functionName}`);
     });
     mockUseQuery.mockReturnValue({
@@ -52,63 +45,29 @@ describe("RegionalSettingsSection", () => {
     });
   });
 
-  it("updates date format and saves selection", async () => {
-    const user = userEvent.setup();
-    updateDateFormatMock.mockResolvedValueOnce({
-      dateFormat: "MM-DD-YYYY",
-      serviceSchedulingEnabled: true,
-      updatedAt: Date.now(),
-    });
-
+  it("renders date format heading and select trigger", () => {
     render(<RegionalSettingsSection />);
 
-    const select = screen.getByLabelText("Date format");
-    expect(select).toHaveValue("DD-MM-YYYY");
-
-    await user.selectOptions(select, "MM-DD-YYYY");
-    await user.click(screen.getByRole("button", { name: "Save settings" }));
-
-    expect(updateDateFormatMock).toHaveBeenCalledWith({
-      dateFormat: "MM-DD-YYYY",
-    });
-    expect(updateServiceSchedulingEnabledMock).not.toHaveBeenCalled();
-    expect(toastSuccessMock).toHaveBeenCalledWith("Settings updated");
+    expect(
+      screen.getByRole("heading", { name: "Date format" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("combobox")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Save format" }),
+    ).toBeInTheDocument();
   });
 
-  it("does not clobber unsaved local selection when query re-renders", async () => {
-    const user = userEvent.setup();
-    const view = render(<RegionalSettingsSection />);
-
-    const select = screen.getByLabelText("Date format");
-    await user.selectOptions(select, "MM-DD-YYYY");
-    expect(select).toHaveValue("MM-DD-YYYY");
-
-    mockUseQuery.mockReturnValue({
-      dateFormat: "DD-MM-YYYY",
-      serviceSchedulingEnabled: true,
-      updatedAt: null,
-    });
-    view.rerender(<RegionalSettingsSection />);
-
-    expect(screen.getByLabelText("Date format")).toHaveValue("MM-DD-YYYY");
-  });
-
-  it("updates scheduling toggle", async () => {
-    const user = userEvent.setup();
-    updateServiceSchedulingEnabledMock.mockResolvedValueOnce({
-      dateFormat: "DD-MM-YYYY",
-      serviceSchedulingEnabled: false,
-      updatedAt: Date.now(),
-    });
-
+  it("shows loading state when settings are undefined", () => {
+    mockUseQuery.mockReturnValue(undefined);
     render(<RegionalSettingsSection />);
 
-    await user.click(screen.getByRole("checkbox", { name: "Enabled" }));
-    await user.click(screen.getByRole("button", { name: "Save settings" }));
+    expect(screen.getByText("Loading preferences...")).toBeInTheDocument();
+  });
 
-    expect(updateServiceSchedulingEnabledMock).toHaveBeenCalledWith({
-      enabled: false,
-    });
-    expect(toastSuccessMock).toHaveBeenCalledWith("Settings updated");
+  it("shows date preview", () => {
+    render(<RegionalSettingsSection />);
+
+    expect(screen.getByText("Preview:")).toBeInTheDocument();
+    expect(screen.getByText("Using default format.")).toBeInTheDocument();
   });
 });

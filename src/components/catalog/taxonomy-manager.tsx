@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import { Loader2, MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { CrudTable } from "@/components/crud/crud-table";
@@ -11,6 +11,13 @@ import { CrudModal } from "@/components/crud/modal";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -18,6 +25,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { formatDateFromTimestamp } from "@/lib/date-format";
 import { useAppDateFormat } from "@/lib/use-app-date-format";
 
@@ -234,72 +246,109 @@ export function TaxonomyManager({
           colSpan={headers.length}
         >
           {rows.length > 0
-            ? rows.map((row) => (
-                <tr key={row._id} className="border-t border-border/50">
-                  <td className="px-3 py-2">
-                    <Badge className="gap-2 border-border/80 bg-muted/30 text-foreground">
-                      <span
-                        className="inline-block h-2.5 w-2.5 rounded-full border border-black/10"
-                        style={{ backgroundColor: row.color }}
-                        aria-hidden="true"
-                      />
-                      <span className="font-mono text-[11px]">{row.color}</span>
-                    </Badge>
-                  </td>
-                  <td className="px-3 py-2 font-medium">{row.name}</td>
-                  {variant === "categories" ? (
-                    <>
-                      <td className="px-3 py-2 text-muted-foreground">
-                        {"prefix" in row ? (row.prefix ?? "—") : "—"}
-                      </td>
-                      <td className="max-w-[22rem] px-3 py-2 text-muted-foreground">
-                        <div className="truncate">
-                          {"description" in row
-                            ? (row.description ?? "—")
-                            : "—"}
-                        </div>
-                      </td>
-                    </>
-                  ) : null}
-                  <td className="px-3 py-2 text-muted-foreground">
-                    {formatDateFromTimestamp(row.updatedAt, dateFormat)}
-                  </td>
-                  <td className="px-3 py-2 text-right">
-                    {canManage ? (
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon-sm"
-                            className="cursor-pointer"
-                            aria-label={`Actions for ${row.name}`}
-                          >
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => openEdit(row._id)}>
-                            <Pencil className="h-4 w-4" />
-                            Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            variant="destructive"
-                            onClick={() => setDeleteId(row._id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    ) : (
-                      <span className="text-xs text-muted-foreground">
-                        Read only
-                      </span>
-                    )}
-                  </td>
-                </tr>
-              ))
+            ? rows.map((row) => {
+                const rowContent = (
+                  <tr className="border-t border-border/50">
+                    <td className="px-3 py-2">
+                      <Badge className="gap-2 border-border/80 bg-muted/30 text-foreground">
+                        <span
+                          className="inline-block h-2.5 w-2.5 rounded-full border border-black/10"
+                          style={{ backgroundColor: row.color }}
+                          aria-hidden="true"
+                        />
+                        <span className="font-mono text-[11px]">
+                          {row.color}
+                        </span>
+                      </Badge>
+                    </td>
+                    <td className="px-3 py-2 font-medium">{row.name}</td>
+                    {variant === "categories" ? (
+                      <>
+                        <td className="px-3 py-2 text-muted-foreground">
+                          {"prefix" in row ? (row.prefix ?? "—") : "—"}
+                        </td>
+                        <td className="max-w-[22rem] px-3 py-2 text-muted-foreground">
+                          <div className="truncate">
+                            {"description" in row
+                              ? (row.description ?? "—")
+                              : "—"}
+                          </div>
+                        </td>
+                      </>
+                    ) : null}
+                    <td className="px-3 py-2 text-muted-foreground">
+                      {formatDateFromTimestamp(row.updatedAt, dateFormat)}
+                    </td>
+                    <td className="px-3 py-2 text-right">
+                      {canManage ? (
+                        <DropdownMenu>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon-sm"
+                                  className="cursor-pointer"
+                                  aria-label={`Actions for ${row.name}`}
+                                >
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                            </TooltipTrigger>
+                            <TooltipContent>Actions</TooltipContent>
+                          </Tooltip>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              onClick={() => openEdit(row._id)}
+                            >
+                              <Pencil className="h-4 w-4" />
+                              Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              variant="destructive"
+                              onClick={() => setDeleteId(row._id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">
+                          Read only
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                );
+
+                return canManage ? (
+                  <ContextMenu key={row._id}>
+                    <ContextMenuTrigger asChild>
+                      {rowContent}
+                    </ContextMenuTrigger>
+                    <ContextMenuContent>
+                      <ContextMenuItem onClick={() => openEdit(row._id)}>
+                        <Pencil className="h-4 w-4" />
+                        Edit
+                      </ContextMenuItem>
+                      <ContextMenuSeparator />
+                      <ContextMenuItem
+                        variant="destructive"
+                        onClick={() => setDeleteId(row._id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        Delete
+                      </ContextMenuItem>
+                    </ContextMenuContent>
+                  </ContextMenu>
+                ) : (
+                  <React.Fragment key={row._id}>
+                    {rowContent}
+                  </React.Fragment>
+                );
+              })
             : null}
         </CrudTable>
       </div>

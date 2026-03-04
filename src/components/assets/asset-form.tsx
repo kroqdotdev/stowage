@@ -21,6 +21,13 @@ import {
 import { ServiceScheduleFields } from "@/components/assets/service-schedule-fields";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/lib/convex-api";
 
@@ -219,30 +226,31 @@ export function AssetForm({
         </div>
 
         <div className="space-y-1.5">
-          <label htmlFor="asset-category" className="text-sm font-medium">
-            Category
-          </label>
-          <select
-            id="asset-category"
-            className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
-            value={values.categoryId ?? ""}
-            onChange={(event) =>
+          <label className="text-sm font-medium">Category</label>
+          <Select
+            value={values.categoryId ?? "__none__"}
+            onValueChange={(value) =>
               setFieldValue(
                 "categoryId",
-                event.target.value
-                  ? (event.target.value as Id<"categories">)
-                  : null,
+                value === "__none__"
+                  ? null
+                  : (value as Id<"categories">),
               )
             }
             disabled={submitting}
           >
-            <option value="">No category</option>
-            {categories.map((category) => (
-              <option key={category._id} value={category._id}>
-                {category.name}
-              </option>
-            ))}
-          </select>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="No category" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__none__">No category</SelectItem>
+              {categories.map((category) => (
+                <SelectItem key={category._id} value={category._id}>
+                  {category.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         <div className="space-y-1.5">
@@ -258,24 +266,25 @@ export function AssetForm({
         </div>
 
         <div className="space-y-1.5">
-          <label htmlFor="asset-status" className="text-sm font-medium">
-            Status
-          </label>
-          <select
-            id="asset-status"
-            className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+          <label className="text-sm font-medium">Status</label>
+          <Select
             value={values.status}
-            onChange={(event) =>
-              setFieldValue("status", event.target.value as AssetStatus)
+            onValueChange={(value) =>
+              setFieldValue("status", value as AssetStatus)
             }
             disabled={submitting}
           >
-            {ASSET_STATUS_OPTIONS.map((status) => (
-              <option key={status} value={status}>
-                {ASSET_STATUS_LABELS[status]}
-              </option>
-            ))}
-          </select>
+            <SelectTrigger className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {ASSET_STATUS_OPTIONS.map((status) => (
+                <SelectItem key={status} value={status}>
+                  {ASSET_STATUS_LABELS[status]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
 

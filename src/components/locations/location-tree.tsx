@@ -10,12 +10,25 @@ import {
   Trash2,
 } from "lucide-react";
 import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
 import { cn } from "@/lib/utils";
 import styles from "./location-tree.module.css";
 
@@ -99,9 +112,11 @@ export function LocationTree({
 
   if (locations.length === 0) {
     return (
-      <div className="rounded-lg border border-dashed border-border/70 bg-muted/20 p-6 text-center text-sm text-muted-foreground">
-        No locations yet. Add a root location to begin your hierarchy.
-      </div>
+      <EmptyState
+        icon={FolderTree}
+        title="No locations yet"
+        description="Add a root location to begin your hierarchy."
+      />
     );
   }
 
@@ -111,94 +126,127 @@ export function LocationTree({
     const isExpanded = expandedIds.has(node._id);
     const isSelected = selectedId === node._id;
 
-    return (
-      <li key={node._id} className={styles.node}>
-        <div className="relative z-10">
-          <div
-            className={cn(
-              "group rounded-lg px-2 py-2 transition",
-              isSelected ? "bg-muted/50 dark:bg-muted/55" : "hover:bg-muted/35",
-            )}
-          >
-            <div className="flex items-start gap-2">
-              {hasChildren ? (
-                <button
-                  type="button"
-                  className="mt-0.5 inline-flex h-6 w-6 cursor-pointer items-center justify-center rounded-md border border-transparent text-muted-foreground hover:border-border/60 hover:bg-background/80"
-                  onClick={() => onToggleExpand(node._id)}
-                  aria-label={isExpanded ? "Collapse" : "Expand"}
-                >
-                  {isExpanded ? (
-                    <ChevronDown className="h-4 w-4" />
-                  ) : (
-                    <ChevronRight className="h-4 w-4" />
-                  )}
-                </button>
-              ) : (
-                <span
-                  aria-hidden="true"
-                  className="mt-0.5 inline-flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground/35"
-                >
-                  <span className="h-4 w-4" />
-                </span>
-              )}
-
+    const nodeContent = (
+      <div className="relative z-10">
+        <div
+          className={cn(
+            "group rounded-lg px-2 py-2 transition",
+            isSelected ? "bg-muted/50 dark:bg-muted/55" : "hover:bg-muted/35",
+          )}
+        >
+          <div className="flex items-start gap-2">
+            {hasChildren ? (
               <button
                 type="button"
-                className="min-w-0 flex-1 cursor-pointer text-left"
-                onClick={() => onSelect(node._id)}
+                className="mt-0.5 inline-flex h-6 w-6 cursor-pointer items-center justify-center rounded-md border border-transparent text-muted-foreground hover:border-border/60 hover:bg-background/80"
+                onClick={() => onToggleExpand(node._id)}
+                aria-label={isExpanded ? "Collapse" : "Expand"}
               >
-                <div className="flex items-center gap-2">
-                  <FolderTree className="h-4 w-4 text-muted-foreground" />
-                  <span className="truncate text-sm font-medium">
-                    {node.name}
-                  </span>
-                  {hasChildren ? (
-                    <span className="rounded-full border border-border/70 px-1.5 py-0 text-[11px] text-muted-foreground">
-                      {children.length}
-                    </span>
-                  ) : null}
-                </div>
-                <div className="mt-0.5 truncate text-xs text-muted-foreground">
-                  {node.path}
-                </div>
+                {isExpanded ? (
+                  <ChevronDown className="h-4 w-4" />
+                ) : (
+                  <ChevronRight className="h-4 w-4" />
+                )}
               </button>
+            ) : (
+              <span
+                aria-hidden="true"
+                className="mt-0.5 inline-flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground/35"
+              >
+                <span className="h-4 w-4" />
+              </span>
+            )}
 
-              {canManage ? (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon-sm"
-                      className="cursor-pointer opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
-                      aria-label={`Actions for ${node.name}`}
-                    >
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => onSelect(node._id)}>
-                      <Pencil className="h-4 w-4" />
-                      Edit details
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => onAddChild(node._id)}>
-                      <Plus className="h-4 w-4" />
-                      Add child
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      variant="destructive"
-                      onClick={() => onDelete(node._id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                      Delete
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              ) : null}
-            </div>
+            <button
+              type="button"
+              className="min-w-0 flex-1 cursor-pointer text-left"
+              onClick={() => onSelect(node._id)}
+            >
+              <div className="flex items-center gap-2">
+                <FolderTree className="h-4 w-4 text-muted-foreground" />
+                <span className="truncate text-sm font-medium">
+                  {node.name}
+                </span>
+                {hasChildren ? (
+                  <span className="rounded-full border border-border/70 px-1.5 py-0 text-[11px] text-muted-foreground">
+                    {children.length}
+                  </span>
+                ) : null}
+              </div>
+              <div className="mt-0.5 truncate text-xs text-muted-foreground">
+                {node.path}
+              </div>
+            </button>
+
+            {canManage ? (
+              <DropdownMenu>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-sm"
+                        className="cursor-pointer opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
+                        aria-label={`Actions for ${node.name}`}
+                      >
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                  </TooltipTrigger>
+                  <TooltipContent>Actions</TooltipContent>
+                </Tooltip>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => onSelect(node._id)}>
+                    <Pencil className="h-4 w-4" />
+                    Edit details
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => onAddChild(node._id)}>
+                    <Plus className="h-4 w-4" />
+                    Add child
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    variant="destructive"
+                    onClick={() => onDelete(node._id)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Delete
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : null}
           </div>
         </div>
+      </div>
+    );
+
+    return (
+      <li key={node._id} className={styles.node}>
+        {canManage ? (
+          <ContextMenu>
+            <ContextMenuTrigger asChild>{nodeContent}</ContextMenuTrigger>
+            <ContextMenuContent>
+              <ContextMenuItem onClick={() => onSelect(node._id)}>
+                <Pencil className="h-4 w-4" />
+                Edit details
+              </ContextMenuItem>
+              <ContextMenuItem onClick={() => onAddChild(node._id)}>
+                <Plus className="h-4 w-4" />
+                Add child
+              </ContextMenuItem>
+              <ContextMenuSeparator />
+              <ContextMenuItem
+                variant="destructive"
+                onClick={() => onDelete(node._id)}
+              >
+                <Trash2 className="h-4 w-4" />
+                Delete
+              </ContextMenuItem>
+            </ContextMenuContent>
+          </ContextMenu>
+        ) : (
+          nodeContent
+        )}
 
         {hasChildren && isExpanded ? (
           <ul className={styles.children}>
