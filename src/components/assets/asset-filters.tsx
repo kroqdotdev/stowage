@@ -1,36 +1,33 @@
-"use client"
+"use client";
 
-import { Filter, Search, X } from "lucide-react"
-import type { Id } from "@/lib/convex-api"
+import { Filter, Search, X } from "lucide-react";
+import type { Id } from "@/lib/convex-api";
 import {
   ASSET_STATUS_LABELS,
   ASSET_STATUS_OPTIONS,
   type AssetFilterOptions,
   type AssetStatus,
-} from "@/components/assets/types"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+} from "@/components/assets/types";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 export type AssetFiltersState = {
-  categoryId: Id<"categories"> | null
-  status: AssetStatus | null
-  locationId: Id<"locations"> | null
-  tagIds: Id<"tags">[]
-}
+  categoryId: Id<"categories"> | null;
+  status: AssetStatus | null;
+  locationId: Id<"locations"> | null;
+  tagIds: Id<"tags">[];
+};
 
-function removeTagId(
-  tagIds: Id<"tags">[],
-  tagId: Id<"tags">,
-) {
-  return tagIds.filter((candidate) => candidate !== tagId)
+function removeTagId(tagIds: Id<"tags">[], tagId: Id<"tags">) {
+  return tagIds.filter((candidate) => candidate !== tagId);
 }
 
 function addTagId(tagIds: Id<"tags">[], tagId: Id<"tags">) {
   if (tagIds.includes(tagId)) {
-    return tagIds
+    return tagIds;
   }
 
-  return [...tagIds, tagId]
+  return [...tagIds, tagId];
 }
 
 export function AssetFilters({
@@ -41,19 +38,19 @@ export function AssetFilters({
   onFiltersChange,
   onReset,
 }: {
-  options: AssetFilterOptions
-  search: string
-  filters: AssetFiltersState
-  onSearchChange: (search: string) => void
-  onFiltersChange: (nextFilters: AssetFiltersState) => void
-  onReset: () => void
+  options: AssetFilterOptions;
+  search: string;
+  filters: AssetFiltersState;
+  onSearchChange: (search: string) => void;
+  onFiltersChange: (nextFilters: AssetFiltersState) => void;
+  onReset: () => void;
 }) {
   const hasFilters =
     Boolean(search.trim()) ||
     filters.categoryId !== null ||
     filters.status !== null ||
     filters.locationId !== null ||
-    filters.tagIds.length > 0
+    filters.tagIds.length > 0;
 
   return (
     <div className="space-y-3 rounded-xl border border-border/70 bg-background p-4 shadow-sm">
@@ -120,18 +117,26 @@ export function AssetFilters({
         </div>
       </div>
 
-      <details className="rounded-lg border border-border/60 bg-muted/20" open={filters.locationId !== null || filters.tagIds.length > 0}>
+      <details
+        className="rounded-lg border border-border/60 bg-muted/20"
+        open={filters.locationId !== null || filters.tagIds.length > 0}
+      >
         <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-3 py-2 text-sm font-medium">
           <span className="inline-flex items-center gap-2 text-muted-foreground">
             <Filter className="h-4 w-4" />
             More filters
           </span>
-          <span className="text-xs text-muted-foreground">Location and tags</span>
+          <span className="text-xs text-muted-foreground">
+            Location and tags
+          </span>
         </summary>
 
         <div className="grid gap-3 border-t border-border/60 px-3 py-3 lg:grid-cols-2">
           <div className="space-y-1.5">
-            <label htmlFor="asset-filter-location" className="text-sm font-medium">
+            <label
+              htmlFor="asset-filter-location"
+              className="text-sm font-medium"
+            >
               Location
             </label>
             <select
@@ -160,12 +165,17 @@ export function AssetFilters({
             <legend className="text-sm font-medium">Tags</legend>
             <div className="max-h-32 space-y-1 overflow-auto rounded-md border border-border/60 bg-background p-2">
               {options.tags.length === 0 ? (
-                <p className="text-xs text-muted-foreground">No tags available.</p>
+                <p className="text-xs text-muted-foreground">
+                  No tags available.
+                </p>
               ) : (
                 options.tags.map((tag) => {
-                  const checked = filters.tagIds.includes(tag._id)
+                  const checked = filters.tagIds.includes(tag._id);
                   return (
-                    <label key={tag._id} className="flex items-center gap-2 text-sm">
+                    <label
+                      key={tag._id}
+                      className="flex items-center gap-2 text-sm"
+                    >
                       <input
                         type="checkbox"
                         checked={checked}
@@ -180,7 +190,7 @@ export function AssetFilters({
                       />
                       <span>{tag.name}</span>
                     </label>
-                  )
+                  );
                 })
               )}
             </div>
@@ -190,13 +200,31 @@ export function AssetFilters({
 
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-          {filters.categoryId ? <span className="rounded-full border border-border/60 px-2 py-0.5">Category</span> : null}
-          {filters.status ? <span className="rounded-full border border-border/60 px-2 py-0.5">Status</span> : null}
-          {filters.locationId ? <span className="rounded-full border border-border/60 px-2 py-0.5">Location</span> : null}
-          {filters.tagIds.length > 0 ? (
-            <span className="rounded-full border border-border/60 px-2 py-0.5">Tags ({filters.tagIds.length})</span>
+          {filters.categoryId ? (
+            <span className="rounded-full border border-border/60 px-2 py-0.5">
+              Category
+            </span>
           ) : null}
-          {search.trim() ? <span className="rounded-full border border-border/60 px-2 py-0.5">Search</span> : null}
+          {filters.status ? (
+            <span className="rounded-full border border-border/60 px-2 py-0.5">
+              Status
+            </span>
+          ) : null}
+          {filters.locationId ? (
+            <span className="rounded-full border border-border/60 px-2 py-0.5">
+              Location
+            </span>
+          ) : null}
+          {filters.tagIds.length > 0 ? (
+            <span className="rounded-full border border-border/60 px-2 py-0.5">
+              Tags ({filters.tagIds.length})
+            </span>
+          ) : null}
+          {search.trim() ? (
+            <span className="rounded-full border border-border/60 px-2 py-0.5">
+              Search
+            </span>
+          ) : null}
           {!hasFilters ? <span>No active filters</span> : null}
         </div>
 
@@ -213,5 +241,5 @@ export function AssetFilters({
         </Button>
       </div>
     </div>
-  )
+  );
 }

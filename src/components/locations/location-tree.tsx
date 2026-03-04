@@ -1,68 +1,78 @@
-"use client"
+"use client";
 
-import { ChevronDown, ChevronRight, FolderTree, MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-react"
+import {
+  ChevronDown,
+  ChevronRight,
+  FolderTree,
+  MoreHorizontal,
+  Pencil,
+  Plus,
+  Trash2,
+} from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Button } from "@/components/ui/button"
-import { cn } from "@/lib/utils"
-import styles from "./location-tree.module.css"
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import styles from "./location-tree.module.css";
 
 export type LocationTreeItem = {
-  _id: string
-  name: string
-  parentId: string | null
-  description: string | null
-  path: string
-  createdAt: number
-  updatedAt: number
-}
+  _id: string;
+  name: string;
+  parentId: string | null;
+  description: string | null;
+  path: string;
+  createdAt: number;
+  updatedAt: number;
+};
 
 export function buildLocationChildrenMap(locations: LocationTreeItem[]) {
-  const map = new Map<string | null, LocationTreeItem[]>()
+  const map = new Map<string | null, LocationTreeItem[]>();
   for (const location of locations) {
-    const key = location.parentId ?? null
-    const existing = map.get(key)
+    const key = location.parentId ?? null;
+    const existing = map.get(key);
     if (existing) {
-      existing.push(location)
+      existing.push(location);
     } else {
-      map.set(key, [location])
+      map.set(key, [location]);
     }
   }
 
   for (const list of map.values()) {
-    list.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }))
+    list.sort((a, b) =>
+      a.name.localeCompare(b.name, undefined, { sensitivity: "base" }),
+    );
   }
 
-  return map
+  return map;
 }
 
 export function collectDescendantIds(
   locationId: string,
   childrenByParent: Map<string | null, LocationTreeItem[]>,
 ) {
-  const descendants = new Set<string>()
-  const stack = [locationId]
+  const descendants = new Set<string>();
+  const stack = [locationId];
 
   while (stack.length > 0) {
-    const current = stack.pop()
+    const current = stack.pop();
     if (!current) {
-      continue
+      continue;
     }
 
-    const children = childrenByParent.get(current) ?? []
+    const children = childrenByParent.get(current) ?? [];
     for (const child of children) {
       if (!descendants.has(child._id)) {
-        descendants.add(child._id)
-        stack.push(child._id)
+        descendants.add(child._id);
+        stack.push(child._id);
       }
     }
   }
 
-  return descendants
+  return descendants;
 }
 
 export function LocationTree({
@@ -75,31 +85,31 @@ export function LocationTree({
   onAddChild,
   onDelete,
 }: {
-  locations: LocationTreeItem[]
-  selectedId: string | null
-  expandedIds: Set<string>
-  canManage: boolean
-  onToggleExpand: (id: string) => void
-  onSelect: (id: string) => void
-  onAddChild: (parentId: string) => void
-  onDelete: (id: string) => void
+  locations: LocationTreeItem[];
+  selectedId: string | null;
+  expandedIds: Set<string>;
+  canManage: boolean;
+  onToggleExpand: (id: string) => void;
+  onSelect: (id: string) => void;
+  onAddChild: (parentId: string) => void;
+  onDelete: (id: string) => void;
 }) {
-  const childrenByParent = buildLocationChildrenMap(locations)
-  const roots = childrenByParent.get(null) ?? []
+  const childrenByParent = buildLocationChildrenMap(locations);
+  const roots = childrenByParent.get(null) ?? [];
 
   if (locations.length === 0) {
     return (
       <div className="rounded-lg border border-dashed border-border/70 bg-muted/20 p-6 text-center text-sm text-muted-foreground">
         No locations yet. Add a root location to begin your hierarchy.
       </div>
-    )
+    );
   }
 
   function renderNode(node: LocationTreeItem): React.ReactNode {
-    const children = childrenByParent.get(node._id) ?? []
-    const hasChildren = children.length > 0
-    const isExpanded = expandedIds.has(node._id)
-    const isSelected = selectedId === node._id
+    const children = childrenByParent.get(node._id) ?? [];
+    const hasChildren = children.length > 0;
+    const isExpanded = expandedIds.has(node._id);
+    const isSelected = selectedId === node._id;
 
     return (
       <li key={node._id} className={styles.node}>
@@ -140,14 +150,18 @@ export function LocationTree({
               >
                 <div className="flex items-center gap-2">
                   <FolderTree className="h-4 w-4 text-muted-foreground" />
-                  <span className="truncate text-sm font-medium">{node.name}</span>
+                  <span className="truncate text-sm font-medium">
+                    {node.name}
+                  </span>
                   {hasChildren ? (
                     <span className="rounded-full border border-border/70 px-1.5 py-0 text-[11px] text-muted-foreground">
                       {children.length}
                     </span>
                   ) : null}
                 </div>
-                <div className="mt-0.5 truncate text-xs text-muted-foreground">{node.path}</div>
+                <div className="mt-0.5 truncate text-xs text-muted-foreground">
+                  {node.path}
+                </div>
               </button>
 
               {canManage ? (
@@ -172,7 +186,10 @@ export function LocationTree({
                       <Plus className="h-4 w-4" />
                       Add child
                     </DropdownMenuItem>
-                    <DropdownMenuItem variant="destructive" onClick={() => onDelete(node._id)}>
+                    <DropdownMenuItem
+                      variant="destructive"
+                      onClick={() => onDelete(node._id)}
+                    >
                       <Trash2 className="h-4 w-4" />
                       Delete
                     </DropdownMenuItem>
@@ -189,12 +206,10 @@ export function LocationTree({
           </ul>
         ) : null}
       </li>
-    )
+    );
   }
 
   return (
-    <ul className={styles.tree}>
-      {roots.map((root) => renderNode(root))}
-    </ul>
-  )
+    <ul className={styles.tree}>{roots.map((root) => renderNode(root))}</ul>
+  );
 }

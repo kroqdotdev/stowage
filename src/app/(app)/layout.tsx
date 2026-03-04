@@ -1,18 +1,18 @@
-import { redirect } from "next/navigation"
-import { AppShell } from "@/components/layout/app-shell"
-import { getProtectedAppRedirect } from "@/lib/auth-route-logic"
-import { getServerRouteAuthState } from "@/lib/server-auth"
+import { redirect } from "next/navigation";
+import { AppShell } from "@/components/layout/app-shell";
+import { getProtectedAppRedirect } from "@/lib/auth-route-logic";
+import { getServerRouteAuthState } from "@/lib/server-auth";
 
 export default async function AppLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
-  const state = await getServerRouteAuthState()
-  const redirectTo = getProtectedAppRedirect(state)
+  const state = await getServerRouteAuthState();
+  const redirectTo = getProtectedAppRedirect(state);
   if (redirectTo) {
-    redirect(redirectTo)
+    redirect(redirectTo);
   }
 
-  return <AppShell>{children}</AppShell>
+  return <AppShell>{children}</AppShell>;
 }

@@ -1,7 +1,7 @@
-"use client"
+"use client";
 
-import { X } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { X } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export function CrudModal({
   open,
@@ -11,15 +11,15 @@ export function CrudModal({
   children,
   footer,
 }: {
-  open: boolean
-  title: string
-  description?: string
-  onClose: () => void
-  children: React.ReactNode
-  footer?: React.ReactNode
+  open: boolean;
+  title: string;
+  description?: string;
+  onClose: () => void;
+  children: React.ReactNode;
+  footer?: React.ReactNode;
 }) {
   if (!open) {
-    return null
+    return null;
   }
 
   return (
@@ -30,14 +30,17 @@ export function CrudModal({
       aria-labelledby="crud-modal-title"
       onClick={(event) => {
         if (event.target === event.currentTarget) {
-          onClose()
+          onClose();
         }
       }}
     >
       <div className="w-full max-w-lg rounded-xl border border-border bg-background shadow-xl">
         <div className="flex items-start justify-between gap-3 border-b border-border/60 px-5 py-4">
           <div className="space-y-1">
-            <h2 id="crud-modal-title" className="text-lg font-semibold tracking-tight">
+            <h2
+              id="crud-modal-title"
+              className="text-lg font-semibold tracking-tight"
+            >
               {title}
             </h2>
             {description ? (
@@ -65,5 +68,5 @@ export function CrudModal({
         ) : null}
       </div>
     </div>
-  )
+  );
 }

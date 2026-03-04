@@ -1,5 +1,5 @@
-import { AssetCreatePageClient } from "@/components/assets/asset-create-page-client"
-import { PageHeader } from "@/components/layout/page-header"
+import { AssetCreatePageClient } from "@/components/assets/asset-create-page-client";
+import { PageHeader } from "@/components/layout/page-header";
 
 export default function NewAssetPage() {
   return (
@@ -15,5 +15,5 @@ export default function NewAssetPage() {
       />
       <AssetCreatePageClient />
     </div>
-  )
+  );
 }

@@ -17,22 +17,26 @@
 **Every phase ends with a dedicated testing task.** Write and run tests before considering the phase complete.
 
 **Test tooling:**
+
 - **Convex functions:** `convex-test` — unit test queries, mutations, and actions against a local Convex test instance
 - **React components:** `vitest` + `@testing-library/react` — component rendering, user interaction, form validation
 - **Integration/E2E:** `playwright` — critical user flows end-to-end (login, create asset, print label)
 
 **What to test per phase:**
+
 - All Convex mutations: valid input, invalid input, edge cases, auth guards
 - All Convex queries: expected data returned, empty state, filter combinations
 - React components: renders correctly, handles user input, displays loading/error/empty states
 - Critical user flows: E2E tests for the happy path of each major feature
 
 **Test file locations:**
+
 - Convex function tests: `convex/__tests__/<module>.test.ts`
 - Component tests: `src/__tests__/components/<component>.test.tsx`
 - E2E tests: `e2e/<feature>.spec.ts`
 
 **Run commands:**
+
 - `pnpm test` — runs vitest (unit + component tests)
 - `pnpm test:e2e` — runs Playwright E2E tests
 - `pnpm typecheck` — TypeScript checks (run before every commit)
@@ -42,18 +46,19 @@
 
 ## Phase Overview
 
-| Phase | Name | Depends On |
-|-------|------|------------|
-| 1 | UI Foundations | - |
-| 2 | Auth & User Management | Phase 1 |
-| 3 | Categories, Tags & Locations | Phase 2 |
-| 4 | Custom Field Definitions | Phase 3 |
-| 5 | Asset Management | Phase 4 |
-| 6 | File Attachments | Phase 5 |
-| 7 | Preventive Service Scheduling | Phase 6 |
-| 8 | Service Lifecycle | Phase 7 |
-| 9 | Label System | Phase 5 |
-| 10 | Dashboard & Global Search | Phase 5, 8 |
+| Phase | Name                                  | Depends On |
+| ----- | ------------------------------------- | ---------- |
+| 1     | UI Foundations                        | -          |
+| 2     | Auth & User Management                | Phase 1    |
+| 3     | Categories, Tags & Locations          | Phase 2    |
+| 4     | Custom Field Definitions              | Phase 3    |
+| 5     | Asset Management                      | Phase 4    |
+| 6     | File Attachments                      | Phase 5    |
+| 7     | Preventive Service Scheduling         | Phase 6    |
+| 7.5   | Service Groups & Configurable Records | Phase 7    |
+| 8     | Service Lifecycle                     | Phase 7.5  |
+| 9     | Label System                          | Phase 5    |
+| 10    | Dashboard & Global Search             | Phase 5, 8 |
 
 ---
 
@@ -77,6 +82,7 @@
 ### Task 1.0: Set up test infrastructure
 
 **Files:**
+
 - Modify: `package.json` (add test dependencies and scripts)
 - Create: `vitest.config.ts`
 - Create: `playwright.config.ts`
@@ -84,6 +90,7 @@
 - Create: `e2e/` directory
 
 **Steps:**
+
 1. Install test dependencies:
    ```
    pnpm add -D vitest @testing-library/react @testing-library/jest-dom @testing-library/user-event jsdom convex-test @playwright/test
@@ -103,6 +110,7 @@
 ### Task 1.1: Install and configure shadcn/ui
 
 **Files:**
+
 - Modify: `package.json` (add dependencies)
 - Create: `components.json` (shadcn config)
 - Modify: `src/app/globals.css` (shadcn CSS variables)
@@ -110,6 +118,7 @@
 - Create: `src/lib/utils.ts` (cn utility)
 
 **Steps:**
+
 1. Run `pnpm dlx shadcn@latest init` — select New York style, Zinc base color, CSS variables enabled
 2. Verify shadcn/ui components.json created and globals.css updated with CSS variables
 3. Install next-themes: `pnpm add next-themes`
@@ -118,10 +127,12 @@
 ### Task 1.2: Set up theme provider and dark mode
 
 **Files:**
+
 - Create: `src/components/theme-provider.tsx`
 - Modify: `src/app/layout.tsx` (wrap with ThemeProvider)
 
 **Steps:**
+
 1. Create ThemeProvider component wrapping next-themes
 2. Add `suppressHydrationWarning` to `<html>` tag
 3. Wrap `{children}` in layout.tsx with ThemeProvider (attribute="class", defaultTheme="system", enableSystem)
@@ -131,12 +142,14 @@
 ### Task 1.3: Build the app shell layout
 
 **Files:**
+
 - Create: `src/components/layout/sidebar.tsx`
 - Create: `src/components/layout/topbar.tsx`
 - Create: `src/components/layout/app-shell.tsx`
 - Install shadcn components: button, separator, sheet (for mobile sidebar), tooltip
 
 **Steps:**
+
 1. Install needed shadcn components: `pnpm dlx shadcn@latest add button separator sheet tooltip dropdown-menu avatar`
 2. Build Sidebar component:
    - Fixed left sidebar, 256px wide on desktop
@@ -156,6 +169,7 @@
 ### Task 1.4: Create route stubs
 
 **Files:**
+
 - Create: `src/app/(app)/layout.tsx` (wraps all authenticated routes with AppShell)
 - Create: `src/app/(app)/dashboard/page.tsx`
 - Create: `src/app/(app)/assets/page.tsx`
@@ -174,6 +188,7 @@
 - Modify: `src/app/page.tsx` (redirect to /dashboard)
 
 **Steps:**
+
 1. Create `(app)` route group with layout that renders AppShell
 2. Create `(auth)` route group with minimal centered layout (no sidebar)
 3. Each page stub: heading with page name, breadcrumb placeholder
@@ -184,11 +199,13 @@
 ### Task 1.5: Phase 1 tests
 
 **Files:**
+
 - Create: `src/__tests__/components/layout/sidebar.test.tsx`
 - Create: `src/__tests__/components/layout/topbar.test.tsx`
 - Create: `src/__tests__/components/layout/app-shell.test.tsx`
 
 **Tests to write:**
+
 1. **Sidebar:** renders all navigation links, active link highlights correctly, collapses to icon-only mode
 2. **Topbar:** renders search placeholder, renders theme toggle, renders user menu placeholder
 3. **AppShell:** renders sidebar + topbar + children content area
@@ -223,6 +240,7 @@
 ### Task 2.1 [completed]: Configure Convex Auth
 
 **Files:**
+
 - Create: `convex/auth.config.ts`
 - Create: `convex/auth.ts`
 - Create: `convex/schema.ts` (users table only for now)
@@ -231,6 +249,7 @@
 - Modify: `src/app/layout.tsx` (wrap with ConvexClientProvider)
 
 **Steps:**
+
 1. Install Convex Auth: `pnpm add @convex-dev/auth @auth/core`
 2. Configure Convex Auth with Password provider in `convex/auth.config.ts`
 3. Create `convex/auth.ts` with password auth functions
@@ -243,11 +262,13 @@
 ### Task 2.2 [completed]: Build first-run setup page
 
 **Files:**
+
 - Create: `convex/users.ts` (queries and mutations: checkFirstRun, createFirstAdmin)
 - Modify: `src/app/(auth)/setup/page.tsx`
 - Install shadcn: `input`, `label`, `card`
 
 **Steps:**
+
 1. Install shadcn components: `pnpm dlx shadcn@latest add input label card`
 2. Write Convex query `checkFirstRun` — returns true if no users exist
 3. Write Convex mutation `createFirstAdmin` — creates user with role "admin", only works if no users exist
@@ -260,9 +281,11 @@
 ### Task 2.3 [completed]: Build login page
 
 **Files:**
+
 - Modify: `src/app/(auth)/login/page.tsx`
 
 **Steps:**
+
 1. Build login form: email, password, submit button
 2. Use Convex Auth signIn function
 3. On success: redirect to /dashboard
@@ -274,10 +297,12 @@
 ### Task 2.4 [completed]: Protect routes with auth middleware
 
 **Files:**
+
 - Create: `src/middleware.ts` or auth check in `(app)/layout.tsx`
 - Modify: `src/app/(app)/layout.tsx`
 
 **Steps:**
+
 1. In `(app)/layout.tsx`, check auth state via Convex `useConvexAuth`
 2. If not authenticated, redirect to /login
 3. If authenticated but on /login or /setup (with users existing), redirect to /dashboard
@@ -288,10 +313,12 @@
 ### Task 2.5 [completed]: Wire up topbar user menu
 
 **Files:**
+
 - Modify: `src/components/layout/topbar.tsx`
 - Create: `convex/users.ts` mutations/queries as needed (getCurrentUser)
 
 **Steps:**
+
 1. Query current user via Convex
 2. Show user avatar (initials) + name in topbar dropdown
 3. Dropdown items: "Profile" (placeholder), "Log out"
@@ -302,10 +329,12 @@
 ### Task 2.6 [completed]: Build user management in settings
 
 **Files:**
+
 - Modify: `src/app/(app)/settings/page.tsx`
 - Create: `convex/users.ts` mutations (createUser, listUsers, updateUserRole)
 
 **Steps:**
+
 1. Query to list all users (admin only)
 2. Mutation to create a user: email, name, temporary password, role
 3. Settings page: table of users (name, email, role, created date)
@@ -317,10 +346,12 @@
 ### Task 2.7 [completed]: Password change
 
 **Files:**
+
 - Modify: `src/app/(app)/settings/page.tsx` (add "Change Password" section)
 - Create Convex mutation for password change
 
 **Steps:**
+
 1. Add "Change Password" card to settings (visible to all users)
 2. Form: current password, new password, confirm new password
 3. Validation: passwords match, minimum length
@@ -330,6 +361,7 @@
 ### Task 2.8 [completed]: Phase 2 tests
 
 **Files:**
+
 - Create: `convex/__tests__/users.test.ts`
 - Create: `convex/__tests__/auth.test.ts`
 - Create: `src/__tests__/components/auth/login-form.test.tsx`
@@ -337,6 +369,7 @@
 - Create: `e2e/auth.spec.ts`
 
 **Tests to write:**
+
 1. **Convex `users` unit tests:**
    - `checkFirstRun` returns true when no users exist, false when users exist
    - `createFirstAdmin` creates admin user, rejects if users already exist
@@ -380,9 +413,11 @@
 ### Task 3.1 [completed]: Add schema for categories, tags, locations
 
 **Files:**
+
 - Modify: `convex/schema.ts` (add categories, tags, locations, assetTags tables)
 
 **Steps:**
+
 1. Add `categories` table: name, prefix, description, color
 2. Add `tags` table: name, color
 3. Add `assetTags` junction table: assetId, tagId with indexes
@@ -395,11 +430,13 @@ Implementation note: `assetTags` was deferred to the later assets phase because 
 ### Task 3.2 [completed]: Build categories page
 
 **Files:**
+
 - Create: `convex/categories.ts` (list, create, update, delete)
 - Modify: `src/app/(app)/categories/page.tsx`
 - Install shadcn: `table`, `dialog`, `badge`, `select`
 
 **Steps:**
+
 1. Install shadcn components: `pnpm dlx shadcn@latest add table dialog badge select popover`
 2. Write Convex functions: listCategories, createCategory, updateCategory, deleteCategory
 3. Build page: table of categories (name with color badge, prefix, description)
@@ -412,10 +449,12 @@ Implementation note: `assetTags` was deferred to the later assets phase because 
 ### Task 3.3 [completed]: Build tags page
 
 **Files:**
+
 - Create: `convex/tags.ts` (list, create, update, delete)
 - Modify: `src/app/(app)/tags/page.tsx`
 
 **Steps:**
+
 1. Write Convex functions: listTags, createTag, updateTag, deleteTag
 2. Build page: similar pattern to categories — table with color badges
 3. Form: name, color picker
@@ -426,12 +465,14 @@ Implementation note: `assetTags` was deferred to the later assets phase because 
 ### Task 3.4 [completed]: Build locations page with tree view
 
 **Files:**
+
 - Create: `convex/locations.ts` (list, create, update, delete, move, getChildren, getPath)
 - Modify: `src/app/(app)/locations/page.tsx`
 - Create: `src/components/locations/location-tree.tsx`
 - Create: `src/components/locations/location-form-dialog.tsx`
 
 **Steps:**
+
 1. Write Convex functions:
    - `listLocations` — all locations (small dataset, load all)
    - `createLocation` — name, parentId, description; auto-compute path from parent chain
@@ -452,6 +493,7 @@ Implementation note: `assetTags` was deferred to the later assets phase because 
 ### Task 3.5 [completed]: Phase 3 tests
 
 **Files:**
+
 - Create: `convex/__tests__/categories.test.ts`
 - Create: `convex/__tests__/tags.test.ts`
 - Create: `convex/__tests__/locations.test.ts`
@@ -459,6 +501,7 @@ Implementation note: `assetTags` was deferred to the later assets phase because 
 - Create: `e2e/categories-tags-locations.spec.ts`
 
 **Tests to write:**
+
 1. **Convex `categories` unit tests:**
    - `createCategory` creates with name/prefix/color, rejects duplicate names
    - `updateCategory` updates fields correctly
@@ -505,12 +548,14 @@ Implementation note: `assetTags` was deferred to the later assets phase because 
 ### Task 4.1 [completed]: Add schema and Convex functions for custom fields
 
 **Files:**
+
 - Modify: `convex/schema.ts` (add customFieldDefinitions)
 - Create: `convex/customFields.ts` (list, create, update, delete, reorder)
 
 Implementation note: added `appSettings` schema and `convex/appSettings.ts` so admins can control the global date display format (`DD-MM-YYYY` default with `MM-DD-YYYY` and `YYYY-MM-DD` options), matching validated Phase 4 requirements.
 
 **Steps:**
+
 1. Add `customFieldDefinitions` table to schema: name, fieldType, options, required, sortOrder
 2. Write Convex functions:
    - `listFieldDefinitions` — all definitions sorted by sortOrder
@@ -523,10 +568,12 @@ Implementation note: added `appSettings` schema and `convex/appSettings.ts` so a
 ### Task 4.2 [completed]: Build fields management page
 
 **Files:**
+
 - Modify: `src/app/(app)/fields/page.tsx`
 - Create: `src/components/fields/field-definition-form.tsx`
 
 **Steps:**
+
 1. Build page: sortable list of field definitions
 2. Each row: name, type badge, required indicator, action menu (edit, delete)
 3. "Add Field" button opens dialog:
@@ -542,10 +589,12 @@ Implementation note: added `appSettings` schema and `convex/appSettings.ts` so a
 ### Task 4.3 [completed]: Build dynamic field renderer component
 
 **Files:**
+
 - Create: `src/components/fields/dynamic-field.tsx`
 - Create: `src/components/fields/dynamic-field-display.tsx`
 
 **Steps:**
+
 1. `DynamicField` component (for forms): takes a field definition + current value, renders the right input:
    - text → text input
    - number → number input
@@ -562,11 +611,13 @@ Implementation note: added `appSettings` schema and `convex/appSettings.ts` so a
 ### Task 4.4 [completed]: Phase 4 tests
 
 **Files:**
+
 - Create: `convex/__tests__/customFields.test.ts`
 - Create: `src/__tests__/components/fields/dynamic-field.test.tsx`
 - Create: `src/__tests__/components/fields/dynamic-field-display.test.tsx`
 
 **Tests to write:**
+
 1. **Convex `customFields` unit tests:**
    - `createFieldDefinition` creates with correct type and auto-assigns sortOrder
    - `createFieldDefinition` validates fieldType is one of the allowed types
@@ -616,10 +667,12 @@ Implementation note: added `appSettings` schema and `convex/appSettings.ts` so a
 ### Task 5.1 [completed]: Add assets schema and core Convex functions
 
 **Files:**
+
 - Modify: `convex/schema.ts` (add assets table)
 - Create: `convex/assets.ts` (CRUD, search, tag generation)
 
 **Steps:**
+
 1. Add `assets` table to schema with all fields and indexes per design doc
 2. Write Convex functions:
    - `generateAssetTag` — query: finds highest existing tag number for a given prefix, returns next (e.g. "IT-0004")
@@ -637,12 +690,14 @@ Implementation note: added `appSettings` schema and `convex/appSettings.ts` so a
 ### Task 5.2 [completed]: Build asset list page
 
 **Files:**
+
 - Modify: `src/app/(app)/assets/page.tsx`
 - Create: `src/components/assets/asset-filters.tsx`
 - Create: `src/components/assets/asset-table.tsx`
 - Install shadcn: `checkbox` (for batch select)
 
 **Steps:**
+
 1. Build filter bar: category dropdown, status dropdown, location tree dropdown, tag multi-select
 2. Search input (debounced, searches name/tag/notes)
 3. Asset table: columns for asset tag, name, category (badge), status (badge), location, created date
@@ -657,6 +712,7 @@ Implementation note: added `appSettings` schema and `convex/appSettings.ts` so a
 ### Task 5.3 [completed]: Build asset create/edit form
 
 **Files:**
+
 - Modify: `src/app/(app)/assets/new/page.tsx`
 - Modify: `src/app/(app)/assets/[id]/edit/page.tsx`
 - Create: `src/components/assets/asset-form.tsx` (shared between create and edit)
@@ -664,6 +720,7 @@ Implementation note: added `appSettings` schema and `convex/appSettings.ts` so a
 - Create: `src/components/tags/tag-picker.tsx` (multi-select for tags)
 
 **Steps:**
+
 1. Build shared AssetForm component:
    - Name input
    - Category select (on change: preview auto-generated tag with prefix)
@@ -682,11 +739,13 @@ Implementation note: added `appSettings` schema and `convex/appSettings.ts` so a
 ### Task 5.4 [completed]: Build asset detail page
 
 **Files:**
+
 - Modify: `src/app/(app)/assets/[id]/page.tsx`
 - Create: `src/components/assets/asset-detail.tsx`
 - Create: `src/components/assets/status-badge.tsx`
 
 **Steps:**
+
 1. Build asset detail page:
    - Header: asset tag + name, status badge, edit/delete action buttons
    - Info section: category, location (breadcrumb), tags (color badges), notes
@@ -702,6 +761,7 @@ Implementation note: added `appSettings` schema and `convex/appSettings.ts` so a
 ### Task 5.5 [completed]: Phase 5 tests
 
 **Files:**
+
 - Create: `convex/__tests__/assets.test.ts`
 - Create: `convex/__tests__/assetTags.test.ts`
 - Create: `src/__tests__/components/assets/asset-form.test.tsx`
@@ -710,6 +770,7 @@ Implementation note: added `appSettings` schema and `convex/appSettings.ts` so a
 - Create: `e2e/assets.spec.ts`
 
 **Tests to write:**
+
 1. **Convex `assets` unit tests:**
    - `generateAssetTag` returns "AST-0001" for first asset, "AST-0002" for second
    - `generateAssetTag` with category prefix returns "IT-0001", "IT-0002" etc.
@@ -763,10 +824,12 @@ Implementation note: added `appSettings` schema and `convex/appSettings.ts` so a
 ### Task 6.1 [completed]: Add attachments schema and Convex functions
 
 **Files:**
+
 - Modify: `convex/schema.ts` (add attachments table)
 - Create: `convex/attachments.ts` (upload URL generation, create, list, delete)
 
 **Steps:**
+
 1. Add `attachments` table to schema per design doc
 2. Write Convex functions:
    - `generateUploadUrl` — mutation: returns Convex upload URL
@@ -779,12 +842,14 @@ Implementation note: added `appSettings` schema and `convex/appSettings.ts` so a
 ### Task 6.2 [completed]: Build file upload and attachment list components
 
 **Files:**
+
 - Create: `src/components/attachments/file-upload-zone.tsx`
 - Create: `src/components/attachments/attachment-list.tsx`
 - Create: `src/components/attachments/attachment-card.tsx`
 - Modify: `src/app/(app)/assets/[id]/page.tsx` (add Attachments tab/section)
 
 **Steps:**
+
 1. Build FileUploadZone:
    - Drag-and-drop area with dashed border
    - Click to open file browser
@@ -804,12 +869,14 @@ Implementation note: added `appSettings` schema and `convex/appSettings.ts` so a
 ### Task 6.3 [completed]: Phase 6 tests
 
 **Files:**
+
 - Create: `convex/__tests__/attachments.test.ts`
 - Create: `src/__tests__/components/attachments/file-upload-zone.test.tsx`
 - Create: `src/__tests__/components/attachments/attachment-card.test.tsx`
 - Create: `e2e/attachments.spec.ts`
 
 **Tests to write:**
+
 1. **Convex `attachments` unit tests:**
    - `generateUploadUrl` returns a valid URL
    - `createAttachment` saves metadata with correct assetId, fileName, fileType, uploadedBy, uploadedAt
@@ -852,14 +919,16 @@ Implementation note: added `appSettings` schema and `convex/appSettings.ts` so a
 - `/services/calendar` sub-tab month view
 - Dashboard 7-day due-date preview card
 
-### Task 7.1: Add service scheduling schema and Convex functions
+### Task 7.1 [completed]: Add service scheduling schema and Convex functions
 
 **Files:**
+
 - Modify: `convex/schema.ts` (add `serviceSchedules`; extend `appSettings`)
 - Create: `convex/serviceSchedules.ts` (CRUD + list/range queries)
 - Create: `convex/service_schedule_helpers.ts` (date and interval validation helpers)
 
 **Steps:**
+
 1. Add `serviceSchedules` table with fields:
    - `assetId`, `nextServiceDate` (`YYYY-MM-DD`), `intervalValue`, `intervalUnit`, `reminderLeadValue`, `reminderLeadUnit`, `createdAt`, `updatedAt`, `createdBy`, `updatedBy`
 2. Add indexes:
@@ -876,29 +945,33 @@ Implementation note: added `appSettings` schema and `convex/appSettings.ts` so a
 5. Add strict validators and structured `ConvexError` codes (`SCHEDULING_DISABLED`, `INVALID_DATE`, `INVALID_INTERVAL`, `FORBIDDEN`, `ASSET_NOT_FOUND`).
 6. Commit: "feat: add preventive service scheduling schema and Convex functions"
 
-### Task 7.2: Add admin scheduling toggle in settings
+### Task 7.2 [completed]: Add admin scheduling toggle in settings
 
 **Files:**
+
 - Modify: `convex/appSettings.ts` (read/write scheduling toggle)
 - Modify: `src/components/settings/regional-settings-section.tsx` OR create `src/components/settings/service-scheduling-settings-section.tsx`
 - Modify: `src/components/settings/settings-page-client.tsx`
 
 **Steps:**
+
 1. Add admin UI control for `serviceSchedulingEnabled` (default on).
 2. Show concise helper text describing effect on asset forms and services planner views.
 3. Persist toggle through Convex mutation with optimistic pending state and toast outcomes.
 4. Guard schedule write mutations when toggle is off.
 5. Commit: "feat: add admin toggle for service scheduling"
 
-### Task 7.3: Add optional schedule inputs to asset create/edit flows
+### Task 7.3 [completed]: Add optional schedule inputs to asset create/edit flows
 
 **Files:**
+
 - Modify: `src/components/assets/asset-form.tsx`
 - Create: `src/components/assets/service-schedule-fields.tsx`
 - Modify: `src/app/(app)/assets/new/page.tsx`
 - Modify: `src/app/(app)/assets/[id]/edit/page.tsx`
 
 **Steps:**
+
 1. Add optional scheduling fields:
    - next service date
    - interval value + unit (`days|weeks|months|years`)
@@ -910,9 +983,10 @@ Implementation note: added `appSettings` schema and `convex/appSettings.ts` so a
 4. Validate client-side for immediate feedback; rely on backend as source of truth.
 5. Commit: "feat: add optional asset service schedule inputs"
 
-### Task 7.4: Build services list + calendar sub-tab and dashboard 7-day preview
+### Task 7.4 [completed]: Build services list + calendar sub-tab and dashboard 7-day preview
 
 **Files:**
+
 - Modify: `src/app/(app)/services/page.tsx`
 - Create: `src/app/(app)/services/calendar/page.tsx`
 - Create: `src/components/services/services-nav-tabs.tsx`
@@ -922,6 +996,7 @@ Implementation note: added `appSettings` schema and `convex/appSettings.ts` so a
 - Create: `src/components/dashboard/upcoming-service-due-7-day-card.tsx`
 
 **Steps:**
+
 1. Add Services sub-tab navigation for list and calendar routes.
 2. Build `/services` scheduled list:
    - includes only assets with schedule
@@ -932,9 +1007,10 @@ Implementation note: added `appSettings` schema and `convex/appSettings.ts` so a
 5. Keep range queries index-backed and avoid query waterfalls in UI composition.
 6. Commit: "feat: add services scheduling list, calendar sub-tab, and dashboard due preview"
 
-### Task 7.5: Phase 7 tests
+### Task 7.5 [completed]: Phase 7 tests
 
 **Files:**
+
 - Create: `convex/__tests__/serviceSchedules.test.ts`
 - Create: `src/__tests__/components/assets/service-schedule-fields.test.tsx`
 - Create: `src/__tests__/components/services/services-scheduled-list.test.tsx`
@@ -943,6 +1019,7 @@ Implementation note: added `appSettings` schema and `convex/appSettings.ts` so a
 - Create: `e2e/service-scheduling.spec.ts`
 
 **Tests to write:**
+
 1. **Convex `serviceSchedules` unit tests:**
    - create/update/delete by `assetId`
    - reject invalid interval/unit/date
@@ -963,7 +1040,111 @@ Implementation note: added `appSettings` schema and `convex/appSettings.ts` so a
 5. Run `pnpm typecheck && pnpm lint` — clean
 6. Commit: "test: add Phase 7 preventive service scheduling tests"
 
-> **PHASE COMPLETE GATE:** Before moving to Phase 8, verify: all Phase 1–7 tests pass (`pnpm test && pnpm test:e2e`), `pnpm typecheck && pnpm lint` are clean, and scheduling works end-to-end (admin toggle, asset schedule inputs, services list/calendar sub-tab, dashboard 7-day due preview). Mark all Phase 7 tasks as `completed` in the task list using `TaskUpdate`. Only then proceed.
+> **PHASE COMPLETE GATE:** Before moving to Phase 7.5, verify: all Phase 1–7 tests pass (`pnpm test && pnpm test:e2e`), `pnpm typecheck && pnpm lint` are clean, and scheduling works end-to-end (admin toggle, asset schedule inputs, services list/calendar sub-tab, dashboard 7-day due preview). Mark all Phase 7 tasks as `completed` in the task list using `TaskUpdate`. Only then proceed.
+
+---
+
+## Phase 7.5: Service Groups & Configurable Service Records
+
+> **START OF PHASE:** Run `/brainstorming` to validate service-group structure and record form UX with the user. Confirm: service group creation flow, group-to-asset assignment, required field types, and attachment behavior on completed service records.
+>
+> **IMPLEMENTATION QUALITY:** Use `/vercel-react-best-practices` for rendering and state transitions. Use `/convex` (especially `convex-best-practices` and `convex-security-check`) for function structure, authorization, and data validation.
+>
+> **UI WORK:** Use `/ui-ux-pro-max` with flat-design style, light and dark mode for `/services/groups`, group detail, and dynamic service record forms.
+>
+> **TEXT:** Use `/writing-clearly-and-concisely` for required-field labels, group descriptions, and service completion messaging.
+
+### What this phase delivers
+
+- Service groups managed under the Services area (`/services/groups`)
+- One service group per asset assignment
+- Configurable required service record fields defined by service group
+- Service record completion flow that blocks submission until all required group fields are provided
+- Service-report attachments on service records
+
+### Task 7.5.1: Add service-group and configurable record schema/functions
+
+**Files:**
+
+- Modify: `convex/schema.ts` (add `serviceGroups`, `serviceGroupFields`; extend or add `serviceRecords` model and record-attachment relation)
+- Create: `convex/serviceGroups.ts`
+- Create: `convex/serviceGroupFields.ts`
+- Create: `convex/serviceRecords.ts`
+- Create: `convex/service_record_helpers.ts`
+
+**Steps:**
+
+1. Add schema for:
+   - `serviceGroups` (name, description, created/updated metadata)
+   - `serviceGroupFields` (groupId, label, fieldType, required, options, sortOrder)
+   - service record storage with dynamic field payload and attachment references
+2. Enforce one group per asset (single assignment relation).
+3. Add Convex functions:
+   - group CRUD
+   - list assets for group and assign/unassign asset group
+   - create/list/update service records with field validation
+4. Ensure record creation validates required fields from the assigned group.
+5. Commit: "feat: add service groups and configurable service record backend"
+
+### Task 7.5.2: Build Services > Groups sub-tab and management UI
+
+**Files:**
+
+- Modify: `src/app/(app)/services/page.tsx` (add services sub-nav)
+- Create: `src/app/(app)/services/groups/page.tsx`
+- Create: `src/app/(app)/services/groups/[id]/page.tsx`
+- Create: `src/components/services/service-groups-list.tsx`
+- Create: `src/components/services/service-group-editor.tsx`
+- Create: `src/components/services/service-group-assets-panel.tsx`
+
+**Steps:**
+
+1. Add services sub-navigation with list/calendar/groups.
+2. Build groups list view with create action.
+3. Build group detail page showing:
+   - required fields configuration
+   - current member assets
+4. Add group assignment UI to assets (single selected group).
+5. Commit: "feat: add services groups pages and assignment UI"
+
+### Task 7.5.3: Build configurable service record completion flow with attachments
+
+**Files:**
+
+- Create: `src/components/services/service-record-dynamic-form.tsx`
+- Create: `src/components/services/service-record-attachments.tsx`
+- Modify: `src/app/(app)/services/page.tsx`
+- Modify: `src/app/(app)/assets/[id]/page.tsx`
+
+**Steps:**
+
+1. Build dynamic record form from service group field definitions.
+2. Enforce all required fields before submit.
+3. Allow service-report attachments on records (reuse attachment upload UX pattern where appropriate).
+4. Wire record creation from services and asset contexts.
+5. Commit: "feat: add configurable service record form with attachments"
+
+### Task 7.5.4: Phase 7.5 tests
+
+**Files:**
+
+- Create: `convex/__tests__/serviceGroups.test.ts`
+- Create: `convex/__tests__/serviceRecords.test.ts`
+- Create: `src/__tests__/components/services/service-groups-list.test.tsx`
+- Create: `src/__tests__/components/services/service-record-dynamic-form.test.tsx`
+- Create: `e2e/service-groups.spec.ts`
+
+**Tests to write:**
+
+1. Group CRUD and single-group-per-asset enforcement.
+2. Required-field validation on service record submission.
+3. Record attachment upload/link behavior.
+4. E2E: create group, assign asset, log record with required fields and attachment.
+5. Run `pnpm test && pnpm test:e2e` — all pass.
+6. Run `pnpm typecheck && pnpm lint` — clean.
+7. Commit: "test: add Phase 7.5 service groups and configurable record tests"
+
+> **PHASE COMPLETE GATE:** Before moving to Phase 8, verify: all Phase 1–7.5 tests pass (`pnpm test && pnpm test:e2e`), `pnpm typecheck && pnpm lint` are clean, and service groups/configurable records work end-to-end (groups management, single-group assignment, required field enforcement, record attachments). Mark all Phase 7.5 tasks as `completed` in the task list using `TaskUpdate`. Only then proceed.
 
 ---
 
@@ -989,12 +1170,14 @@ Implementation note: added `appSettings` schema and `convex/appSettings.ts` so a
 ### Task 8.1: Add service lifecycle schema and Convex functions
 
 **Files:**
+
 - Modify: `convex/schema.ts` (add `serviceProviders`, `serviceRecords`)
 - Create: `convex/serviceProviders.ts` (CRUD)
 - Create: `convex/serviceRecords.ts` (CRUD + completion workflow)
 - Modify: `convex/serviceSchedules.ts` (internal helper for schedule advancement)
 
 **Steps:**
+
 1. Add `serviceProviders` and `serviceRecords` tables to schema per design doc.
 2. Write `serviceProviders` functions: list, create, update, delete.
 3. Write `serviceRecords` functions:
@@ -1009,9 +1192,11 @@ Implementation note: added `appSettings` schema and `convex/appSettings.ts` so a
 ### Task 8.2: Build service provider management
 
 **Files:**
+
 - Modify: `src/app/(app)/settings/page.tsx` (add Service Providers section) OR create dedicated page
 
 **Steps:**
+
 1. Add "Service Providers" section to settings page (or a dedicated services-provider route).
 2. Table: provider name, email, phone.
 3. Add/edit dialog, delete with confirmation.
@@ -1021,11 +1206,13 @@ Implementation note: added `appSettings` schema and `convex/appSettings.ts` so a
 ### Task 8.3: Build service history on asset detail
 
 **Files:**
+
 - Create: `src/components/services/service-record-form.tsx`
 - Create: `src/components/services/service-history.tsx`
 - Modify: `src/app/(app)/assets/[id]/page.tsx` (add Service History tab/section)
 
 **Steps:**
+
 1. Build service record form dialog:
    - Date picker
    - Description textarea
@@ -1042,6 +1229,7 @@ Implementation note: added `appSettings` schema and `convex/appSettings.ts` so a
 ### Task 8.4: Enhance services planner with execution actions
 
 **Files:**
+
 - Modify: `src/app/(app)/services/page.tsx`
 - Modify: `src/app/(app)/services/calendar/page.tsx`
 - Modify: `src/components/services/services-scheduled-list.tsx`
@@ -1049,6 +1237,7 @@ Implementation note: added `appSettings` schema and `convex/appSettings.ts` so a
 - Create: `src/components/services/log-service-dialog.tsx`
 
 **Steps:**
+
 1. Add "Log service" actions on scheduled items in list and calendar views.
 2. Use `completeScheduledService` to create history records directly from planner rows.
 3. After completion, refresh planner data and show advanced next due date immediately.
@@ -1059,6 +1248,7 @@ Implementation note: added `appSettings` schema and `convex/appSettings.ts` so a
 ### Task 8.5: Phase 8 tests
 
 **Files:**
+
 - Create: `convex/__tests__/serviceProviders.test.ts`
 - Create: `convex/__tests__/serviceRecords.test.ts`
 - Create: `src/__tests__/components/services/service-record-form.test.tsx`
@@ -1067,6 +1257,7 @@ Implementation note: added `appSettings` schema and `convex/appSettings.ts` so a
 - Create: `e2e/services-lifecycle.spec.ts`
 
 **Tests to write:**
+
 1. **Convex `serviceProviders` unit tests:**
    - CRUD: create, list, update, delete.
    - `deleteServiceProvider` rejects if referenced by existing service records (or nullifies reference by explicit design).
@@ -1111,11 +1302,13 @@ Implementation note: added `appSettings` schema and `convex/appSettings.ts` so a
 ### Task 9.1: Add label templates schema and install bwip-js
 
 **Files:**
+
 - Modify: `convex/schema.ts` (add labelTemplates)
 - Create: `convex/labelTemplates.ts` (CRUD, getDefault)
 - Modify: `package.json` (add bwip-js)
 
 **Steps:**
+
 1. Add `labelTemplates` table to schema per design doc
 2. Install bwip-js: `pnpm add bwip-js`
 3. Write Convex functions:
@@ -1133,9 +1326,11 @@ Implementation note: added `appSettings` schema and `convex/appSettings.ts` so a
 ### Task 9.2: Build barcode/data matrix renderer component
 
 **Files:**
+
 - Create: `src/components/labels/barcode-renderer.tsx`
 
 **Steps:**
+
 1. Component takes: type ("code128" | "datamatrix"), data (string), width, height
 2. Uses bwip-js to render SVG inline
 3. Handles errors gracefully (invalid data, etc.)
@@ -1145,6 +1340,7 @@ Implementation note: added `appSettings` schema and `convex/appSettings.ts` so a
 ### Task 9.3: Build label template designer
 
 **Files:**
+
 - Modify: `src/app/(app)/labels/page.tsx`
 - Create: `src/components/labels/template-designer.tsx`
 - Create: `src/components/labels/template-canvas.tsx`
@@ -1152,6 +1348,7 @@ Implementation note: added `appSettings` schema and `convex/appSettings.ts` so a
 - Create: `src/components/labels/element-properties.tsx`
 
 **Steps:**
+
 1. Build template list: shows saved templates, "Create Template" button
 2. Template designer layout:
    - Left: element toolbar (drag elements onto canvas)
@@ -1171,6 +1368,7 @@ Implementation note: added `appSettings` schema and `convex/appSettings.ts` so a
 ### Task 9.4: Build label preview and print flow
 
 **Files:**
+
 - Create: `src/components/labels/label-preview.tsx`
 - Create: `src/components/labels/label-print.tsx`
 - Modify: `src/app/(app)/assets/[id]/page.tsx` (wire "Print Label" button)
@@ -1178,6 +1376,7 @@ Implementation note: added `appSettings` schema and `convex/appSettings.ts` so a
 - Create: `src/app/(app)/labels/print/page.tsx` (print preview page)
 
 **Steps:**
+
 1. Build LabelPreview: renders a label template with real asset data
    - Resolves each element type to actual asset field values
    - Renders barcode/data matrix with asset URL
@@ -1196,12 +1395,14 @@ Implementation note: added `appSettings` schema and `convex/appSettings.ts` so a
 ### Task 9.5: Phase 9 tests
 
 **Files:**
+
 - Create: `convex/__tests__/labelTemplates.test.ts`
 - Create: `src/__tests__/components/labels/barcode-renderer.test.tsx`
 - Create: `src/__tests__/components/labels/label-preview.test.tsx`
 - Create: `e2e/labels.spec.ts`
 
 **Tests to write:**
+
 1. **Convex `labelTemplates` unit tests:**
    - `createTemplate` saves name, dimensions, elements array correctly
    - `setDefaultTemplate` sets one as default, unsets all others
@@ -1247,6 +1448,7 @@ Implementation note: added `appSettings` schema and `convex/appSettings.ts` so a
 ### Task 10.1: Build dashboard page
 
 **Files:**
+
 - Modify: `src/app/(app)/dashboard/page.tsx`
 - Create: `src/components/dashboard/stat-card.tsx`
 - Create: `src/components/dashboard/recent-assets.tsx`
@@ -1254,6 +1456,7 @@ Implementation note: added `appSettings` schema and `convex/appSettings.ts` so a
 - Create: `convex/dashboard.ts` (aggregation queries)
 
 **Steps:**
+
 1. Write Convex queries:
    - `getAssetCountsByStatus` — returns count per status
    - `getRecentAssets` — last 10 created/updated assets
@@ -1268,11 +1471,13 @@ Implementation note: added `appSettings` schema and `convex/appSettings.ts` so a
 ### Task 10.2: Build global search
 
 **Files:**
+
 - Modify: `src/components/layout/topbar.tsx` (wire search input)
 - Create: `src/components/search/global-search.tsx`
 - Create: `convex/search.ts` (search query)
 
 **Steps:**
+
 1. Write Convex query `searchAssets`: searches name, assetTag, and notes fields. Returns top 10 matches.
 2. Build GlobalSearch component:
    - Command palette style (shadcn `command` component): `pnpm dlx shadcn@latest add command`
@@ -1288,10 +1493,12 @@ Implementation note: added `appSettings` schema and `convex/appSettings.ts` so a
 ### Task 10.3: Final polish and root redirect
 
 **Files:**
+
 - Modify: `src/app/page.tsx` (redirect to /dashboard or /login)
 - Modify: `src/app/(app)/layout.tsx` (ensure redirect logic)
 
 **Steps:**
+
 1. Root `/` redirects: if authenticated → /dashboard, if not → /login
 2. Verify all navigation links in sidebar work
 3. Verify dark/light mode works across all pages
@@ -1301,6 +1508,7 @@ Implementation note: added `appSettings` schema and `convex/appSettings.ts` so a
 ### Task 10.4: Phase 10 tests
 
 **Files:**
+
 - Create: `convex/__tests__/dashboard.test.ts`
 - Create: `convex/__tests__/search.test.ts`
 - Create: `src/__tests__/components/dashboard/stat-card.test.tsx`
@@ -1309,6 +1517,7 @@ Implementation note: added `appSettings` schema and `convex/appSettings.ts` so a
 - Create: `e2e/search.spec.ts`
 
 **Tests to write:**
+
 1. **Convex `dashboard` unit tests:**
    - `getAssetCountsByStatus` returns correct counts (create 3 active, 2 retired, verify counts)
    - `getAssetCountsByStatus` returns 0 for statuses with no assets
@@ -1338,6 +1547,7 @@ Implementation note: added `appSettings` schema and `convex/appSettings.ts` so a
 ### Task 10.5: Full regression test run
 
 **Steps:**
+
 1. Run complete test suite: `pnpm test:all`
 2. Fix any failures from cross-phase interactions
 3. Verify all E2E tests pass end-to-end
@@ -1352,7 +1562,7 @@ Implementation note: added `appSettings` schema and `convex/appSettings.ts` so a
 
 - Each phase is independently functional — after completing a phase, the app works with that feature set
 - Phase 6 (file attachments) is intentionally placed before service work so assets support evidence/docs before service execution flows
-- Phases 7 and 8 should be executed back-to-back: Phase 7 owns scheduling/planning and Phase 8 owns execution/history on top of that model
+- Phases 7, 7.5, and 8 should be executed back-to-back: Phase 7 owns scheduling/planning, Phase 7.5 owns service groups and configurable records, and Phase 8 owns execution/provider lifecycle on top of that model
 - Phase 9 can be developed independently after Phase 5 because the label system does not depend on service modules
 - Phase 10 depends on Phase 8 for execution-aware service widgets and on Phase 7 for scheduler-backed due-date data, but dashboard scaffolding can start after Phase 5 with placeholders
 - Commit frequently within each phase at the boundaries indicated

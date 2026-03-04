@@ -1,53 +1,52 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Download, FileImage, FileSpreadsheet, FileText, RefreshCcw, Trash2 } from "lucide-react"
-import { ConfirmDialog } from "@/components/crud/confirm-dialog"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import type { AttachmentItem } from "@/components/attachments/types"
-import { formatDateFromTimestamp } from "@/lib/date-format"
-import { useAppDateFormat } from "@/lib/use-app-date-format"
+import { useState } from "react";
+import {
+  Download,
+  FileImage,
+  FileSpreadsheet,
+  FileText,
+  RefreshCcw,
+  Trash2,
+} from "lucide-react";
+import { ConfirmDialog } from "@/components/crud/confirm-dialog";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import type { AttachmentItem } from "@/components/attachments/types";
+import { formatDateFromTimestamp } from "@/lib/date-format";
+import { useAppDateFormat } from "@/lib/use-app-date-format";
 
 function formatSize(size: number | null) {
   if (!size) {
-    return "—"
+    return "—";
   }
 
   if (size >= 1024 * 1024) {
-    return `${(size / (1024 * 1024)).toFixed(1)} MB`
+    return `${(size / (1024 * 1024)).toFixed(1)} MB`;
   }
 
-  return `${Math.max(1, Math.round(size / 1024))} KB`
+  return `${Math.max(1, Math.round(size / 1024))} KB`;
 }
 
-function FileKindIcon({
-  fileKind,
-}: {
-  fileKind: AttachmentItem["fileKind"]
-}) {
+function FileKindIcon({ fileKind }: { fileKind: AttachmentItem["fileKind"] }) {
   if (fileKind === "image") {
-    return <FileImage className="size-5 text-muted-foreground" />
+    return <FileImage className="size-5 text-muted-foreground" />;
   }
 
   if (fileKind === "pdf") {
-    return <FileText className="size-5 text-muted-foreground" />
+    return <FileText className="size-5 text-muted-foreground" />;
   }
 
-  return <FileSpreadsheet className="size-5 text-muted-foreground" />
+  return <FileSpreadsheet className="size-5 text-muted-foreground" />;
 }
 
-function StatusBadge({
-  status,
-}: {
-  status: AttachmentItem["status"]
-}) {
+function StatusBadge({ status }: { status: AttachmentItem["status"] }) {
   if (status === "ready") {
     return (
       <Badge className="border-emerald-300/70 bg-emerald-100 text-emerald-900 dark:border-emerald-400/30 dark:bg-emerald-500/15 dark:text-emerald-200">
         Ready
       </Badge>
-    )
+    );
   }
 
   if (status === "failed") {
@@ -55,7 +54,7 @@ function StatusBadge({
       <Badge className="border-destructive/50 bg-destructive/10 text-destructive">
         Failed
       </Badge>
-    )
+    );
   }
 
   if (status === "processing") {
@@ -63,14 +62,14 @@ function StatusBadge({
       <Badge className="border-amber-300/70 bg-amber-100 text-amber-900 dark:border-amber-400/30 dark:bg-amber-500/15 dark:text-amber-200">
         Processing
       </Badge>
-    )
+    );
   }
 
   return (
     <Badge className="border-slate-300/70 bg-slate-100 text-slate-900 dark:border-slate-400/30 dark:bg-slate-500/15 dark:text-slate-200">
       Pending
     </Badge>
-  )
+  );
 }
 
 export function AttachmentCard({
@@ -80,15 +79,15 @@ export function AttachmentCard({
   onDelete,
   onRetry,
 }: {
-  attachment: AttachmentItem
-  deleting: boolean
-  retrying: boolean
-  onDelete: (attachmentId: AttachmentItem["_id"]) => Promise<void>
-  onRetry: (attachmentId: AttachmentItem["_id"]) => Promise<void>
+  attachment: AttachmentItem;
+  deleting: boolean;
+  retrying: boolean;
+  onDelete: (attachmentId: AttachmentItem["_id"]) => Promise<void>;
+  onRetry: (attachmentId: AttachmentItem["_id"]) => Promise<void>;
 }) {
-  const dateFormat = useAppDateFormat()
-  const [confirmOpen, setConfirmOpen] = useState(false)
-  const canPreviewImage = attachment.fileKind === "image" && attachment.url
+  const dateFormat = useAppDateFormat();
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const canPreviewImage = attachment.fileKind === "image" && attachment.url;
 
   return (
     <>
@@ -111,17 +110,25 @@ export function AttachmentCard({
 
           <div className="min-w-0 flex-1 space-y-1">
             <div className="flex flex-wrap items-center gap-2">
-              <p className="truncate text-sm font-medium">{attachment.fileName}</p>
+              <p className="truncate text-sm font-medium">
+                {attachment.fileName}
+              </p>
               <StatusBadge status={attachment.status} />
             </div>
             <p className="text-xs text-muted-foreground">
-              {attachment.fileType} • {formatSize(attachment.fileSizeOptimized ?? attachment.fileSizeOriginal)}
+              {attachment.fileType} •{" "}
+              {formatSize(
+                attachment.fileSizeOptimized ?? attachment.fileSizeOriginal,
+              )}
             </p>
             <p className="text-xs text-muted-foreground">
-              Uploaded {formatDateFromTimestamp(attachment.uploadedAt, dateFormat)}
+              Uploaded{" "}
+              {formatDateFromTimestamp(attachment.uploadedAt, dateFormat)}
             </p>
             {attachment.status === "failed" && attachment.optimizationError ? (
-              <p className="text-xs text-destructive">{attachment.optimizationError}</p>
+              <p className="text-xs text-destructive">
+                {attachment.optimizationError}
+              </p>
             ) : null}
           </div>
         </div>
@@ -135,7 +142,11 @@ export function AttachmentCard({
             asChild
             disabled={!attachment.url}
           >
-            <a href={attachment.url ?? undefined} target="_blank" rel="noreferrer">
+            <a
+              href={attachment.url ?? undefined}
+              target="_blank"
+              rel="noreferrer"
+            >
               <Download className="size-3.5" />
               Download
             </a>
@@ -149,7 +160,7 @@ export function AttachmentCard({
               className="cursor-pointer"
               disabled={retrying}
               onClick={() => {
-                void onRetry(attachment._id)
+                void onRetry(attachment._id);
               }}
             >
               <RefreshCcw className="size-3.5" />
@@ -178,14 +189,14 @@ export function AttachmentCard({
         confirmLabel="Delete attachment"
         busy={deleting}
         onConfirm={() => {
-          void onDelete(attachment._id)
+          void onDelete(attachment._id);
         }}
         onClose={() => {
           if (!deleting) {
-            setConfirmOpen(false)
+            setConfirmOpen(false);
           }
         }}
       />
     </>
-  )
+  );
 }

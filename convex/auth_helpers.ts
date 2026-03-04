@@ -1,14 +1,14 @@
 type PasswordAuthCallbackArgs = {
-  existingUserId: unknown
-  type: unknown
-  profile: Record<string, unknown>
-}
+  existingUserId: unknown;
+  type: unknown;
+  profile: Record<string, unknown>;
+};
 
-export const INVALID_CREDENTIALS = "INVALID_CREDENTIALS" as const
+export const INVALID_CREDENTIALS = "INVALID_CREDENTIALS" as const;
 
 export function normalizePasswordSignInError(error: unknown) {
   if (!(error instanceof Error)) {
-    return error
+    return error;
   }
 
   if (
@@ -16,14 +16,14 @@ export function normalizePasswordSignInError(error: unknown) {
     error.message === "InvalidAccountId" ||
     error.message === "Invalid credentials"
   ) {
-    return INVALID_CREDENTIALS
+    return INVALID_CREDENTIALS;
   }
 
   if (error.message === "TooManyFailedAttempts") {
-    return new Error("Too many failed attempts. Try again later.")
+    return new Error("Too many failed attempts. Try again later.");
   }
 
-  return error
+  return error;
 }
 
 export function isFirstAdminBootstrapAttempt(
@@ -34,5 +34,5 @@ export function isFirstAdminBootstrapAttempt(
     args.existingUserId === null &&
     args.profile.role === "admin" &&
     args.profile.createdBy === null
-  )
+  );
 }

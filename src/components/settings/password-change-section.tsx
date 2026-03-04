@@ -1,59 +1,59 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Loader2 } from "lucide-react"
-import { useAction } from "convex/react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { api } from "@/lib/convex-api"
+import { useState } from "react";
+import { Loader2 } from "lucide-react";
+import { useAction } from "convex/react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { api } from "@/lib/convex-api";
 
 function getPasswordChangeErrorMessage(error: unknown) {
   if (error instanceof Error && error.message) {
     if (error.message.includes("Server Error")) {
-      return "Unable to change password. Try again."
+      return "Unable to change password. Try again.";
     }
-    return error.message
+    return error.message;
   }
 
-  return "Unable to change password. Try again."
+  return "Unable to change password. Try again.";
 }
 
 export function PasswordChangeSection() {
-  const changePassword = useAction(api.users.changePassword)
+  const changePassword = useAction(api.users.changePassword);
 
-  const [currentPassword, setCurrentPassword] = useState("")
-  const [newPassword, setNewPassword] = useState("")
-  const [confirmNewPassword, setConfirmNewPassword] = useState("")
-  const [submitting, setSubmitting] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState<string | null>(null)
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    setError(null)
-    setSuccess(null)
+    event.preventDefault();
+    setError(null);
+    setSuccess(null);
 
     if (newPassword.length < 8) {
-      setError("New password must be at least 8 characters")
-      return
+      setError("New password must be at least 8 characters");
+      return;
     }
 
     if (newPassword !== confirmNewPassword) {
-      setError("New passwords do not match")
-      return
+      setError("New passwords do not match");
+      return;
     }
 
-    setSubmitting(true)
+    setSubmitting(true);
     try {
-      await changePassword({ currentPassword, newPassword })
-      setSuccess("Password updated")
-      setCurrentPassword("")
-      setNewPassword("")
-      setConfirmNewPassword("")
+      await changePassword({ currentPassword, newPassword });
+      setSuccess("Password updated");
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmNewPassword("");
     } catch (caught) {
-      setError(getPasswordChangeErrorMessage(caught))
+      setError(getPasswordChangeErrorMessage(caught));
     } finally {
-      setSubmitting(false)
+      setSubmitting(false);
     }
   }
 
@@ -63,7 +63,10 @@ export function PasswordChangeSection() {
       className="rounded-xl border border-border/70 bg-background p-5 shadow-sm"
     >
       <div className="space-y-1">
-        <h2 id="settings-password-title" className="text-lg font-semibold tracking-tight">
+        <h2
+          id="settings-password-title"
+          className="text-lg font-semibold tracking-tight"
+        >
           Change password
         </h2>
         <p className="text-sm text-muted-foreground">
@@ -131,12 +134,16 @@ export function PasswordChangeSection() {
         ) : null}
 
         <div className="sm:col-span-2 flex justify-end">
-          <Button type="submit" className="cursor-pointer" disabled={submitting}>
+          <Button
+            type="submit"
+            className="cursor-pointer"
+            disabled={submitting}
+          >
             {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
             {submitting ? "Updating..." : "Update password"}
           </Button>
         </div>
       </form>
     </section>
-  )
+  );
 }

@@ -1,34 +1,34 @@
-"use client"
+"use client";
 
-import Link from "next/link"
-import { useMemo, useState } from "react"
-import { Pencil, Printer, Trash2, Wrench } from "lucide-react"
-import type { FieldDefinition } from "@/components/fields/types"
-import { DynamicFieldDisplay } from "@/components/fields/dynamic-field-display"
-import { ConfirmDialog } from "@/components/crud/confirm-dialog"
-import { AttachmentsPanel } from "@/components/attachments/attachments-panel"
-import { StatusBadge } from "@/components/assets/status-badge"
+import Link from "next/link";
+import { useMemo, useState } from "react";
+import { Pencil, Printer, Trash2, Wrench } from "lucide-react";
+import type { FieldDefinition } from "@/components/fields/types";
+import { DynamicFieldDisplay } from "@/components/fields/dynamic-field-display";
+import { ConfirmDialog } from "@/components/crud/confirm-dialog";
+import { AttachmentsPanel } from "@/components/attachments/attachments-panel";
+import { StatusBadge } from "@/components/assets/status-badge";
 import {
   ASSET_STATUS_LABELS,
   ASSET_STATUS_OPTIONS,
   type AssetDetail as AssetDetailType,
   type AssetStatus,
-} from "@/components/assets/types"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { formatDateFromTimestamp } from "@/lib/date-format"
-import { useAppDateFormat } from "@/lib/use-app-date-format"
+} from "@/components/assets/types";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { formatDateFromTimestamp } from "@/lib/date-format";
+import { useAppDateFormat } from "@/lib/use-app-date-format";
 
-type AssetTab = "info" | "service" | "attachments"
+type AssetTab = "info" | "service" | "attachments";
 
 function AssetTabButton({
   active,
   label,
   onClick,
 }: {
-  active: boolean
-  label: string
-  onClick: () => void
+  active: boolean;
+  label: string;
+  onClick: () => void;
 }) {
   return (
     <button
@@ -42,7 +42,7 @@ function AssetTabButton({
     >
       {label}
     </button>
-  )
+  );
 }
 
 export function AssetDetail({
@@ -54,25 +54,22 @@ export function AssetDetail({
   onStatusChange,
   onDelete,
 }: {
-  asset: AssetDetailType
-  fieldDefinitions: FieldDefinition[]
-  canDelete: boolean
-  deleting: boolean
-  updatingStatus: boolean
-  onStatusChange: (status: AssetStatus) => void
-  onDelete: () => Promise<void>
+  asset: AssetDetailType;
+  fieldDefinitions: FieldDefinition[];
+  canDelete: boolean;
+  deleting: boolean;
+  updatingStatus: boolean;
+  onStatusChange: (status: AssetStatus) => void;
+  onDelete: () => Promise<void>;
 }) {
-  const dateFormat = useAppDateFormat()
-  const [activeTab, setActiveTab] = useState<AssetTab>("info")
-  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false)
+  const dateFormat = useAppDateFormat();
+  const [activeTab, setActiveTab] = useState<AssetTab>("info");
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
 
   const orderedFieldDefinitions = useMemo(
-    () =>
-      fieldDefinitions
-        .slice()
-        .sort((a, b) => a.sortOrder - b.sortOrder),
+    () => fieldDefinitions.slice().sort((a, b) => a.sortOrder - b.sortOrder),
     [fieldDefinitions],
-  )
+  );
 
   return (
     <div className="space-y-4">
@@ -86,7 +83,9 @@ export function AssetDetail({
               <StatusBadge status={asset.status} />
             </div>
             <div>
-              <h2 className="text-2xl font-semibold tracking-tight">{asset.name}</h2>
+              <h2 className="text-2xl font-semibold tracking-tight">
+                {asset.name}
+              </h2>
               <p className="text-sm text-muted-foreground">
                 Created {formatDateFromTimestamp(asset.createdAt, dateFormat)}
               </p>
@@ -101,7 +100,9 @@ export function AssetDetail({
               id="asset-status-quick-change"
               className="h-9 min-w-44 rounded-md border border-input bg-background px-3 text-sm"
               value={asset.status}
-              onChange={(event) => onStatusChange(event.target.value as AssetStatus)}
+              onChange={(event) =>
+                onStatusChange(event.target.value as AssetStatus)
+              }
               disabled={updatingStatus}
             >
               {ASSET_STATUS_OPTIONS.map((status) => (
@@ -147,7 +148,11 @@ export function AssetDetail({
 
       <section className="rounded-xl border border-border/70 bg-background p-5 shadow-sm">
         <div className="mb-4 flex flex-wrap gap-1 rounded-lg border border-border/60 bg-muted/15 p-1">
-          <AssetTabButton active={activeTab === "info"} label="Info" onClick={() => setActiveTab("info")} />
+          <AssetTabButton
+            active={activeTab === "info"}
+            label="Info"
+            onClick={() => setActiveTab("info")}
+          />
           <AssetTabButton
             active={activeTab === "service"}
             label="Service"
@@ -164,21 +169,36 @@ export function AssetDetail({
           <div className="space-y-6">
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-1">
-                <p className="text-xs uppercase tracking-wide text-muted-foreground">Category</p>
-                <p className="text-sm font-medium">{asset.category?.name ?? "—"}</p>
+                <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                  Category
+                </p>
+                <p className="text-sm font-medium">
+                  {asset.category?.name ?? "—"}
+                </p>
               </div>
               <div className="space-y-1">
-                <p className="text-xs uppercase tracking-wide text-muted-foreground">Location</p>
-                <p className="text-sm font-medium">{asset.location?.path ?? "—"}</p>
+                <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                  Location
+                </p>
+                <p className="text-sm font-medium">
+                  {asset.location?.path ?? "—"}
+                </p>
               </div>
               <div className="space-y-1 md:col-span-2">
-                <p className="text-xs uppercase tracking-wide text-muted-foreground">Tags</p>
+                <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                  Tags
+                </p>
                 {asset.tags.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">No tags assigned.</p>
+                  <p className="text-sm text-muted-foreground">
+                    No tags assigned.
+                  </p>
                 ) : (
                   <div className="flex flex-wrap gap-1">
                     {asset.tags.map((tag) => (
-                      <Badge key={tag._id} className="border border-border/70 bg-muted/20 text-xs">
+                      <Badge
+                        key={tag._id}
+                        className="border border-border/70 bg-muted/20 text-xs"
+                      >
                         {tag.name}
                       </Badge>
                     ))}
@@ -186,7 +206,9 @@ export function AssetDetail({
                 )}
               </div>
               <div className="space-y-1 md:col-span-2">
-                <p className="text-xs uppercase tracking-wide text-muted-foreground">Notes</p>
+                <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                  Notes
+                </p>
                 <p className="whitespace-pre-wrap text-sm text-muted-foreground">
                   {asset.notes ?? "No notes"}
                 </p>
@@ -194,18 +216,30 @@ export function AssetDetail({
             </div>
 
             <div className="space-y-3">
-              <h3 className="text-sm font-semibold tracking-tight">Custom fields</h3>
+              <h3 className="text-sm font-semibold tracking-tight">
+                Custom fields
+              </h3>
               {orderedFieldDefinitions.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No custom fields defined.</p>
+                <p className="text-sm text-muted-foreground">
+                  No custom fields defined.
+                </p>
               ) : (
                 <div className="grid gap-3 md:grid-cols-2">
                   {orderedFieldDefinitions.map((definition) => (
-                    <div key={definition._id} className="rounded-lg border border-border/60 p-3">
-                      <p className="text-xs uppercase tracking-wide text-muted-foreground">{definition.name}</p>
+                    <div
+                      key={definition._id}
+                      className="rounded-lg border border-border/60 p-3"
+                    >
+                      <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                        {definition.name}
+                      </p>
                       <p className="mt-1 text-sm">
                         <DynamicFieldDisplay
                           definition={definition}
-                          value={asset.customFieldValues[definition._id as string] ?? null}
+                          value={
+                            asset.customFieldValues[definition._id as string] ??
+                            null
+                          }
                           dateFormat={dateFormat}
                         />
                       </p>
@@ -239,14 +273,14 @@ export function AssetDetail({
         confirmLabel="Delete asset"
         busy={deleting}
         onConfirm={() => {
-          void onDelete()
+          void onDelete();
         }}
         onClose={() => {
           if (!deleting) {
-            setConfirmDeleteOpen(false)
+            setConfirmDeleteOpen(false);
           }
         }}
       />
     </div>
-  )
+  );
 }

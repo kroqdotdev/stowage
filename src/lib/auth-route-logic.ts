@@ -1,40 +1,40 @@
 export type RouteAuthState = {
-  firstRun: boolean
-  isAuthenticated: boolean
-}
+  firstRun: boolean;
+  isAuthenticated: boolean;
+};
 
 export function getProtectedAppRedirect(state: RouteAuthState): string | null {
   if (state.isAuthenticated) {
-    return null
+    return null;
   }
 
-  return state.firstRun ? "/setup" : "/login"
+  return state.firstRun ? "/setup" : "/login";
 }
 
 export function getHomeRedirect(state: RouteAuthState): string {
-  return getProtectedAppRedirect(state) ?? "/dashboard"
+  return getProtectedAppRedirect(state) ?? "/dashboard";
 }
 
 export function getLoginPageRedirect(state: RouteAuthState): string | null {
   if (state.isAuthenticated) {
-    return "/dashboard"
+    return "/dashboard";
   }
 
   if (state.firstRun) {
-    return "/setup"
+    return "/setup";
   }
 
-  return null
+  return null;
 }
 
 export function getSetupPageRedirect(state: RouteAuthState): string | null {
   if (state.isAuthenticated) {
-    return "/dashboard"
+    return "/dashboard";
   }
 
   if (!state.firstRun) {
-    return "/login"
+    return "/login";
   }
 
-  return null
+  return null;
 }

@@ -1,12 +1,12 @@
-import { ConvexError, v } from "convex/values"
-import type { Id } from "./_generated/dataModel"
-import { mutation, query, type MutationCtx } from "./_generated/server"
-import { requireAdminUser, requireAuthenticatedUser } from "./authz"
+import { ConvexError, v } from "convex/values";
+import type { Id } from "./_generated/dataModel";
+import { mutation, query, type MutationCtx } from "./_generated/server";
+import { requireAdminUser, requireAuthenticatedUser } from "./authz";
 import {
   normalizeCatalogNameKey,
   normalizeHexColor,
   requireCatalogName,
-} from "./catalog_helpers"
+} from "./catalog_helpers";
 
 const tagViewValidator = v.object({
   _id: v.id("tags"),
@@ -15,17 +15,17 @@ const tagViewValidator = v.object({
   color: v.string(),
   createdAt: v.number(),
   updatedAt: v.number(),
-})
+});
 
 type TagRow = {
-  _id: Id<"tags">
-  _creationTime: number
-  name: string
-  normalizedName: string
-  color: string
-  createdAt: number
-  updatedAt: number
-}
+  _id: Id<"tags">;
+  _creationTime: number;
+  name: string;
+  normalizedName: string;
+  color: string;
+  createdAt: number;
+  updatedAt: number;
+};
 
 async function assertUniqueTagName(
   ctx: MutationCtx,
@@ -34,12 +34,14 @@ async function assertUniqueTagName(
 ) {
   const matches = await ctx.db
     .query("tags")
-    .withIndex("by_normalized_name", (q) => q.eq("normalizedName", normalizedName))
-    .take(2)
+    .withIndex("by_normalized_name", (q) =>
+      q.eq("normalizedName", normalizedName),
+    )
+    .take(2);
 
-  const duplicate = matches.find((tag) => tag._id !== excludeId)
+  const duplicate = matches.find((tag) => tag._id !== excludeId);
   if (duplicate) {
-    throw new ConvexError("A tag with this name already exists")
+    throw new ConvexError("A tag with this name already exists");
   }
 }
 
@@ -47,12 +49,14 @@ export const listTags = query({
   args: {},
   returns: v.array(tagViewValidator),
   handler: async (ctx) => {
-    await requireAuthenticatedUser(ctx)
+    await requireAuthenticatedUser(ctx);
 
-    const tags = (await ctx.db.query("tags").collect()) as TagRow[]
+    const tags = (await ctx.db.query("tags").collect()) as TagRow[];
     return tags
       .slice()
-      .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }))
+      .sort((a, b) =>
+        a.name.localeCompare(b.name, undefined, { sensitivity: "base" }),
+      )
       .map((tag) => ({
         _id: tag._id,
         _creationTime: tag._creationTime,
@@ -60,9 +64,9 @@ export const listTags = query({
         color: tag.color,
         createdAt: tag.createdAt,
         updatedAt: tag.updatedAt,
-      }))
+      }));
   },
-})
+});
 
 export const createTag = mutation({
   args: {
@@ -71,26 +75,26 @@ export const createTag = mutation({
   },
   returns: v.object({ tagId: v.id("tags") }),
   handler: async (ctx, args) => {
-    await requireAdminUser(ctx)
+    await requireAdminUser(ctx);
 
-    const name = requireCatalogName(args.name)
-    const normalizedName = normalizeCatalogNameKey(name)
-    const color = normalizeHexColor(args.color)
+    const name = requireCatalogName(args.name);
+    const normalizedName = normalizeCatalogNameKey(name);
+    const color = normalizeHexColor(args.color);
 
-    await assertUniqueTagName(ctx, normalizedName)
+    await assertUniqueTagName(ctx, normalizedName);
 
-    const now = Date.now()
+    const now = Date.now();
     const tagId = await ctx.db.insert("tags", {
       name,
       normalizedName,
       color,
       createdAt: now,
       updatedAt: now,
-    })
+    });
 
-    return { tagId }
+    return { tagId };
   },
-})
+});
 
 export const updateTag = mutation({
   args: {
@@ -100,51 +104,51 @@ export const updateTag = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    await requireAdminUser(ctx)
+    await requireAdminUser(ctx);
 
-    const tag = await ctx.db.get(args.tagId)
+    const tag = await ctx.db.get(args.tagId);
     if (!tag) {
-      throw new ConvexError("Tag not found")
+      throw new ConvexError("Tag not found");
     }
 
-    const name = requireCatalogName(args.name)
-    const normalizedName = normalizeCatalogNameKey(name)
-    const color = normalizeHexColor(args.color)
+    const name = requireCatalogName(args.name);
+    const normalizedName = normalizeCatalogNameKey(name);
+    const color = normalizeHexColor(args.color);
 
-    await assertUniqueTagName(ctx, normalizedName, args.tagId)
+    await assertUniqueTagName(ctx, normalizedName, args.tagId);
 
     await ctx.db.patch(args.tagId, {
       name,
       normalizedName,
       color,
       updatedAt: Date.now(),
-    })
+    });
 
-    return null
+    return null;
   },
-})
+});
 
 export const deleteTag = mutation({
   args: { tagId: v.id("tags") },
   returns: v.null(),
   handler: async (ctx, args) => {
-    await requireAdminUser(ctx)
+    await requireAdminUser(ctx);
 
-    const tag = await ctx.db.get(args.tagId)
+    const tag = await ctx.db.get(args.tagId);
     if (!tag) {
-      throw new ConvexError("Tag not found")
+      throw new ConvexError("Tag not found");
     }
 
     const linkedAssetTag = await ctx.db
       .query("assetTags")
       .withIndex("by_tagId", (q) => q.eq("tagId", args.tagId))
-      .first()
+      .first();
 
     if (linkedAssetTag) {
-      throw new ConvexError("Cannot delete a tag that is assigned to assets")
+      throw new ConvexError("Cannot delete a tag that is assigned to assets");
     }
 
-    await ctx.db.delete(args.tagId)
-    return null
+    await ctx.db.delete(args.tagId);
+    return null;
   },
-})
+});

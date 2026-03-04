@@ -1,12 +1,12 @@
-import { describe, expect, it, vi } from "vitest"
-import { render, screen } from "@testing-library/react"
-import userEvent from "@testing-library/user-event"
-import { AttachmentCard } from "@/components/attachments/attachment-card"
-import type { AttachmentItem } from "@/components/attachments/types"
+import { describe, expect, it, vi } from "vitest";
+import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { AttachmentCard } from "@/components/attachments/attachment-card";
+import type { AttachmentItem } from "@/components/attachments/types";
 
 vi.mock("@/lib/use-app-date-format", () => ({
   useAppDateFormat: () => "DD-MM-YYYY",
-}))
+}));
 
 const baseAttachment: AttachmentItem = {
   _id: "att1" as never,
@@ -25,7 +25,7 @@ const baseAttachment: AttachmentItem = {
   uploadedAt: 1,
   updatedAt: 1,
   url: "https://example.com/photo.webp",
-}
+};
 
 describe("AttachmentCard", () => {
   it("renders ready attachments with download action", () => {
@@ -37,19 +37,19 @@ describe("AttachmentCard", () => {
         onDelete={vi.fn().mockResolvedValue(undefined)}
         onRetry={vi.fn().mockResolvedValue(undefined)}
       />,
-    )
+    );
 
-    expect(screen.getByText("photo.webp")).toBeInTheDocument()
-    expect(screen.getByText("Ready")).toBeInTheDocument()
+    expect(screen.getByText("photo.webp")).toBeInTheDocument();
+    expect(screen.getByText("Ready")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Download" })).toHaveAttribute(
       "href",
       "https://example.com/photo.webp",
-    )
-  })
+    );
+  });
 
   it("renders failed attachments and allows retry", async () => {
-    const user = userEvent.setup()
-    const onRetry = vi.fn().mockResolvedValue(undefined)
+    const user = userEvent.setup();
+    const onRetry = vi.fn().mockResolvedValue(undefined);
 
     render(
       <AttachmentCard
@@ -65,12 +65,12 @@ describe("AttachmentCard", () => {
         onDelete={vi.fn().mockResolvedValue(undefined)}
         onRetry={onRetry}
       />,
-    )
+    );
 
-    expect(screen.getByText("Failed")).toBeInTheDocument()
-    expect(screen.getByText("Optimization failed")).toBeInTheDocument()
+    expect(screen.getByText("Failed")).toBeInTheDocument();
+    expect(screen.getByText("Optimization failed")).toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: "Retry" }))
-    expect(onRetry).toHaveBeenCalledWith("att1")
-  })
-})
+    await user.click(screen.getByRole("button", { name: "Retry" }));
+    expect(onRetry).toHaveBeenCalledWith("att1");
+  });
+});

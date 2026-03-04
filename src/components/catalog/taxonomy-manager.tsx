@@ -1,55 +1,58 @@
-"use client"
+"use client";
 
-import { useMemo, useState } from "react"
-import { Loader2, MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-react"
-import { toast } from "sonner"
-import { CrudTable } from "@/components/crud/crud-table"
-import { ColorField } from "@/components/crud/color-field"
-import { ConfirmDialog } from "@/components/crud/confirm-dialog"
-import { getConvexUiErrorMessage } from "@/components/crud/error-messages"
-import { CrudModal } from "@/components/crud/modal"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import { useMemo, useState } from "react";
+import { Loader2, MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-react";
+import { toast } from "sonner";
+import { CrudTable } from "@/components/crud/crud-table";
+import { ColorField } from "@/components/crud/color-field";
+import { ConfirmDialog } from "@/components/crud/confirm-dialog";
+import { getConvexUiErrorMessage } from "@/components/crud/error-messages";
+import { CrudModal } from "@/components/crud/modal";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { formatDateFromTimestamp } from "@/lib/date-format"
-import { useAppDateFormat } from "@/lib/use-app-date-format"
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { formatDateFromTimestamp } from "@/lib/date-format";
+import { useAppDateFormat } from "@/lib/use-app-date-format";
 
 export type TaxonomyFormValues = {
-  name: string
-  color: string
-  prefix: string
-  description: string
-}
+  name: string;
+  color: string;
+  prefix: string;
+  description: string;
+};
 
 type TaxonomyRowBase = {
-  _id: string
-  name: string
-  color: string
-  createdAt: number
-  updatedAt: number
-}
+  _id: string;
+  name: string;
+  color: string;
+  createdAt: number;
+  updatedAt: number;
+};
 
 type CategoryRow = TaxonomyRowBase & {
-  prefix: string | null
-  description: string | null
-}
+  prefix: string | null;
+  description: string | null;
+};
 
-type TagRow = TaxonomyRowBase
+type TagRow = TaxonomyRowBase;
 
-function normalizeForm(values: TaxonomyFormValues, variant: "categories" | "tags") {
+function normalizeForm(
+  values: TaxonomyFormValues,
+  variant: "categories" | "tags",
+) {
   return {
     name: values.name.trim(),
     color: values.color.trim(),
     prefix: variant === "categories" ? values.prefix.trim() : "",
     description: variant === "categories" ? values.description.trim() : "",
-  }
+  };
 }
 
 function createInitialForm(
@@ -61,7 +64,7 @@ function createInitialForm(
     color: values?.color ?? "#2563EB",
     prefix: variant === "categories" ? (values?.prefix ?? "") : "",
     description: variant === "categories" ? (values?.description ?? "") : "",
-  }
+  };
 }
 
 export function TaxonomyManager({
@@ -73,44 +76,49 @@ export function TaxonomyManager({
   onUpdate,
   onDelete,
 }: {
-  variant: "categories" | "tags"
-  rows: CategoryRow[] | TagRow[]
-  loading: boolean
-  canManage: boolean
-  onCreate: (values: TaxonomyFormValues) => Promise<void>
-  onUpdate: (id: string, values: TaxonomyFormValues) => Promise<void>
-  onDelete: (id: string) => Promise<void>
+  variant: "categories" | "tags";
+  rows: CategoryRow[] | TagRow[];
+  loading: boolean;
+  canManage: boolean;
+  onCreate: (values: TaxonomyFormValues) => Promise<void>;
+  onUpdate: (id: string, values: TaxonomyFormValues) => Promise<void>;
+  onDelete: (id: string) => Promise<void>;
 }) {
-  const dateFormat = useAppDateFormat()
-  const singular = variant === "categories" ? "category" : "tag"
-  const singularTitle = variant === "categories" ? "Category" : "Tag"
-  const pluralTitle = variant === "categories" ? "Categories" : "Tags"
-  const pluralLower = variant
-  const [editorOpen, setEditorOpen] = useState(false)
-  const [editorMode, setEditorMode] = useState<"create" | "edit">("create")
-  const [activeId, setActiveId] = useState<string | null>(null)
-  const [form, setForm] = useState<TaxonomyFormValues>(() => createInitialForm(variant))
-  const [submitting, setSubmitting] = useState(false)
-  const [deleteId, setDeleteId] = useState<string | null>(null)
-  const [deleting, setDeleting] = useState(false)
+  const dateFormat = useAppDateFormat();
+  const singular = variant === "categories" ? "category" : "tag";
+  const singularTitle = variant === "categories" ? "Category" : "Tag";
+  const pluralTitle = variant === "categories" ? "Categories" : "Tags";
+  const pluralLower = variant;
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [editorMode, setEditorMode] = useState<"create" | "edit">("create");
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [form, setForm] = useState<TaxonomyFormValues>(() =>
+    createInitialForm(variant),
+  );
+  const [submitting, setSubmitting] = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
-  const rowsById = useMemo(() => new Map(rows.map((row) => [row._id, row])), [rows])
-  const activeDeleteRow = deleteId ? rowsById.get(deleteId) ?? null : null
+  const rowsById = useMemo(
+    () => new Map(rows.map((row) => [row._id, row])),
+    [rows],
+  );
+  const activeDeleteRow = deleteId ? (rowsById.get(deleteId) ?? null) : null;
 
   function openCreate() {
-    setEditorMode("create")
-    setActiveId(null)
-    setForm(createInitialForm(variant))
-    setEditorOpen(true)
+    setEditorMode("create");
+    setActiveId(null);
+    setForm(createInitialForm(variant));
+    setEditorOpen(true);
   }
 
   function openEdit(id: string) {
-    const row = rowsById.get(id)
+    const row = rowsById.get(id);
     if (!row) {
-      return
+      return;
     }
-    setEditorMode("edit")
-    setActiveId(id)
+    setEditorMode("edit");
+    setActiveId(id);
     setForm(
       createInitialForm(variant, {
         name: row.name,
@@ -118,53 +126,55 @@ export function TaxonomyManager({
         prefix: "prefix" in row ? (row.prefix ?? "") : "",
         description: "description" in row ? (row.description ?? "") : "",
       }),
-    )
-    setEditorOpen(true)
+    );
+    setEditorOpen(true);
   }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault()
+    event.preventDefault();
 
-    const next = normalizeForm(form, variant)
+    const next = normalizeForm(form, variant);
     if (!next.name) {
-      toast.error(`Enter a ${singular} name`)
-      return
+      toast.error(`Enter a ${singular} name`);
+      return;
     }
 
-    setSubmitting(true)
+    setSubmitting(true);
     try {
       if (editorMode === "create") {
-        await onCreate(next)
-        toast.success(`${singularTitle} created`)
+        await onCreate(next);
+        toast.success(`${singularTitle} created`);
       } else if (activeId) {
-        await onUpdate(activeId, next)
-        toast.success(`${singularTitle} updated`)
+        await onUpdate(activeId, next);
+        toast.success(`${singularTitle} updated`);
       }
-      setEditorOpen(false)
-      setActiveId(null)
-      setForm(createInitialForm(variant))
+      setEditorOpen(false);
+      setActiveId(null);
+      setForm(createInitialForm(variant));
     } catch (error) {
-      const fallback = `Unable to ${editorMode === "create" ? "create" : "update"} ${singular}`
-      toast.error(getConvexUiErrorMessage(error, fallback))
+      const fallback = `Unable to ${editorMode === "create" ? "create" : "update"} ${singular}`;
+      toast.error(getConvexUiErrorMessage(error, fallback));
     } finally {
-      setSubmitting(false)
+      setSubmitting(false);
     }
   }
 
   async function handleDelete() {
     if (!deleteId) {
-      return
+      return;
     }
 
-    setDeleting(true)
+    setDeleting(true);
     try {
-      await onDelete(deleteId)
-      toast.success(`${singularTitle} deleted`)
-      setDeleteId(null)
+      await onDelete(deleteId);
+      toast.success(`${singularTitle} deleted`);
+      setDeleteId(null);
     } catch (error) {
-      toast.error(getConvexUiErrorMessage(error, `Unable to delete ${singular}`))
+      toast.error(
+        getConvexUiErrorMessage(error, `Unable to delete ${singular}`),
+      );
     } finally {
-      setDeleting(false)
+      setDeleting(false);
     }
   }
 
@@ -183,24 +193,33 @@ export function TaxonomyManager({
           { key: "name", label: "Name" },
           { key: "updated", label: "Updated" },
           { key: "actions", label: "Actions", align: "right" as const },
-        ]
+        ];
 
   return (
     <section className="rounded-xl border border-border/70 bg-background p-5 shadow-sm">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-1">
-          <h2 className="text-lg font-semibold tracking-tight">{pluralTitle}</h2>
+          <h2 className="text-lg font-semibold tracking-tight">
+            {pluralTitle}
+          </h2>
           <p className="text-sm text-muted-foreground">
             {variant === "categories"
               ? "Group assets with category names, prefixes, and colors."
               : "Create reusable tags with clear colors for quick filtering."}
           </p>
           {!canManage ? (
-            <p className="text-xs text-muted-foreground">Only admins can add, edit, or delete {pluralLower}.</p>
+            <p className="text-xs text-muted-foreground">
+              Only admins can add, edit, or delete {pluralLower}.
+            </p>
           ) : null}
         </div>
         {canManage ? (
-          <Button type="button" variant="outline" className="cursor-pointer" onClick={openCreate}>
+          <Button
+            type="button"
+            variant="outline"
+            className="cursor-pointer"
+            onClick={openCreate}
+          >
             <Plus className="h-4 w-4" />
             Add {singularTitle}
           </Button>
@@ -230,9 +249,15 @@ export function TaxonomyManager({
                   <td className="px-3 py-2 font-medium">{row.name}</td>
                   {variant === "categories" ? (
                     <>
-                      <td className="px-3 py-2 text-muted-foreground">{"prefix" in row ? (row.prefix ?? "—") : "—"}</td>
+                      <td className="px-3 py-2 text-muted-foreground">
+                        {"prefix" in row ? (row.prefix ?? "—") : "—"}
+                      </td>
                       <td className="max-w-[22rem] px-3 py-2 text-muted-foreground">
-                        <div className="truncate">{"description" in row ? (row.description ?? "—") : "—"}</div>
+                        <div className="truncate">
+                          {"description" in row
+                            ? (row.description ?? "—")
+                            : "—"}
+                        </div>
                       </td>
                     </>
                   ) : null}
@@ -268,7 +293,9 @@ export function TaxonomyManager({
                         </DropdownMenuContent>
                       </DropdownMenu>
                     ) : (
-                      <span className="text-xs text-muted-foreground">Read only</span>
+                      <span className="text-xs text-muted-foreground">
+                        Read only
+                      </span>
                     )}
                   </td>
                 </tr>
@@ -281,10 +308,14 @@ export function TaxonomyManager({
         open={editorOpen}
         onClose={() => {
           if (!submitting) {
-            setEditorOpen(false)
+            setEditorOpen(false);
           }
         }}
-        title={editorMode === "create" ? `Add ${singularTitle}` : `Edit ${singularTitle}`}
+        title={
+          editorMode === "create"
+            ? `Add ${singularTitle}`
+            : `Edit ${singularTitle}`
+        }
         description={
           variant === "categories"
             ? "Use short, clear names. Prefix and description are optional."
@@ -319,7 +350,11 @@ export function TaxonomyManager({
           </>
         }
       >
-        <form id="taxonomy-editor-form" onSubmit={handleSubmit} className="space-y-4">
+        <form
+          id="taxonomy-editor-form"
+          onSubmit={handleSubmit}
+          className="space-y-4"
+        >
           <div className="space-y-1.5">
             <label htmlFor="taxonomy-name" className="text-sm font-medium">
               Name
@@ -327,7 +362,9 @@ export function TaxonomyManager({
             <Input
               id="taxonomy-name"
               value={form.name}
-              onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
+              onChange={(event) =>
+                setForm((prev) => ({ ...prev, name: event.target.value }))
+              }
               placeholder={variant === "categories" ? "Laptops" : "Fragile"}
               required
             />
@@ -336,13 +373,18 @@ export function TaxonomyManager({
           {variant === "categories" ? (
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <label htmlFor="taxonomy-prefix" className="text-sm font-medium">
+                <label
+                  htmlFor="taxonomy-prefix"
+                  className="text-sm font-medium"
+                >
                   Prefix
                 </label>
                 <Input
                   id="taxonomy-prefix"
                   value={form.prefix}
-                  onChange={(event) => setForm((prev) => ({ ...prev, prefix: event.target.value }))}
+                  onChange={(event) =>
+                    setForm((prev) => ({ ...prev, prefix: event.target.value }))
+                  }
                   placeholder="LAP"
                 />
               </div>
@@ -362,14 +404,20 @@ export function TaxonomyManager({
 
           {variant === "categories" ? (
             <div className="space-y-1.5">
-              <label htmlFor="taxonomy-description" className="text-sm font-medium">
+              <label
+                htmlFor="taxonomy-description"
+                className="text-sm font-medium"
+              >
                 Description
               </label>
               <Textarea
                 id="taxonomy-description"
                 value={form.description}
                 onChange={(event) =>
-                  setForm((prev) => ({ ...prev, description: event.target.value }))
+                  setForm((prev) => ({
+                    ...prev,
+                    description: event.target.value,
+                  }))
                 }
                 placeholder="Optional note about when to use this category"
               />
@@ -389,11 +437,11 @@ export function TaxonomyManager({
         busy={deleting}
         onClose={() => {
           if (!deleting) {
-            setDeleteId(null)
+            setDeleteId(null);
           }
         }}
         onConfirm={() => void handleDelete()}
       />
     </section>
-  )
+  );
 }

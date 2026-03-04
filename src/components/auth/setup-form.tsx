@@ -1,76 +1,78 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
-import { useAuthActions, useAuthToken } from "@convex-dev/auth/react"
-import { useAction, useConvexAuth, useQuery } from "convex/react"
-import { Loader2 } from "lucide-react"
-import { AuthPanel } from "@/components/auth/auth-panel"
-import { getSetupErrorMessage } from "@/components/auth/auth-error-messages"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { setAuthTokenCookie } from "@/lib/auth-token-cookie"
-import { api } from "@/lib/convex-api"
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useAuthActions, useAuthToken } from "@convex-dev/auth/react";
+import { useAction, useConvexAuth, useQuery } from "convex/react";
+import { Loader2 } from "lucide-react";
+import { AuthPanel } from "@/components/auth/auth-panel";
+import { getSetupErrorMessage } from "@/components/auth/auth-error-messages";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { setAuthTokenCookie } from "@/lib/auth-token-cookie";
+import { api } from "@/lib/convex-api";
 
 export function SetupForm() {
-  const router = useRouter()
-  const { signIn } = useAuthActions()
-  const authToken = useAuthToken()
-  const { isAuthenticated, isLoading } = useConvexAuth()
-  const firstRun = useQuery(api.users.checkFirstRun, {})
-  const createFirstAdmin = useAction(api.users.createFirstAdmin)
+  const router = useRouter();
+  const { signIn } = useAuthActions();
+  const authToken = useAuthToken();
+  const { isAuthenticated, isLoading } = useConvexAuth();
+  const firstRun = useQuery(api.users.checkFirstRun, {});
+  const createFirstAdmin = useAction(api.users.createFirstAdmin);
 
-  const [name, setName] = useState("")
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [confirmPassword, setConfirmPassword] = useState("")
-  const [submitting, setSubmitting] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isLoading && isAuthenticated && authToken) {
-      setAuthTokenCookie(authToken)
-      router.replace("/dashboard")
+      setAuthTokenCookie(authToken);
+      router.replace("/dashboard");
     }
-  }, [authToken, isAuthenticated, isLoading, router])
+  }, [authToken, isAuthenticated, isLoading, router]);
 
   useEffect(() => {
     if (firstRun === false) {
-      router.replace("/login")
+      router.replace("/login");
     }
-  }, [firstRun, router])
+  }, [firstRun, router]);
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    setError(null)
+    event.preventDefault();
+    setError(null);
 
     if (password !== confirmPassword) {
-      setError("Passwords do not match")
-      return
+      setError("Passwords do not match");
+      return;
     }
 
-    setSubmitting(true)
+    setSubmitting(true);
 
     try {
       await createFirstAdmin({
         email,
         name,
         password,
-      })
+      });
 
       const result = await signIn("password", {
         flow: "signIn",
         email: email.trim().toLowerCase(),
         password,
-      })
+      });
 
       if (!result.signingIn) {
-        setError("Setup completed, but sign-in did not finish. Try signing in.")
+        setError(
+          "Setup completed, but sign-in did not finish. Try signing in.",
+        );
       }
     } catch (caught) {
-      setError(getSetupErrorMessage(caught))
+      setError(getSetupErrorMessage(caught));
     } finally {
-      setSubmitting(false)
+      setSubmitting(false);
     }
   }
 
@@ -88,7 +90,7 @@ export function SetupForm() {
           <div className="h-9 animate-pulse rounded-md bg-muted" />
         </div>
       </AuthPanel>
-    )
+    );
   }
 
   return (
@@ -147,7 +149,10 @@ export function SetupForm() {
         </div>
 
         <div className="space-y-1.5">
-          <label htmlFor="setup-password-confirm" className="text-sm font-medium">
+          <label
+            htmlFor="setup-password-confirm"
+            className="text-sm font-medium"
+          >
             Confirm password
           </label>
           <Input
@@ -180,5 +185,5 @@ export function SetupForm() {
         </Button>
       </form>
     </AuthPanel>
-  )
+  );
 }

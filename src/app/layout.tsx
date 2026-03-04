@@ -26,7 +26,8 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const convexUrl = process.env.CONVEX_URL ?? process.env.NEXT_PUBLIC_CONVEX_URL;
+  const convexUrl =
+    process.env.CONVEX_URL ?? process.env.NEXT_PUBLIC_CONVEX_URL;
 
   if (!convexUrl) {
     throw new Error(

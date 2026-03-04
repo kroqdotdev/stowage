@@ -1,28 +1,42 @@
-import { authTables } from "@convex-dev/auth/server"
-import { defineSchema, defineTable } from "convex/server"
-import { v } from "convex/values"
+import { authTables } from "@convex-dev/auth/server";
+import { defineSchema, defineTable } from "convex/server";
+import { v } from "convex/values";
 
-const roleValidator = v.union(v.literal("admin"), v.literal("user"))
+const roleValidator = v.union(v.literal("admin"), v.literal("user"));
 const assetStatusValidator = v.union(
   v.literal("active"),
   v.literal("in_storage"),
   v.literal("under_repair"),
   v.literal("retired"),
   v.literal("disposed"),
-)
+);
 const attachmentStatusValidator = v.union(
   v.literal("pending"),
   v.literal("processing"),
   v.literal("ready"),
   v.literal("failed"),
-)
+);
 const attachmentKindValidator = v.union(
   v.literal("image"),
   v.literal("pdf"),
   v.literal("office"),
-)
-const customFieldValueValidator = v.union(v.string(), v.number(), v.boolean(), v.null())
-const customFieldValuesValidator = v.record(v.string(), customFieldValueValidator)
+);
+const serviceIntervalUnitValidator = v.union(
+  v.literal("days"),
+  v.literal("weeks"),
+  v.literal("months"),
+  v.literal("years"),
+);
+const customFieldValueValidator = v.union(
+  v.string(),
+  v.number(),
+  v.boolean(),
+  v.null(),
+);
+const customFieldValuesValidator = v.record(
+  v.string(),
+  customFieldValueValidator,
+);
 
 export default defineSchema({
   ...authTables,
@@ -93,6 +107,7 @@ export default defineSchema({
       v.literal("MM-DD-YYYY"),
       v.literal("YYYY-MM-DD"),
     ),
+    serviceSchedulingEnabled: v.boolean(),
     updatedAt: v.number(),
     updatedBy: v.id("users"),
   }).index("by_key", ["key"]),
@@ -146,4 +161,18 @@ export default defineSchema({
     .index("by_assetId_and_uploadedAt", ["assetId", "uploadedAt"])
     .index("by_status", ["status"])
     .index("by_assetId_and_status", ["assetId", "status"]),
-})
+  serviceSchedules: defineTable({
+    assetId: v.id("assets"),
+    nextServiceDate: v.string(),
+    intervalValue: v.number(),
+    intervalUnit: serviceIntervalUnitValidator,
+    reminderLeadValue: v.number(),
+    reminderLeadUnit: serviceIntervalUnitValidator,
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    createdBy: v.id("users"),
+    updatedBy: v.id("users"),
+  })
+    .index("by_assetId", ["assetId"])
+    .index("by_nextServiceDate", ["nextServiceDate"]),
+});

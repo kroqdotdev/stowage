@@ -1,6 +1,6 @@
-import * as React from "react"
+import * as React from "react";
 
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/utils";
 
 function Badge({ className, ...props }: React.ComponentProps<"span">) {
   return (
@@ -12,7 +12,7 @@ function Badge({ className, ...props }: React.ComponentProps<"span">) {
       )}
       {...props}
     />
-  )
+  );
 }
 
-export { Badge }
+export { Badge };

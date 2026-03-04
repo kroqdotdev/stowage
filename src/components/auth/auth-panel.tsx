@@ -1,16 +1,16 @@
-import Link from "next/link"
-import type { ReactNode } from "react"
+import Link from "next/link";
+import type { ReactNode } from "react";
 
 type AuthPanelProps = {
-  title: string
-  description: string
-  children: ReactNode
+  title: string;
+  description: string;
+  children: ReactNode;
   footer?: {
-    prompt: string
-    href: string
-    linkLabel: string
-  }
-}
+    prompt: string;
+    href: string;
+    linkLabel: string;
+  };
+};
 
 export function AuthPanel({
   title,
@@ -41,5 +41,5 @@ export function AuthPanel({
         </p>
       ) : null}
     </div>
-  )
+  );
 }

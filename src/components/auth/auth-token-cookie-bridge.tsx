@@ -1,15 +1,15 @@
-"use client"
+"use client";
 
-import { useEffect } from "react"
-import { useAuthToken } from "@convex-dev/auth/react"
-import { syncAuthTokenCookie } from "@/lib/auth-token-cookie"
+import { useEffect } from "react";
+import { useAuthToken } from "@convex-dev/auth/react";
+import { syncAuthTokenCookie } from "@/lib/auth-token-cookie";
 
 export function AuthTokenCookieBridge() {
-  const token = useAuthToken()
+  const token = useAuthToken();
 
   useEffect(() => {
-    syncAuthTokenCookie(token)
-  }, [token])
+    syncAuthTokenCookie(token);
+  }, [token]);
 
-  return null
+  return null;
 }

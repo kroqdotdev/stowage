@@ -1,4 +1,4 @@
-import type { Id } from "@/lib/convex-api"
+import type { Id } from "@/lib/convex-api";
 
 export const FIELD_TYPE_OPTIONS = [
   "text",
@@ -8,21 +8,21 @@ export const FIELD_TYPE_OPTIONS = [
   "checkbox",
   "url",
   "currency",
-] as const
+] as const;
 
-export type FieldType = (typeof FIELD_TYPE_OPTIONS)[number]
+export type FieldType = (typeof FIELD_TYPE_OPTIONS)[number];
 
 export type FieldDefinition = {
-  _id: Id<"customFieldDefinitions">
-  _creationTime: number
-  name: string
-  fieldType: FieldType
-  options: string[]
-  required: boolean
-  sortOrder: number
-  usageCount: number
-  createdAt: number
-  updatedAt: number
-}
+  _id: Id<"customFieldDefinitions">;
+  _creationTime: number;
+  name: string;
+  fieldType: FieldType;
+  options: string[];
+  required: boolean;
+  sortOrder: number;
+  usageCount: number;
+  createdAt: number;
+  updatedAt: number;
+};
 
-export type FieldValue = string | number | boolean | null | undefined
+export type FieldValue = string | number | boolean | null | undefined;

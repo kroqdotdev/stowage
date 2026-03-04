@@ -6,18 +6,18 @@ Stowage is a self-hosted asset management application for small teams (1-10 user
 
 ## Tech Stack
 
-| Layer | Choice |
-|-------|--------|
-| Framework | Next.js 16 (App Router, Turbopack) |
-| Backend/DB | Convex (realtime, file storage, auth) |
-| Auth | Convex Auth (email/password) |
-| UI Components | shadcn/ui (Radix + Tailwind) |
-| Styling | Tailwind CSS 4, flat design, light + dark mode |
-| Theming | next-themes |
-| Barcode/Matrix | bwip-js (SVG output) |
-| Label printing | CSS @media print (browser-native) |
-| File uploads | Convex file storage |
-| Package manager | pnpm |
+| Layer           | Choice                                         |
+| --------------- | ---------------------------------------------- |
+| Framework       | Next.js 16 (App Router, Turbopack)             |
+| Backend/DB      | Convex (realtime, file storage, auth)          |
+| Auth            | Convex Auth (email/password)                   |
+| UI Components   | shadcn/ui (Radix + Tailwind)                   |
+| Styling         | Tailwind CSS 4, flat design, light + dark mode |
+| Theming         | next-themes                                    |
+| Barcode/Matrix  | bwip-js (SVG output)                           |
+| Label printing  | CSS @media print (browser-native)              |
+| File uploads    | Convex file storage                            |
+| Package manager | pnpm                                           |
 
 ## Data Model
 
@@ -105,7 +105,7 @@ Indexes: `by_assetId`, `by_nextServiceDate`
 ### attachments
 
 - `assetId`: Id<"assets">
-- `storageId`: Id<"_storage"> (Convex file storage)
+- `storageId`: Id<"\_storage"> (Convex file storage)
 - `fileName`: string
 - `fileType`: string (MIME type)
 - `uploadedBy`: Id<"users">

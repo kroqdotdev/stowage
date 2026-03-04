@@ -1,11 +1,11 @@
-import { describe, expect, it, vi } from "vitest"
-import { fireEvent, render, screen } from "@testing-library/react"
-import { AssetTable } from "@/components/assets/asset-table"
-import type { AssetListItem } from "@/components/assets/types"
+import { describe, expect, it, vi } from "vitest";
+import { fireEvent, render, screen } from "@testing-library/react";
+import { AssetTable } from "@/components/assets/asset-table";
+import type { AssetListItem } from "@/components/assets/types";
 
 vi.mock("@/lib/use-app-date-format", () => ({
   useAppDateFormat: () => "DD-MM-YYYY",
-}))
+}));
 
 const rows: AssetListItem[] = [
   {
@@ -25,11 +25,11 @@ const rows: AssetListItem[] = [
     createdAt: 1,
     updatedAt: 1,
   },
-]
+];
 
 describe("AssetTable", () => {
   it("opens row when activated by keyboard", () => {
-    const onRowOpen = vi.fn()
+    const onRowOpen = vi.fn();
 
     render(
       <AssetTable
@@ -43,16 +43,16 @@ describe("AssetTable", () => {
         onSelectAll={vi.fn()}
         onRowOpen={onRowOpen}
       />,
-    )
+    );
 
-    const row = screen.getByText("Router").closest("tr")
-    expect(row).not.toBeNull()
+    const row = screen.getByText("Router").closest("tr");
+    expect(row).not.toBeNull();
 
-    row!.focus()
-    fireEvent.keyDown(row!, { key: "Enter" })
-    fireEvent.keyDown(row!, { key: " " })
+    row!.focus();
+    fireEvent.keyDown(row!, { key: "Enter" });
+    fireEvent.keyDown(row!, { key: " " });
 
-    expect(onRowOpen).toHaveBeenCalledTimes(2)
-    expect(onRowOpen).toHaveBeenCalledWith("asset1")
-  })
-})
+    expect(onRowOpen).toHaveBeenCalledTimes(2);
+    expect(onRowOpen).toHaveBeenCalledWith("asset1");
+  });
+});

@@ -1,14 +1,14 @@
-import { redirect } from "next/navigation"
-import { LoginForm } from "@/components/auth/login-form"
-import { getLoginPageRedirect } from "@/lib/auth-route-logic"
-import { getServerRouteAuthState } from "@/lib/server-auth"
+import { redirect } from "next/navigation";
+import { LoginForm } from "@/components/auth/login-form";
+import { getLoginPageRedirect } from "@/lib/auth-route-logic";
+import { getServerRouteAuthState } from "@/lib/server-auth";
 
 export default async function LoginPage() {
-  const state = await getServerRouteAuthState()
-  const redirectTo = getLoginPageRedirect(state)
+  const state = await getServerRouteAuthState();
+  const redirectTo = getLoginPageRedirect(state);
   if (redirectTo) {
-    redirect(redirectTo)
+    redirect(redirectTo);
   }
 
-  return <LoginForm />
+  return <LoginForm />;
 }

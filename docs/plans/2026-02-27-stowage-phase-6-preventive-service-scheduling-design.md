@@ -10,6 +10,7 @@ Add an opt-in (default enabled) preventive maintenance scheduler that lets admin
 ## Scope
 
 In scope:
+
 - Admin setting `serviceSchedulingEnabled` (default `true`)
 - Optional asset schedule inputs: next due date, interval, reminder lead
 - Dedicated `serviceSchedules` table keyed by `assetId`
@@ -18,6 +19,7 @@ In scope:
 - Dashboard 7-day due-date preview card
 
 Out of scope:
+
 - Service completion workflow details and provider lifecycle (handled in later Service Lifecycle phase)
 - Reminder channels (email/push/webhook)
 - Multi-reminder rules
@@ -37,12 +39,14 @@ Out of scope:
 ## Architecture
 
 Backend extends Convex with:
+
 - `serviceSchedules` domain functions in `convex/serviceSchedules.ts`
 - supporting validation/date helpers in `convex/service_schedule_helpers.ts`
 - schema additions in `convex/schema.ts`
 - app setting extension in `convex/appSettings.ts`
 
 Frontend extends:
+
 - asset form with optional `ServiceScheduleFields`
 - services navigation tabs and two views (`/services` list, `/services/calendar` month grid)
 - dashboard card for due dates in next 7 days
@@ -64,6 +68,7 @@ The schedule model is separated from core asset records to keep asset CRUD stabl
 - `createdBy`, `updatedBy`
 
 Indexes:
+
 - `by_assetId`
 - `by_nextServiceDate`
 
@@ -81,6 +86,7 @@ Indexes:
 - `listUpcomingServiceDueInDays({ days })`
 
 Validation and errors:
+
 - strict date and interval validation at mutation boundary
 - structured `ConvexError` codes:
   - `SCHEDULING_DISABLED`
@@ -90,6 +96,7 @@ Validation and errors:
   - `FORBIDDEN`
 
 Authorization:
+
 - schedule writes require authenticated admin/authorized editor checks
 - reads follow asset visibility constraints
 
@@ -105,6 +112,7 @@ Authorization:
 6. Dashboard queries next 7 days of due dates for quick action.
 
 UI behavior:
+
 - scheduler fields are optional
 - due-date statuses computed client-side from canonical due date
 - when toggle off, scheduling UI is hidden and schedule writes are blocked by backend guard
@@ -118,11 +126,13 @@ UI behavior:
 ## Implementation Quality Guardrails
 
 Use `vercel-react-best-practices` during implementation:
+
 - avoid client waterfalls by starting independent queries early
 - prevent unnecessary rerenders with derived state at render time
 - keep bundles lean by route-level component boundaries for calendar/list views
 
 Use Convex best practices:
+
 - strict `args` and `returns` validators
 - indexed queries for all due-date range reads
 - idempotent mutations where possible

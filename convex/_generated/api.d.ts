@@ -25,6 +25,8 @@ import type * as custom_fields_helpers from "../custom_fields_helpers.js";
 import type * as http from "../http.js";
 import type * as locations from "../locations.js";
 import type * as locations_helpers from "../locations_helpers.js";
+import type * as serviceSchedules from "../serviceSchedules.js";
+import type * as service_schedule_helpers from "../service_schedule_helpers.js";
 import type * as tags from "../tags.js";
 import type * as users from "../users.js";
 import type * as users_helpers from "../users_helpers.js";
@@ -53,6 +55,8 @@ declare const fullApi: ApiFromModules<{
   http: typeof http;
   locations: typeof locations;
   locations_helpers: typeof locations_helpers;
+  serviceSchedules: typeof serviceSchedules;
+  service_schedule_helpers: typeof service_schedule_helpers;
   tags: typeof tags;
   users: typeof users;
   users_helpers: typeof users_helpers;

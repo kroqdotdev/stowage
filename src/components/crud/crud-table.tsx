@@ -1,4 +1,4 @@
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/utils";
 
 export function CrudTable({
   headers,
@@ -8,15 +8,20 @@ export function CrudTable({
   colSpan,
   className,
 }: {
-  headers: Array<{ key: string; label: string; align?: "left" | "right" }>
-  children: React.ReactNode
-  emptyMessage: string
-  loading: boolean
-  colSpan: number
-  className?: string
+  headers: Array<{ key: string; label: string; align?: "left" | "right" }>;
+  children: React.ReactNode;
+  emptyMessage: string;
+  loading: boolean;
+  colSpan: number;
+  className?: string;
 }) {
   return (
-    <div className={cn("overflow-x-auto rounded-lg border border-border/60", className)}>
+    <div
+      className={cn(
+        "overflow-x-auto rounded-lg border border-border/60",
+        className,
+      )}
+    >
       <table className="min-w-full text-sm">
         <thead className="bg-muted/40 text-left">
           <tr>
@@ -36,7 +41,10 @@ export function CrudTable({
         <tbody>
           {loading ? (
             <tr>
-              <td colSpan={colSpan} className="px-3 py-8 text-center text-muted-foreground">
+              <td
+                colSpan={colSpan}
+                className="px-3 py-8 text-center text-muted-foreground"
+              >
                 Loading...
               </td>
             </tr>
@@ -44,7 +52,10 @@ export function CrudTable({
             children
           ) : (
             <tr>
-              <td colSpan={colSpan} className="px-3 py-8 text-center text-muted-foreground">
+              <td
+                colSpan={colSpan}
+                className="px-3 py-8 text-center text-muted-foreground"
+              >
                 {emptyMessage}
               </td>
             </tr>
@@ -52,5 +63,5 @@ export function CrudTable({
         </tbody>
       </table>
     </div>
-  )
+  );
 }

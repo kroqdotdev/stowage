@@ -8,6 +8,7 @@ Status: Validated
 Phase 4 adds reusable custom field definitions and rendering primitives that Phase 5 assets will consume.
 
 In scope:
+
 - `customFieldDefinitions` backend model and admin CRUD.
 - Field ordering with drag-and-drop reorder.
 - Seven fixed field types: `text`, `number`, `date`, `dropdown`, `checkbox`, `url`, `currency`.
@@ -16,6 +17,7 @@ In scope:
 - Global app date display setting with admin control.
 
 Out of scope:
+
 - Asset form integration (Phase 5).
 - Labeling, attachments, service workflows (later phases).
 
@@ -24,6 +26,7 @@ Out of scope:
 Backend adds two tables:
 
 1. `customFieldDefinitions`
+
 - `name`: string
 - `fieldType`: enum of 7 allowed types
 - `options`: string[] (only used for `dropdown`)
@@ -32,6 +35,7 @@ Backend adds two tables:
 - `createdAt`, `updatedAt`: number
 
 2. `appSettings`
+
 - singleton logical row keyed by `key = "global"`
 - `dateFormat`: enum `"DD-MM-YYYY" | "MM-DD-YYYY" | "YYYY-MM-DD"`
 
@@ -40,6 +44,7 @@ Storage contract for date field values remains canonical `YYYY-MM-DD`. Display f
 ## Components And Data Flow
 
 Frontend is split into focused pieces:
+
 - `FieldsPageClient`: loads definitions, handles admin permissions, mutation wiring, and list state.
 - `FieldDefinitionForm`: create/edit dialog with type-specific controls.
 - `DynamicField`: form input renderer by definition type.
@@ -51,12 +56,14 @@ Mutations are authoritative for all validation and invariant checks. UI performs
 ## Validation And Error Handling
 
 Required behavior:
+
 - Dropdown options are normalized (trim, drop empties, case-insensitive dedupe).
 - Unsafe type changes are blocked when existing values would become incompatible.
 - Deleting in-use fields is blocked.
 - Definition writes and setting updates are admin-only.
 
 Error shape uses stable codes from Convex (for deterministic toast mapping):
+
 - `FORBIDDEN`
 - `INVALID_FIELD_TYPE`
 - `INVALID_DROPDOWN_OPTIONS`
@@ -77,17 +84,20 @@ UI maps these to Sonner toasts with concise action-oriented messages.
 ## Testing Plan
 
 Backend tests:
+
 - custom field create/update/delete/reorder and sort behavior
 - dropdown validation and normalization
 - admin guards
 - app settings date-format read/write and enum validation
 
 Component tests:
+
 - `DynamicField` for all seven types
 - `DynamicFieldDisplay` formatting behavior and null handling
 - date rendering for each display format option
 
 Phase gate:
+
 - `pnpm test`
 - `pnpm typecheck`
 - `pnpm lint`

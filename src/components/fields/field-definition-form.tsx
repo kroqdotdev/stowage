@@ -1,25 +1,29 @@
-"use client"
+"use client";
 
-import { useMemo, useState } from "react"
-import { Loader2, Plus, Trash2 } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { CrudModal } from "@/components/crud/modal"
-import { FIELD_TYPE_OPTIONS, type FieldDefinition, type FieldType } from "./types"
+import { useMemo, useState } from "react";
+import { Loader2, Plus, Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { CrudModal } from "@/components/crud/modal";
+import {
+  FIELD_TYPE_OPTIONS,
+  type FieldDefinition,
+  type FieldType,
+} from "./types";
 
 type FieldDefinitionFormValues = {
-  name: string
-  fieldType: FieldType
-  options: string[]
-  required: boolean
-}
+  name: string;
+  fieldType: FieldType;
+  options: string[];
+  required: boolean;
+};
 
 function getInitialOptions(definition: FieldDefinition | null) {
   if (!definition || definition.fieldType !== "dropdown") {
-    return [""]
+    return [""];
   }
 
-  return definition.options.length > 0 ? definition.options : [""]
+  return definition.options.length > 0 ? definition.options : [""];
 }
 
 export function FieldDefinitionForm({
@@ -30,26 +34,30 @@ export function FieldDefinitionForm({
   onClose,
   onSubmit,
 }: {
-  open: boolean
-  mode: "create" | "edit"
-  initialDefinition: FieldDefinition | null
-  submitting: boolean
-  onClose: () => void
-  onSubmit: (values: FieldDefinitionFormValues) => Promise<void>
+  open: boolean;
+  mode: "create" | "edit";
+  initialDefinition: FieldDefinition | null;
+  submitting: boolean;
+  onClose: () => void;
+  onSubmit: (values: FieldDefinitionFormValues) => Promise<void>;
 }) {
-  const [name, setName] = useState(initialDefinition?.name ?? "")
+  const [name, setName] = useState(initialDefinition?.name ?? "");
   const [fieldType, setFieldType] = useState<FieldType>(
     initialDefinition?.fieldType ?? "text",
-  )
-  const [options, setOptions] = useState<string[]>(getInitialOptions(initialDefinition))
-  const [required, setRequired] = useState(initialDefinition?.required ?? false)
+  );
+  const [options, setOptions] = useState<string[]>(
+    getInitialOptions(initialDefinition),
+  );
+  const [required, setRequired] = useState(
+    initialDefinition?.required ?? false,
+  );
 
-  const isDropdown = fieldType === "dropdown"
+  const isDropdown = fieldType === "dropdown";
   const showTypeChangeWarning =
     mode === "edit" &&
     initialDefinition !== null &&
     initialDefinition.fieldType !== fieldType &&
-    initialDefinition.usageCount > 0
+    initialDefinition.usageCount > 0;
 
   const normalizedDropdownOptions = useMemo(
     () =>
@@ -57,17 +65,17 @@ export function FieldDefinitionForm({
         .map((option) => option.trim())
         .filter((option) => option.length > 0),
     [options],
-  )
+  );
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault()
+    event.preventDefault();
 
     await onSubmit({
       name,
       fieldType,
       options: isDropdown ? normalizedDropdownOptions : [],
       required,
-    })
+    });
   }
 
   return (
@@ -75,7 +83,7 @@ export function FieldDefinitionForm({
       open={open}
       onClose={() => {
         if (!submitting) {
-          onClose()
+          onClose();
         }
       }}
       title={mode === "create" ? "Add field" : "Edit field"}
@@ -109,7 +117,11 @@ export function FieldDefinitionForm({
         </>
       }
     >
-      <form id="field-definition-form" className="space-y-4" onSubmit={handleSubmit}>
+      <form
+        id="field-definition-form"
+        className="space-y-4"
+        onSubmit={handleSubmit}
+      >
         <div className="space-y-1.5">
           <label htmlFor="field-name" className="text-sm font-medium">
             Name
@@ -143,7 +155,8 @@ export function FieldDefinitionForm({
 
         {showTypeChangeWarning ? (
           <div className="rounded-md border border-amber-400/50 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-300">
-            This field already has saved values. Some type changes are blocked to prevent data loss.
+            This field already has saved values. Some type changes are blocked
+            to prevent data loss.
           </div>
         ) : null}
 
@@ -165,7 +178,10 @@ export function FieldDefinitionForm({
 
             <div className="space-y-2">
               {options.map((option, index) => (
-                <div key={`${index}-${option}`} className="flex items-center gap-2">
+                <div
+                  key={`${index}-${option}`}
+                  className="flex items-center gap-2"
+                >
                   <Input
                     aria-label={`Dropdown option ${index + 1}`}
                     value={option}
@@ -187,9 +203,11 @@ export function FieldDefinitionForm({
                     onClick={() =>
                       setOptions((prev) => {
                         if (prev.length <= 1) {
-                          return [""]
+                          return [""];
                         }
-                        return prev.filter((_, optionIndex) => optionIndex !== index)
+                        return prev.filter(
+                          (_, optionIndex) => optionIndex !== index,
+                        );
                       })
                     }
                   >
@@ -215,7 +233,7 @@ export function FieldDefinitionForm({
         </div>
       </form>
     </CrudModal>
-  )
+  );
 }
 
-export type { FieldDefinitionFormValues }
+export type { FieldDefinitionFormValues };

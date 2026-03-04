@@ -1,13 +1,13 @@
-import { AssetEditPageClient } from "@/components/assets/asset-edit-page-client"
-import { PageHeader } from "@/components/layout/page-header"
-import type { Id } from "@/lib/convex-api"
+import { AssetEditPageClient } from "@/components/assets/asset-edit-page-client";
+import { PageHeader } from "@/components/layout/page-header";
+import type { Id } from "@/lib/convex-api";
 
 export default async function EditAssetPage({
   params,
 }: {
-  params: Promise<{ id: string }>
+  params: Promise<{ id: string }>;
 }) {
-  const { id } = await params
+  const { id } = await params;
 
   return (
     <div className="space-y-6">
@@ -22,5 +22,5 @@ export default async function EditAssetPage({
       />
       <AssetEditPageClient assetId={id as Id<"assets">} />
     </div>
-  )
+  );
 }

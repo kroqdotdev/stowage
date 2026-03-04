@@ -1,26 +1,26 @@
-"use client"
+"use client";
 
-import { useId, useState } from "react"
-import { Input } from "@/components/ui/input"
-import { FieldValue, type FieldDefinition } from "@/components/fields/types"
-import { isIsoDateOnly } from "@/lib/date-format"
+import { useId, useState } from "react";
+import { Input } from "@/components/ui/input";
+import { FieldValue, type FieldDefinition } from "@/components/fields/types";
+import { isIsoDateOnly } from "@/lib/date-format";
 
 function coerceString(value: FieldValue) {
   if (value === null || value === undefined) {
-    return ""
+    return "";
   }
-  return String(value)
+  return String(value);
 }
 
 function coerceNumber(value: FieldValue) {
   if (typeof value === "number" && Number.isFinite(value)) {
-    return String(value)
+    return String(value);
   }
-  return ""
+  return "";
 }
 
 function coerceCheckbox(value: FieldValue) {
-  return value === true
+  return value === true;
 }
 
 export function DynamicField({
@@ -29,16 +29,19 @@ export function DynamicField({
   onChange,
   disabled = false,
 }: {
-  definition: Pick<FieldDefinition, "name" | "fieldType" | "options" | "required">
-  value: FieldValue
-  onChange: (value: FieldValue) => void
-  disabled?: boolean
+  definition: Pick<
+    FieldDefinition,
+    "name" | "fieldType" | "options" | "required"
+  >;
+  value: FieldValue;
+  onChange: (value: FieldValue) => void;
+  disabled?: boolean;
 }) {
-  const fieldId = useId()
-  const [urlError, setUrlError] = useState<string | null>(null)
+  const fieldId = useId();
+  const [urlError, setUrlError] = useState<string | null>(null);
 
   if (definition.fieldType === "checkbox") {
-    const checked = coerceCheckbox(value)
+    const checked = coerceCheckbox(value);
 
     return (
       <div className="space-y-1.5">
@@ -53,20 +56,24 @@ export function DynamicField({
           />
           <label htmlFor={fieldId} className="text-sm font-medium">
             {definition.name}
-            {definition.required ? <span className="ml-1 text-destructive">*</span> : null}
+            {definition.required ? (
+              <span className="ml-1 text-destructive">*</span>
+            ) : null}
           </label>
         </div>
       </div>
-    )
+    );
   }
 
   if (definition.fieldType === "dropdown") {
-    const currentValue = coerceString(value)
+    const currentValue = coerceString(value);
     return (
       <div className="space-y-1.5">
         <label htmlFor={fieldId} className="text-sm font-medium">
           {definition.name}
-          {definition.required ? <span className="ml-1 text-destructive">*</span> : null}
+          {definition.required ? (
+            <span className="ml-1 text-destructive">*</span>
+          ) : null}
         </label>
         <select
           id={fieldId}
@@ -84,16 +91,18 @@ export function DynamicField({
           ))}
         </select>
       </div>
-    )
+    );
   }
 
   if (definition.fieldType === "date") {
-    const currentValue = coerceString(value)
+    const currentValue = coerceString(value);
     return (
       <div className="space-y-1.5">
         <label htmlFor={fieldId} className="text-sm font-medium">
           {definition.name}
-          {definition.required ? <span className="ml-1 text-destructive">*</span> : null}
+          {definition.required ? (
+            <span className="ml-1 text-destructive">*</span>
+          ) : null}
         </label>
         <Input
           id={fieldId}
@@ -104,7 +113,7 @@ export function DynamicField({
           required={definition.required}
         />
       </div>
-    )
+    );
   }
 
   if (definition.fieldType === "number") {
@@ -112,28 +121,30 @@ export function DynamicField({
       <div className="space-y-1.5">
         <label htmlFor={fieldId} className="text-sm font-medium">
           {definition.name}
-          {definition.required ? <span className="ml-1 text-destructive">*</span> : null}
+          {definition.required ? (
+            <span className="ml-1 text-destructive">*</span>
+          ) : null}
         </label>
         <Input
           id={fieldId}
           type="number"
           value={coerceNumber(value)}
           onChange={(event) => {
-            const next = event.target.value
+            const next = event.target.value;
             if (next === "") {
-              onChange(null)
-              return
+              onChange(null);
+              return;
             }
-            const parsed = Number(next)
+            const parsed = Number(next);
             if (Number.isFinite(parsed)) {
-              onChange(parsed)
+              onChange(parsed);
             }
           }}
           disabled={disabled}
           required={definition.required}
         />
       </div>
-    )
+    );
   }
 
   if (definition.fieldType === "currency") {
@@ -141,7 +152,9 @@ export function DynamicField({
       <div className="space-y-1.5">
         <label htmlFor={fieldId} className="text-sm font-medium">
           {definition.name}
-          {definition.required ? <span className="ml-1 text-destructive">*</span> : null}
+          {definition.required ? (
+            <span className="ml-1 text-destructive">*</span>
+          ) : null}
         </label>
         <div className="relative">
           <span className="pointer-events-none absolute inset-y-0 left-3 inline-flex items-center text-sm text-muted-foreground">
@@ -155,14 +168,14 @@ export function DynamicField({
             className="pl-7"
             value={coerceNumber(value)}
             onChange={(event) => {
-              const next = event.target.value
+              const next = event.target.value;
               if (next === "") {
-                onChange(null)
-                return
+                onChange(null);
+                return;
               }
-              const parsed = Number(next)
+              const parsed = Number(next);
               if (Number.isFinite(parsed)) {
-                onChange(parsed)
+                onChange(parsed);
               }
             }}
             disabled={disabled}
@@ -170,17 +183,19 @@ export function DynamicField({
           />
         </div>
       </div>
-    )
+    );
   }
 
   if (definition.fieldType === "url") {
-    const currentValue = coerceString(value)
+    const currentValue = coerceString(value);
 
     return (
       <div className="space-y-1.5">
         <label htmlFor={fieldId} className="text-sm font-medium">
           {definition.name}
-          {definition.required ? <span className="ml-1 text-destructive">*</span> : null}
+          {definition.required ? (
+            <span className="ml-1 text-destructive">*</span>
+          ) : null}
         </label>
         <Input
           id={fieldId}
@@ -188,35 +203,39 @@ export function DynamicField({
           value={currentValue}
           placeholder="https://example.com"
           onChange={(event) => {
-            const nextValue = event.target.value
+            const nextValue = event.target.value;
             if (!nextValue.trim()) {
-              setUrlError(null)
-              onChange(null)
-              return
+              setUrlError(null);
+              onChange(null);
+              return;
             }
 
             try {
-              new URL(nextValue)
-              setUrlError(null)
+              new URL(nextValue);
+              setUrlError(null);
             } catch {
-              setUrlError("Enter a valid URL")
+              setUrlError("Enter a valid URL");
             }
 
-            onChange(nextValue)
+            onChange(nextValue);
           }}
           disabled={disabled}
           required={definition.required}
         />
-        {urlError ? <p className="text-xs text-destructive">{urlError}</p> : null}
+        {urlError ? (
+          <p className="text-xs text-destructive">{urlError}</p>
+        ) : null}
       </div>
-    )
+    );
   }
 
   return (
     <div className="space-y-1.5">
       <label htmlFor={fieldId} className="text-sm font-medium">
         {definition.name}
-        {definition.required ? <span className="ml-1 text-destructive">*</span> : null}
+        {definition.required ? (
+          <span className="ml-1 text-destructive">*</span>
+        ) : null}
       </label>
       <Input
         id={fieldId}
@@ -227,5 +246,5 @@ export function DynamicField({
         required={definition.required}
       />
     </div>
-  )
+  );
 }

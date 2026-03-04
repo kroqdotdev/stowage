@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useConvexAuth, useQuery } from "convex/react";
 import { ChevronDown, Loader2, LogOut, Search, User } from "lucide-react";
+import { toast } from "sonner";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
@@ -23,38 +24,37 @@ import { api } from "@/lib/convex-api";
 import { clearAuthTokenCookie } from "@/lib/auth-token-cookie";
 
 function getInitials(name: string) {
-  const parts = name
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
+  const parts = name.trim().split(/\s+/).filter(Boolean).slice(0, 2);
 
   if (parts.length === 0) {
-    return "?"
+    return "?";
   }
 
-  return parts.map((part) => part[0]?.toUpperCase() ?? "").join("")
+  return parts.map((part) => part[0]?.toUpperCase() ?? "").join("");
 }
 
 export function Topbar() {
-  const router = useRouter()
-  const { signOut } = useAuthActions()
-  const { isLoading } = useConvexAuth()
-  const currentUser = useQuery(api.users.getCurrentUser, {})
-  const [loggingOut, setLoggingOut] = useState(false)
+  const router = useRouter();
+  const { signOut } = useAuthActions();
+  const { isLoading } = useConvexAuth();
+  const currentUser = useQuery(api.users.getCurrentUser, {});
+  const [loggingOut, setLoggingOut] = useState(false);
 
-  const userLabel = currentUser?.name ?? "User"
-  const userSecondary = currentUser?.email ?? "Signed in"
+  const userLabel = currentUser?.name ?? "User";
+  const userSecondary = currentUser?.email ?? "Signed in";
 
   async function handleLogout() {
-    setLoggingOut(true)
-    try {
-      await signOut()
-      clearAuthTokenCookie()
-      router.replace("/login")
-    } finally {
-      setLoggingOut(false)
-    }
+    setLoggingOut(true);
+    clearAuthTokenCookie();
+    router.replace("/login");
+
+    void signOut()
+      .catch(() => {
+        toast.error("Signed out locally. Refresh if needed.");
+      })
+      .finally(() => {
+        setLoggingOut(false);
+      });
   }
 
   return (
@@ -110,7 +110,10 @@ export function Topbar() {
               Profile
             </DropdownMenuItem>
             <DropdownMenuItem
-              onClick={handleLogout}
+              onSelect={(event) => {
+                event.preventDefault();
+                void handleLogout();
+              }}
               className="cursor-pointer"
               disabled={loggingOut}
             >

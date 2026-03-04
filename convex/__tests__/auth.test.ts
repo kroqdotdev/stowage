@@ -1,44 +1,48 @@
-import { describe, expect, it } from "vitest"
+import { describe, expect, it } from "vitest";
 import {
   INVALID_CREDENTIALS,
   isFirstAdminBootstrapAttempt,
   normalizePasswordSignInError,
-} from "../auth_helpers"
+} from "../auth_helpers";
 
 describe("normalizePasswordSignInError", () => {
   it("maps invalid secret errors to handled invalid-credentials status", () => {
-    const normalized = normalizePasswordSignInError(new Error("InvalidSecret"))
-    expect(normalized).toBe(INVALID_CREDENTIALS)
-  })
+    const normalized = normalizePasswordSignInError(new Error("InvalidSecret"));
+    expect(normalized).toBe(INVALID_CREDENTIALS);
+  });
 
   it("maps invalid account id errors to handled invalid-credentials status", () => {
-    const normalized = normalizePasswordSignInError(new Error("InvalidAccountId"))
-    expect(normalized).toBe(INVALID_CREDENTIALS)
-  })
+    const normalized = normalizePasswordSignInError(
+      new Error("InvalidAccountId"),
+    );
+    expect(normalized).toBe(INVALID_CREDENTIALS);
+  });
 
   it("maps invalid credentials errors to handled invalid-credentials status", () => {
-    const normalized = normalizePasswordSignInError(new Error("Invalid credentials"))
-    expect(normalized).toBe(INVALID_CREDENTIALS)
-  })
+    const normalized = normalizePasswordSignInError(
+      new Error("Invalid credentials"),
+    );
+    expect(normalized).toBe(INVALID_CREDENTIALS);
+  });
 
   it("normalizes rate limit errors", () => {
     const normalized = normalizePasswordSignInError(
       new Error("TooManyFailedAttempts"),
-    )
+    );
     expect((normalized as Error).message).toBe(
       "Too many failed attempts. Try again later.",
-    )
-  })
+    );
+  });
 
   it("passes through unrelated errors", () => {
-    const error = new Error("Something else")
-    expect(normalizePasswordSignInError(error)).toBe(error)
-  })
+    const error = new Error("Something else");
+    expect(normalizePasswordSignInError(error)).toBe(error);
+  });
 
   it("passes through non-error values", () => {
-    expect(normalizePasswordSignInError("nope")).toBe("nope")
-  })
-})
+    expect(normalizePasswordSignInError("nope")).toBe("nope");
+  });
+});
 
 describe("isFirstAdminBootstrapAttempt", () => {
   it("matches the first admin bootstrap profile", () => {
@@ -52,8 +56,8 @@ describe("isFirstAdminBootstrapAttempt", () => {
           email: "admin@example.com",
         },
       }),
-    ).toBe(true)
-  })
+    ).toBe(true);
+  });
 
   it("does not match admin creation by another admin", () => {
     expect(
@@ -65,8 +69,8 @@ describe("isFirstAdminBootstrapAttempt", () => {
           createdBy: "user_123",
         },
       }),
-    ).toBe(false)
-  })
+    ).toBe(false);
+  });
 
   it("does not match updates or non-admin users", () => {
     expect(
@@ -78,7 +82,7 @@ describe("isFirstAdminBootstrapAttempt", () => {
           createdBy: null,
         },
       }),
-    ).toBe(false)
+    ).toBe(false);
 
     expect(
       isFirstAdminBootstrapAttempt({
@@ -89,6 +93,6 @@ describe("isFirstAdminBootstrapAttempt", () => {
           createdBy: null,
         },
       }),
-    ).toBe(false)
-  })
-})
+    ).toBe(false);
+  });
+});

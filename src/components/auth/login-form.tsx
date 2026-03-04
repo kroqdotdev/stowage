@@ -1,57 +1,57 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from "react"
-import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { useAuthActions, useAuthToken } from "@convex-dev/auth/react"
-import { useConvexAuth } from "convex/react"
-import { Loader2 } from "lucide-react"
-import { getLoginErrorMessage } from "@/components/auth/auth-error-messages"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { AuthPanel } from "@/components/auth/auth-panel"
-import { setAuthTokenCookie } from "@/lib/auth-token-cookie"
-import { api } from "@/lib/convex-api"
-import { useQuery } from "convex/react"
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useAuthActions, useAuthToken } from "@convex-dev/auth/react";
+import { useConvexAuth } from "convex/react";
+import { Loader2 } from "lucide-react";
+import { getLoginErrorMessage } from "@/components/auth/auth-error-messages";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { AuthPanel } from "@/components/auth/auth-panel";
+import { setAuthTokenCookie } from "@/lib/auth-token-cookie";
+import { api } from "@/lib/convex-api";
+import { useQuery } from "convex/react";
 
 export function LoginForm() {
-  const router = useRouter()
-  const { signIn } = useAuthActions()
-  const authToken = useAuthToken()
-  const { isAuthenticated, isLoading } = useConvexAuth()
-  const firstRun = useQuery(api.users.checkFirstRun, {})
+  const router = useRouter();
+  const { signIn } = useAuthActions();
+  const authToken = useAuthToken();
+  const { isAuthenticated, isLoading } = useConvexAuth();
+  const firstRun = useQuery(api.users.checkFirstRun, {});
 
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [submitting, setSubmitting] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isLoading && isAuthenticated && authToken) {
-      setAuthTokenCookie(authToken)
-      router.replace("/dashboard")
+      setAuthTokenCookie(authToken);
+      router.replace("/dashboard");
     }
-  }, [authToken, isAuthenticated, isLoading, router])
+  }, [authToken, isAuthenticated, isLoading, router]);
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    setSubmitting(true)
-    setError(null)
+    event.preventDefault();
+    setSubmitting(true);
+    setError(null);
 
     try {
       const result = await signIn("password", {
         flow: "signIn",
         email: email.trim().toLowerCase(),
         password,
-      })
+      });
 
       if (!result.signingIn) {
-        setError("Invalid email or password")
+        setError("Invalid email or password");
       }
     } catch (caught) {
-      setError(getLoginErrorMessage(caught))
+      setError(getLoginErrorMessage(caught));
     } finally {
-      setSubmitting(false)
+      setSubmitting(false);
     }
   }
 
@@ -132,5 +132,5 @@ export function LoginForm() {
         ) : null}
       </form>
     </AuthPanel>
-  )
+  );
 }

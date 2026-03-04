@@ -1,12 +1,12 @@
-import { describe, expect, it, vi } from "vitest"
-import { render, screen } from "@testing-library/react"
-import userEvent from "@testing-library/user-event"
+import { describe, expect, it, vi } from "vitest";
+import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import {
   LocationTree,
   buildLocationChildrenMap,
   collectDescendantIds,
   type LocationTreeItem,
-} from "@/components/locations/location-tree"
+} from "@/components/locations/location-tree";
 
 const locations: LocationTreeItem[] = [
   {
@@ -36,24 +36,25 @@ const locations: LocationTreeItem[] = [
     createdAt: 3,
     updatedAt: 3,
   },
-]
+];
 
 describe("location tree helpers", () => {
   it("collects descendant ids", () => {
-    const childrenByParent = buildLocationChildrenMap(locations)
-    expect(Array.from(collectDescendantIds("root", childrenByParent)).sort()).toEqual([
-      "child",
-      "grandchild",
-    ])
-    expect(Array.from(collectDescendantIds("child", childrenByParent))).toEqual(["grandchild"])
-  })
-})
+    const childrenByParent = buildLocationChildrenMap(locations);
+    expect(
+      Array.from(collectDescendantIds("root", childrenByParent)).sort(),
+    ).toEqual(["child", "grandchild"]);
+    expect(Array.from(collectDescendantIds("child", childrenByParent))).toEqual(
+      ["grandchild"],
+    );
+  });
+});
 
 describe("LocationTree", () => {
   it("renders root nodes and expands nested children", async () => {
-    const user = userEvent.setup()
-    const onToggleExpand = vi.fn()
-    const onSelect = vi.fn()
+    const user = userEvent.setup();
+    const onToggleExpand = vi.fn();
+    const onSelect = vi.fn();
 
     const { rerender } = render(
       <LocationTree
@@ -66,13 +67,15 @@ describe("LocationTree", () => {
         onAddChild={vi.fn()}
         onDelete={vi.fn()}
       />,
-    )
+    );
 
-    expect(screen.getByRole("button", { name: /Warehouse/i })).toBeInTheDocument()
-    expect(screen.queryByText("Aisle 1")).not.toBeInTheDocument()
+    expect(
+      screen.getByRole("button", { name: /Warehouse/i }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Aisle 1")).not.toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: "Expand" }))
-    expect(onToggleExpand).toHaveBeenCalledWith("root")
+    await user.click(screen.getByRole("button", { name: "Expand" }));
+    expect(onToggleExpand).toHaveBeenCalledWith("root");
 
     rerender(
       <LocationTree
@@ -85,15 +88,15 @@ describe("LocationTree", () => {
         onAddChild={vi.fn()}
         onDelete={vi.fn()}
       />,
-    )
+    );
 
-    expect(screen.getByText("Aisle 1")).toBeInTheDocument()
-    expect(screen.getByText("Warehouse / Aisle 1 / Bin 2")).toBeInTheDocument()
+    expect(screen.getByText("Aisle 1")).toBeInTheDocument();
+    expect(screen.getByText("Warehouse / Aisle 1 / Bin 2")).toBeInTheDocument();
 
-    const rootLabel = screen.getAllByText("Warehouse")[0]
-    const rootSelectButton = rootLabel.closest("button")
-    expect(rootSelectButton).not.toBeNull()
-    await user.click(rootSelectButton!)
-    expect(onSelect).toHaveBeenCalledWith("root")
-  })
-})
+    const rootLabel = screen.getAllByText("Warehouse")[0];
+    const rootSelectButton = rootLabel.closest("button");
+    expect(rootSelectButton).not.toBeNull();
+    await user.click(rootSelectButton!);
+    expect(onSelect).toHaveBeenCalledWith("root");
+  });
+});

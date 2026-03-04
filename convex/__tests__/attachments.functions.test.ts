@@ -1,24 +1,25 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
-import { convexTest } from "convex-test"
-import { api } from "../_generated/api"
-import type { Id } from "../_generated/dataModel"
-import schema from "../schema"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { convexTest } from "convex-test";
+import { api, internal } from "../_generated/api";
+import type { Id } from "../_generated/dataModel";
+import { MAX_ATTACHMENT_UPLOAD_BYTES } from "../attachments_helpers";
+import schema from "../schema";
 
-const modules = import.meta.glob("../**/*.ts")
+const modules = import.meta.glob("../**/*.ts");
 
 const TINY_PNG = Uint8Array.from(
   Buffer.from(
     "iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAE0lEQVR4AWP8z8DwnwEImBigAAAfFwICgH3ifwAAAABJRU5ErkJggg==",
     "base64",
   ),
-)
+);
 
 const SIMPLE_PDF = Uint8Array.from(
   Buffer.from(
     "%PDF-1.4\n1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n2 0 obj\n<< /Type /Pages /Count 1 /Kids [3 0 R] >>\nendobj\n3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 200] /Contents 4 0 R >>\nendobj\n4 0 obj\n<< /Length 44 >>\nstream\nBT /F1 12 Tf 72 120 Td (Hello PDF) Tj ET\nendstream\nendobj\nxref\n0 5\n0000000000 65535 f \n0000000010 00000 n \n0000000060 00000 n \n0000000117 00000 n \n0000000204 00000 n \ntrailer\n<< /Root 1 0 R /Size 5 >>\nstartxref\n295\n%%EOF",
     "utf8",
   ),
-)
+);
 
 async function insertUser(
   t: ReturnType<typeof convexTest>,
@@ -31,11 +32,11 @@ async function insertUser(
       createdBy: null,
       createdAt: Date.now(),
     }),
-  )) as Id<"users">
+  )) as Id<"users">;
 }
 
 function asUser(t: ReturnType<typeof convexTest>, userId: Id<"users">) {
-  return t.withIdentity({ subject: userId })
+  return t.withIdentity({ subject: userId });
 }
 
 async function storeFile(
@@ -45,20 +46,20 @@ async function storeFile(
 ) {
   return (await t.run(async (ctx) =>
     ctx.storage.store(new Blob([Buffer.from(bytes)], { type: fileType })),
-  )) as Id<"_storage">
+  )) as Id<"_storage">;
 }
 
 describe("attachments functions", () => {
-  let t: ReturnType<typeof convexTest>
-  let adminId: Id<"users">
-  let assetId: Id<"assets">
+  let t: ReturnType<typeof convexTest>;
+  let adminId: Id<"users">;
+  let assetId: Id<"assets">;
 
   beforeEach(async () => {
-    vi.useFakeTimers()
-    t = convexTest(schema, modules)
-    adminId = await insertUser(t)
+    vi.useFakeTimers();
+    t = convexTest(schema, modules);
+    adminId = await insertUser(t);
 
-    const admin = asUser(t, adminId)
+    const admin = asUser(t, adminId);
     const created = await admin.mutation(api.assets.createAsset, {
       name: "Asset with files",
       categoryId: null,
@@ -67,24 +68,24 @@ describe("attachments functions", () => {
       notes: null,
       customFieldValues: {},
       tagIds: [],
-    })
-    assetId = created.assetId
-  })
+    });
+    assetId = created.assetId;
+  });
 
   afterEach(() => {
-    vi.useRealTimers()
-  })
+    vi.useRealTimers();
+  });
 
   it("generates upload URLs for authenticated users", async () => {
-    const admin = asUser(t, adminId)
-    const result = await admin.mutation(api.attachments.generateUploadUrl, {})
+    const admin = asUser(t, adminId);
+    const result = await admin.mutation(api.attachments.generateUploadUrl, {});
 
-    expect(result.uploadUrl).toContain("http")
-  })
+    expect(result.uploadUrl).toContain("http");
+  });
 
   it("creates and optimizes image attachments asynchronously", async () => {
-    const admin = asUser(t, adminId)
-    const storageId = await storeFile(t, "image/png", TINY_PNG)
+    const admin = asUser(t, adminId);
+    const storageId = await storeFile(t, "image/png", TINY_PNG);
 
     await admin.mutation(api.attachments.createAttachment, {
       assetId,
@@ -92,24 +93,29 @@ describe("attachments functions", () => {
       fileName: "photo.png",
       fileType: "image/png",
       fileSize: TINY_PNG.byteLength,
-    })
+    });
 
     await t.finishAllScheduledFunctions(() => {
-      vi.runAllTimers()
-    })
+      vi.runAllTimers();
+    });
 
-    const list = await admin.query(api.attachments.listAttachments, { assetId })
-    expect(list).toHaveLength(1)
-    expect(list[0]?.status).toBe("ready")
-    expect(list[0]?.fileKind).toBe("image")
-    expect(list[0]?.fileType).toBe("image/jpeg")
-    expect(list[0]?.fileExtension).toBe("jpg")
-    expect(list[0]?.url).toBeTypeOf("string")
-  })
+    const list = await admin.query(api.attachments.listAttachments, {
+      assetId,
+    });
+    expect(list).toHaveLength(1);
+    expect(list[0]?.status).toBe("ready");
+    expect(list[0]?.fileKind).toBe("image");
+    expect(list[0]?.fileType).toBe("image/png");
+    expect(list[0]?.fileExtension).toBe("png");
+    expect(list[0]?.fileSizeOptimized).toBeLessThanOrEqual(
+      list[0]?.fileSizeOriginal ?? 0,
+    );
+    expect(list[0]?.url).toBeTypeOf("string");
+  });
 
   it("processes pdf attachments and keeps them available", async () => {
-    const admin = asUser(t, adminId)
-    const storageId = await storeFile(t, "application/pdf", SIMPLE_PDF)
+    const admin = asUser(t, adminId);
+    const storageId = await storeFile(t, "application/pdf", SIMPLE_PDF);
 
     await admin.mutation(api.attachments.createAttachment, {
       assetId,
@@ -117,26 +123,28 @@ describe("attachments functions", () => {
       fileName: "manual.pdf",
       fileType: "application/pdf",
       fileSize: SIMPLE_PDF.byteLength,
-    })
+    });
 
     await t.finishAllScheduledFunctions(() => {
-      vi.runAllTimers()
-    })
+      vi.runAllTimers();
+    });
 
-    const list = await admin.query(api.attachments.listAttachments, { assetId })
-    expect(list).toHaveLength(1)
-    expect(list[0]?.status).toBe("ready")
-    expect(list[0]?.fileKind).toBe("pdf")
-    expect(list[0]?.url).toBeTypeOf("string")
-  })
+    const list = await admin.query(api.attachments.listAttachments, {
+      assetId,
+    });
+    expect(list).toHaveLength(1);
+    expect(list[0]?.status).toBe("ready");
+    expect(list[0]?.fileKind).toBe("pdf");
+    expect(list[0]?.url).toBeTypeOf("string");
+  });
 
   it("rejects unsupported file types", async () => {
-    const admin = asUser(t, adminId)
+    const admin = asUser(t, adminId);
     const storageId = await storeFile(
       t,
       "text/plain",
       Uint8Array.from(Buffer.from("plain text", "utf8")),
-    )
+    );
 
     await expect(
       admin.mutation(api.attachments.createAttachment, {
@@ -146,16 +154,128 @@ describe("attachments functions", () => {
         fileType: "text/plain",
         fileSize: 10,
       }),
-    ).rejects.toThrow("Unsupported file type")
-  })
+    ).rejects.toThrow("Unsupported file type");
+  });
+
+  it("marks oversized uploads as failed using actual storage size and cleans up storage", async () => {
+    const admin = asUser(t, adminId);
+    const oversizedBytes = new Uint8Array(MAX_ATTACHMENT_UPLOAD_BYTES + 1);
+    const storageId = await storeFile(t, "application/pdf", oversizedBytes);
+
+    await admin.mutation(api.attachments.createAttachment, {
+      assetId,
+      storageId,
+      fileName: "oversized.pdf",
+      fileType: "application/pdf",
+      fileSize: 1,
+    });
+
+    const list = await admin.query(api.attachments.listAttachments, {
+      assetId,
+    });
+    expect(list).toHaveLength(1);
+    expect(list[0]?.status).toBe("failed");
+    expect(list[0]?.optimizationError).toContain("too large");
+    expect(list[0]?.fileSizeOriginal).toBe(MAX_ATTACHMENT_UPLOAD_BYTES + 1);
+
+    const stored = await t.run(async (ctx) =>
+      ctx.db.system.get("_storage", storageId),
+    );
+    expect(stored).toBeNull();
+  });
+
+  it("fails non-retryable and cleans storage when processing detects oversized file", async () => {
+    const admin = asUser(t, adminId);
+    const oversizedBytes = new Uint8Array(MAX_ATTACHMENT_UPLOAD_BYTES + 1);
+    const storageId = await storeFile(t, "application/pdf", oversizedBytes);
+    const now = Date.now();
+
+    const attachmentId = (await t.run(async (ctx) =>
+      ctx.db.insert("attachments", {
+        assetId,
+        storageId,
+        originalStorageId: storageId,
+        fileName: "late-oversized.pdf",
+        fileType: "application/pdf",
+        fileExtension: "pdf",
+        fileKind: "pdf",
+        fileSizeOriginal: 1,
+        fileSizeOptimized: null,
+        status: "pending",
+        optimizationAttempts: 0,
+        optimizationError: null,
+        uploadedBy: adminId,
+        uploadedAt: now,
+        updatedAt: now,
+      }),
+    )) as Id<"attachments">;
+
+    await t.action(
+      internal.attachmentsProcessing.processAttachmentOptimization,
+      {
+        attachmentId,
+      },
+    );
+
+    const list = await admin.query(api.attachments.listAttachments, {
+      assetId,
+    });
+    const failed = list.find((row) => row._id === attachmentId);
+    expect(failed?.status).toBe("failed");
+    expect(failed?.optimizationError).toContain("too large");
+    expect(failed?.optimizationAttempts).toBe(1);
+
+    const stored = await t.run(async (ctx) =>
+      ctx.db.system.get("_storage", storageId),
+    );
+    expect(stored).toBeNull();
+
+    await t.finishAllScheduledFunctions(() => {
+      vi.runAllTimers();
+    });
+
+    const afterRetriesWindow = await admin.query(
+      api.attachments.listAttachments,
+      { assetId },
+    );
+    const final = afterRetriesWindow.find((row) => row._id === attachmentId);
+    expect(final?.optimizationAttempts).toBe(1);
+  });
+
+  it("returns lightweight queue statuses without requiring URL fetches", async () => {
+    const admin = asUser(t, adminId);
+    const storageId = await storeFile(t, "application/pdf", SIMPLE_PDF);
+
+    await admin.mutation(api.attachments.createAttachment, {
+      assetId,
+      storageId,
+      fileName: "queue-status.pdf",
+      fileType: "application/pdf",
+      fileSize: SIMPLE_PDF.byteLength,
+    });
+
+    const statuses = await admin.query(
+      api.attachments.listAttachmentQueueStatuses,
+      {
+        assetId,
+      },
+    );
+    expect(statuses).toHaveLength(1);
+    expect(statuses[0]).toEqual(
+      expect.objectContaining({
+        _id: expect.any(String),
+        status: expect.stringMatching(/pending|processing|ready|failed/),
+      }),
+    );
+  });
 
   it("deletes attachments and storage files", async () => {
-    const admin = asUser(t, adminId)
+    const admin = asUser(t, adminId);
     const storageId = await storeFile(
       t,
       "application/vnd.ms-excel",
       Uint8Array.from(Buffer.from("legacy sheet", "utf8")),
-    )
+    );
 
     await admin.mutation(api.attachments.createAttachment, {
       assetId,
@@ -163,24 +283,30 @@ describe("attachments functions", () => {
       fileName: "legacy.xls",
       fileType: "application/vnd.ms-excel",
       fileSize: 12,
-    })
+    });
 
     await t.finishAllScheduledFunctions(() => {
-      vi.runAllTimers()
-    })
+      vi.runAllTimers();
+    });
 
-    const list = await admin.query(api.attachments.listAttachments, { assetId })
-    const attachmentId = list[0]?._id
-    expect(attachmentId).toBeTruthy()
+    const list = await admin.query(api.attachments.listAttachments, {
+      assetId,
+    });
+    const attachmentId = list[0]?._id;
+    expect(attachmentId).toBeTruthy();
 
     await admin.mutation(api.attachments.deleteAttachment, {
       attachmentId: attachmentId as Id<"attachments">,
-    })
+    });
 
-    const afterDelete = await admin.query(api.attachments.listAttachments, { assetId })
-    expect(afterDelete).toHaveLength(0)
+    const afterDelete = await admin.query(api.attachments.listAttachments, {
+      assetId,
+    });
+    expect(afterDelete).toHaveLength(0);
 
-    const stored = await t.run(async (ctx) => ctx.storage.get(storageId))
-    expect(stored).toBeNull()
-  })
-})
+    const stored = await t.run(async (ctx) =>
+      ctx.db.system.get("_storage", storageId),
+    );
+    expect(stored).toBeNull();
+  });
+});

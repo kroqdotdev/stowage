@@ -1,19 +1,22 @@
-"use client"
+"use client";
 
-import { useMutation, useQuery } from "convex/react"
-import { TaxonomyManager, type TaxonomyFormValues } from "@/components/catalog/taxonomy-manager"
-import { api } from "@/lib/convex-api"
+import { useMutation, useQuery } from "convex/react";
+import {
+  TaxonomyManager,
+  type TaxonomyFormValues,
+} from "@/components/catalog/taxonomy-manager";
+import { api } from "@/lib/convex-api";
 
 export function CategoriesPageClient() {
-  const currentUser = useQuery(api.users.getCurrentUser, {})
-  const categories = useQuery(api.categories.listCategories, {})
-  const createCategory = useMutation(api.categories.createCategory)
-  const updateCategory = useMutation(api.categories.updateCategory)
-  const deleteCategory = useMutation(api.categories.deleteCategory)
+  const currentUser = useQuery(api.users.getCurrentUser, {});
+  const categories = useQuery(api.categories.listCategories, {});
+  const createCategory = useMutation(api.categories.createCategory);
+  const updateCategory = useMutation(api.categories.updateCategory);
+  const deleteCategory = useMutation(api.categories.deleteCategory);
 
-  const rows = categories ?? []
-  const loading = categories === undefined || currentUser === undefined
-  const canManage = currentUser?.role === "admin"
+  const rows = categories ?? [];
+  const loading = categories === undefined || currentUser === undefined;
+  const canManage = currentUser?.role === "admin";
 
   async function handleCreate(values: TaxonomyFormValues) {
     await createCategory({
@@ -21,7 +24,7 @@ export function CategoriesPageClient() {
       prefix: values.prefix || null,
       description: values.description || null,
       color: values.color,
-    })
+    });
   }
 
   async function handleUpdate(categoryId: string, values: TaxonomyFormValues) {
@@ -31,11 +34,11 @@ export function CategoriesPageClient() {
       prefix: values.prefix || null,
       description: values.description || null,
       color: values.color,
-    })
+    });
   }
 
   async function handleDelete(categoryId: string) {
-    await deleteCategory({ categoryId: categoryId as never })
+    await deleteCategory({ categoryId: categoryId as never });
   }
 
   return (
@@ -48,5 +51,5 @@ export function CategoriesPageClient() {
       onUpdate={handleUpdate}
       onDelete={handleDelete}
     />
-  )
+  );
 }

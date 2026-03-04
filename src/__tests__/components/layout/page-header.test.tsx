@@ -15,9 +15,7 @@ describe("PageHeader", () => {
       <PageHeader title="Assets" description="Manage your tracked assets." />,
     );
     expect(screen.getByRole("heading", { name: "Assets" })).toBeInTheDocument();
-    expect(
-      screen.getByText("Manage your tracked assets."),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Manage your tracked assets.")).toBeInTheDocument();
   });
 
   it("does not render a description when not provided", () => {

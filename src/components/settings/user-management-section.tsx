@@ -1,144 +1,149 @@
-"use client"
+"use client";
 
-import { useMemo, useState } from "react"
-import { Loader2, Plus } from "lucide-react"
-import { useAction, useMutation, useQuery } from "convex/react"
-import { toast } from "sonner"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { api, type Id } from "@/lib/convex-api"
-import { getConvexUiMessage } from "@/lib/convex-errors"
-import { formatDateFromTimestamp, type AppDateFormat } from "@/lib/date-format"
-import { useAppDateFormat } from "@/lib/use-app-date-format"
+import { useMemo, useState } from "react";
+import { Loader2, Plus } from "lucide-react";
+import { useAction, useMutation, useQuery } from "convex/react";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { api, type Id } from "@/lib/convex-api";
+import { getConvexUiMessage } from "@/lib/convex-errors";
+import { formatDateFromTimestamp, type AppDateFormat } from "@/lib/date-format";
+import { useAppDateFormat } from "@/lib/use-app-date-format";
 
 type CreateUserFormState = {
-  name: string
-  email: string
-  password: string
-  role: "admin" | "user"
-}
+  name: string;
+  email: string;
+  password: string;
+  role: "admin" | "user";
+};
 
 const INITIAL_CREATE_USER_FORM: CreateUserFormState = {
   name: "",
   email: "",
   password: "",
   role: "user",
-}
+};
 
 function formatCreatedDate(timestamp: number, format: AppDateFormat) {
-  return formatDateFromTimestamp(timestamp, format)
+  return formatDateFromTimestamp(timestamp, format);
 }
 
 function normalizeErrorMessage(error: unknown, fallback: string) {
-  return getConvexUiMessage(error, fallback)
+  return getConvexUiMessage(error, fallback);
 }
 
 function normalizeRoleUpdateErrorMessage(error: unknown) {
-  const message = normalizeErrorMessage(error, "Unable to update user role")
+  const message = normalizeErrorMessage(error, "Unable to update user role");
 
   if (message.includes("At least one admin is required")) {
-    return "You can't remove the last admin. Promote another user to admin first."
+    return "You can't remove the last admin. Promote another user to admin first.";
   }
 
-  return message
+  return message;
 }
 
 export function UserManagementSection({
   currentUserId,
 }: {
-  currentUserId: Id<"users">
+  currentUserId: Id<"users">;
 }) {
-  const dateFormat = useAppDateFormat()
-  const users = useQuery(api.users.listUsers, {})
-  const createUser = useAction(api.users.createUser)
-  const updateUserRole = useMutation(api.users.updateUserRole)
+  const dateFormat = useAppDateFormat();
+  const users = useQuery(api.users.listUsers, {});
+  const createUser = useAction(api.users.createUser);
+  const updateUserRole = useMutation(api.users.updateUserRole);
 
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [createForm, setCreateForm] = useState<CreateUserFormState>(
     INITIAL_CREATE_USER_FORM,
-  )
-  const [creating, setCreating] = useState(false)
+  );
+  const [creating, setCreating] = useState(false);
 
-  const [roleEdits, setRoleEdits] = useState<Record<string, "admin" | "user">>({})
-  const [savingRoleUserId, setSavingRoleUserId] = useState<string | null>(null)
+  const [roleEdits, setRoleEdits] = useState<Record<string, "admin" | "user">>(
+    {},
+  );
+  const [savingRoleUserId, setSavingRoleUserId] = useState<string | null>(null);
 
-  const rows = useMemo(() => users ?? [], [users])
+  const rows = useMemo(() => users ?? [], [users]);
   const adminCount = useMemo(
     () => rows.filter((user) => user.role === "admin").length,
     [rows],
-  )
+  );
 
   function openDialog() {
-    setIsDialogOpen(true)
+    setIsDialogOpen(true);
   }
 
   function closeDialog() {
     if (creating) {
-      return
+      return;
     }
-    setIsDialogOpen(false)
-    setCreateForm(INITIAL_CREATE_USER_FORM)
+    setIsDialogOpen(false);
+    setCreateForm(INITIAL_CREATE_USER_FORM);
   }
 
   async function handleCreateUser(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault()
+    event.preventDefault();
 
     if (createForm.password.length < 8) {
-      toast.error("Temporary password must be at least 8 characters")
-      return
+      toast.error("Temporary password must be at least 8 characters");
+      return;
     }
 
-    setCreating(true)
+    setCreating(true);
     try {
       await createUser({
         email: createForm.email,
         name: createForm.name,
         password: createForm.password,
         role: createForm.role,
-      })
-      toast.success("User created")
-      setCreateForm(INITIAL_CREATE_USER_FORM)
-      setIsDialogOpen(false)
+      });
+      toast.success("User created");
+      setCreateForm(INITIAL_CREATE_USER_FORM);
+      setIsDialogOpen(false);
     } catch (error) {
-      const message = normalizeErrorMessage(error, "Unable to create user")
-      toast.error(message)
+      const message = normalizeErrorMessage(error, "Unable to create user");
+      toast.error(message);
     } finally {
-      setCreating(false)
+      setCreating(false);
     }
   }
 
-  async function handleSaveRole(userId: Id<"users">, currentRole: "admin" | "user") {
-    const nextRole = roleEdits[userId] ?? currentRole
+  async function handleSaveRole(
+    userId: Id<"users">,
+    currentRole: "admin" | "user",
+  ) {
+    const nextRole = roleEdits[userId] ?? currentRole;
     if (nextRole === currentRole) {
-      return
+      return;
     }
 
     if (currentRole === "admin" && nextRole !== "admin" && adminCount <= 1) {
       const message =
-        "You can't remove the last admin. Promote another user to admin first."
-      toast.error(message)
+        "You can't remove the last admin. Promote another user to admin first.";
+      toast.error(message);
       setRoleEdits((prev) => {
-        const next = { ...prev }
-        delete next[userId]
-        return next
-      })
-      return
+        const next = { ...prev };
+        delete next[userId];
+        return next;
+      });
+      return;
     }
 
-    setSavingRoleUserId(userId)
+    setSavingRoleUserId(userId);
     try {
-      await updateUserRole({ userId, role: nextRole })
-      toast.success("User role updated")
+      await updateUserRole({ userId, role: nextRole });
+      toast.success("User role updated");
       setRoleEdits((prev) => {
-        const next = { ...prev }
-        delete next[userId]
-        return next
-      })
+        const next = { ...prev };
+        delete next[userId];
+        return next;
+      });
     } catch (error) {
-      const message = normalizeRoleUpdateErrorMessage(error)
-      toast.error(message)
+      const message = normalizeRoleUpdateErrorMessage(error);
+      toast.error(message);
     } finally {
-      setSavingRoleUserId(null)
+      setSavingRoleUserId(null);
     }
   }
 
@@ -159,7 +164,12 @@ export function UserManagementSection({
             Add team members and manage access roles.
           </p>
         </div>
-        <Button type="button" variant="outline" onClick={openDialog} className="cursor-pointer">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={openDialog}
+          className="cursor-pointer"
+        >
           <Plus className="h-4 w-4" />
           Add User
         </Button>
@@ -179,15 +189,18 @@ export function UserManagementSection({
           <tbody>
             {rows === undefined ? null : rows.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-3 py-6 text-center text-muted-foreground">
+                <td
+                  colSpan={5}
+                  className="px-3 py-6 text-center text-muted-foreground"
+                >
                   No users found.
                 </td>
               </tr>
             ) : (
               rows.map((user) => {
-                const pendingRole = roleEdits[user._id] ?? user.role
-                const roleChanged = pendingRole !== user.role
-                const isSaving = savingRoleUserId === user._id
+                const pendingRole = roleEdits[user._id] ?? user.role;
+                const roleChanged = pendingRole !== user.role;
+                const isSaving = savingRoleUserId === user._id;
                 return (
                   <tr key={user._id} className="border-t border-border/50">
                     <td className="px-3 py-2">
@@ -196,7 +209,9 @@ export function UserManagementSection({
                         <div className="text-xs text-muted-foreground">You</div>
                       ) : null}
                     </td>
-                    <td className="px-3 py-2 text-muted-foreground">{user.email}</td>
+                    <td className="px-3 py-2 text-muted-foreground">
+                      {user.email}
+                    </td>
                     <td className="px-3 py-2">
                       <label className="sr-only" htmlFor={`role-${user._id}`}>
                         Role for {user.name}
@@ -229,12 +244,14 @@ export function UserManagementSection({
                         disabled={!roleChanged || isSaving}
                         onClick={() => void handleSaveRole(user._id, user.role)}
                       >
-                        {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                        {isSaving ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : null}
                         Save
                       </Button>
                     </td>
                   </tr>
-                )
+                );
               })
             )}
           </tbody>
@@ -250,7 +267,10 @@ export function UserManagementSection({
         >
           <div className="w-full max-w-md rounded-xl border border-border bg-background p-5 shadow-lg">
             <div className="mb-4 space-y-1">
-              <h3 id="add-user-dialog-title" className="text-lg font-semibold tracking-tight">
+              <h3
+                id="add-user-dialog-title"
+                className="text-lg font-semibold tracking-tight"
+              >
                 Add user
               </h3>
               <p className="text-sm text-muted-foreground">
@@ -267,7 +287,10 @@ export function UserManagementSection({
                   id="new-user-name"
                   value={createForm.name}
                   onChange={(event) =>
-                    setCreateForm((prev) => ({ ...prev, name: event.target.value }))
+                    setCreateForm((prev) => ({
+                      ...prev,
+                      name: event.target.value,
+                    }))
                   }
                   placeholder="Taylor Smith"
                   required
@@ -283,7 +306,10 @@ export function UserManagementSection({
                   type="email"
                   value={createForm.email}
                   onChange={(event) =>
-                    setCreateForm((prev) => ({ ...prev, email: event.target.value }))
+                    setCreateForm((prev) => ({
+                      ...prev,
+                      email: event.target.value,
+                    }))
                   }
                   placeholder="taylor@example.com"
                   required
@@ -291,7 +317,10 @@ export function UserManagementSection({
               </div>
 
               <div className="space-y-1.5">
-                <label htmlFor="new-user-password" className="text-sm font-medium">
+                <label
+                  htmlFor="new-user-password"
+                  className="text-sm font-medium"
+                >
                   Temporary password
                 </label>
                 <Input
@@ -299,7 +328,10 @@ export function UserManagementSection({
                   type="password"
                   value={createForm.password}
                   onChange={(event) =>
-                    setCreateForm((prev) => ({ ...prev, password: event.target.value }))
+                    setCreateForm((prev) => ({
+                      ...prev,
+                      password: event.target.value,
+                    }))
                   }
                   placeholder="At least 8 characters"
                   required
@@ -336,8 +368,14 @@ export function UserManagementSection({
                 >
                   Cancel
                 </Button>
-                <Button type="submit" className="cursor-pointer" disabled={creating}>
-                  {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                <Button
+                  type="submit"
+                  className="cursor-pointer"
+                  disabled={creating}
+                >
+                  {creating ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : null}
                   {creating ? "Creating..." : "Create user"}
                 </Button>
               </div>
@@ -346,9 +384,9 @@ export function UserManagementSection({
         </div>
       ) : null}
     </section>
-  )
+  );
 }
 
 export function __testOnly__formatCreatedDate(timestamp: number) {
-  return formatCreatedDate(timestamp, "DD-MM-YYYY")
+  return formatCreatedDate(timestamp, "DD-MM-YYYY");
 }

@@ -5,7 +5,11 @@
   --connector-arm: 0.95rem;
   --connector-top: 1.375rem;
   --connector-radius: 0.25rem;
-  --connector-color: color-mix(in oklch, var(--color-muted-foreground) 40%, transparent);
+  --connector-color: color-mix(
+    in oklch,
+    var(--color-muted-foreground) 40%,
+    transparent
+  );
 }
 
 .tree,

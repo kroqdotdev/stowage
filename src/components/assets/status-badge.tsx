@@ -1,6 +1,9 @@
-import { Badge } from "@/components/ui/badge"
-import { ASSET_STATUS_LABELS, type AssetStatus } from "@/components/assets/types"
-import { cn } from "@/lib/utils"
+import { Badge } from "@/components/ui/badge";
+import {
+  ASSET_STATUS_LABELS,
+  type AssetStatus,
+} from "@/components/assets/types";
+import { cn } from "@/lib/utils";
 
 const STATUS_CLASS_NAME: Record<AssetStatus, string> = {
   active:
@@ -13,14 +16,14 @@ const STATUS_CLASS_NAME: Record<AssetStatus, string> = {
     "border-violet-300/70 bg-violet-100 text-violet-900 dark:border-violet-400/30 dark:bg-violet-500/15 dark:text-violet-200",
   disposed:
     "border-rose-300/70 bg-rose-100 text-rose-900 dark:border-rose-400/30 dark:bg-rose-500/15 dark:text-rose-200",
-}
+};
 
 export function StatusBadge({
   status,
   className,
 }: {
-  status: AssetStatus
-  className?: string
+  status: AssetStatus;
+  className?: string;
 }) {
   return (
     <Badge
@@ -32,5 +35,5 @@ export function StatusBadge({
     >
       {ASSET_STATUS_LABELS[status]}
     </Badge>
-  )
+  );
 }

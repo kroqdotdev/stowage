@@ -1,14 +1,17 @@
-import * as React from "react"
-import { Slot } from "radix-ui"
-import { ChevronRight, MoreHorizontal } from "lucide-react"
+import * as React from "react";
+import { Slot } from "radix-ui";
+import { ChevronRight, MoreHorizontal } from "lucide-react";
 
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/utils";
 
 function Breadcrumb({ ...props }: React.ComponentPropsWithoutRef<"nav">) {
-  return <nav aria-label="breadcrumb" {...props} />
+  return <nav aria-label="breadcrumb" {...props} />;
 }
 
-function BreadcrumbList({ className, ...props }: React.ComponentPropsWithoutRef<"ol">) {
+function BreadcrumbList({
+  className,
+  ...props
+}: React.ComponentPropsWithoutRef<"ol">) {
   return (
     <ol
       className={cn(
@@ -17,11 +20,19 @@ function BreadcrumbList({ className, ...props }: React.ComponentPropsWithoutRef<
       )}
       {...props}
     />
-  )
+  );
 }
 
-function BreadcrumbItem({ className, ...props }: React.ComponentPropsWithoutRef<"li">) {
-  return <li className={cn("inline-flex items-center gap-1.5", className)} {...props} />
+function BreadcrumbItem({
+  className,
+  ...props
+}: React.ComponentPropsWithoutRef<"li">) {
+  return (
+    <li
+      className={cn("inline-flex items-center gap-1.5", className)}
+      {...props}
+    />
+  );
 }
 
 function BreadcrumbLink({
@@ -29,19 +40,22 @@ function BreadcrumbLink({
   className,
   ...props
 }: React.ComponentPropsWithoutRef<"a"> & {
-  asChild?: boolean
+  asChild?: boolean;
 }) {
-  const Comp = asChild ? Slot.Root : "a"
+  const Comp = asChild ? Slot.Root : "a";
 
   return (
     <Comp
       className={cn("transition-colors hover:text-foreground", className)}
       {...props}
     />
-  )
+  );
 }
 
-function BreadcrumbPage({ className, ...props }: React.ComponentPropsWithoutRef<"span">) {
+function BreadcrumbPage({
+  className,
+  ...props
+}: React.ComponentPropsWithoutRef<"span">) {
   return (
     <span
       role="link"
@@ -50,7 +64,7 @@ function BreadcrumbPage({ className, ...props }: React.ComponentPropsWithoutRef<
       className={cn("font-normal text-foreground", className)}
       {...props}
     />
-  )
+  );
 }
 
 function BreadcrumbSeparator({
@@ -67,10 +81,13 @@ function BreadcrumbSeparator({
     >
       {children ?? <ChevronRight />}
     </li>
-  )
+  );
 }
 
-function BreadcrumbEllipsis({ className, ...props }: React.ComponentPropsWithoutRef<"span">) {
+function BreadcrumbEllipsis({
+  className,
+  ...props
+}: React.ComponentPropsWithoutRef<"span">) {
   return (
     <span
       role="presentation"
@@ -81,7 +98,7 @@ function BreadcrumbEllipsis({ className, ...props }: React.ComponentPropsWithout
       <MoreHorizontal className="h-4 w-4" />
       <span className="sr-only">More</span>
     </span>
-  )
+  );
 }
 
 export {
@@ -92,4 +109,4 @@ export {
   BreadcrumbPage,
   BreadcrumbSeparator,
   BreadcrumbEllipsis,
-}
+};

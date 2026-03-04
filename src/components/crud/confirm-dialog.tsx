@@ -1,7 +1,7 @@
-"use client"
+"use client";
 
-import { Button } from "@/components/ui/button"
-import { CrudModal } from "@/components/crud/modal"
+import { Button } from "@/components/ui/button";
+import { CrudModal } from "@/components/crud/modal";
 
 export function ConfirmDialog({
   open,
@@ -14,15 +14,15 @@ export function ConfirmDialog({
   onConfirm,
   onClose,
 }: {
-  open: boolean
-  title: string
-  description: string
-  confirmLabel?: string
-  cancelLabel?: string
-  destructive?: boolean
-  busy?: boolean
-  onConfirm: () => void
-  onClose: () => void
+  open: boolean;
+  title: string;
+  description: string;
+  confirmLabel?: string;
+  cancelLabel?: string;
+  destructive?: boolean;
+  busy?: boolean;
+  onConfirm: () => void;
+  onClose: () => void;
 }) {
   return (
     <CrudModal
@@ -31,7 +31,7 @@ export function ConfirmDialog({
       description={description}
       onClose={() => {
         if (!busy) {
-          onClose()
+          onClose();
         }
       }}
       footer={
@@ -57,7 +57,9 @@ export function ConfirmDialog({
         </>
       }
     >
-      <p className="text-sm text-muted-foreground">This action cannot be undone.</p>
+      <p className="text-sm text-muted-foreground">
+        This action cannot be undone.
+      </p>
     </CrudModal>
-  )
+  );
 }

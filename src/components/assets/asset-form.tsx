@@ -1,41 +1,46 @@
-"use client"
+"use client";
 
-import { useMemo, useState } from "react"
-import { Loader2 } from "lucide-react"
-import { useQuery } from "convex/react"
-import type { Id } from "@/lib/convex-api"
-import { DynamicField } from "@/components/fields/dynamic-field"
-import type { FieldDefinition, FieldValue } from "@/components/fields/types"
-import { LocationPicker, type LocationPickerOption } from "@/components/locations/location-picker"
-import { TagPicker, type TagPickerOption } from "@/components/tags/tag-picker"
+import { useMemo, useState } from "react";
+import { Loader2 } from "lucide-react";
+import { useQuery } from "convex/react";
+import type { Id } from "@/lib/convex-api";
+import { DynamicField } from "@/components/fields/dynamic-field";
+import type { FieldDefinition, FieldValue } from "@/components/fields/types";
+import {
+  LocationPicker,
+  type LocationPickerOption,
+} from "@/components/locations/location-picker";
+import { TagPicker, type TagPickerOption } from "@/components/tags/tag-picker";
 import {
   ASSET_STATUS_LABELS,
   ASSET_STATUS_OPTIONS,
   type AssetFormValues,
   type AssetStatus,
-} from "@/components/assets/types"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { api } from "@/lib/convex-api"
+  type ServiceScheduleDraft,
+} from "@/components/assets/types";
+import { ServiceScheduleFields } from "@/components/assets/service-schedule-fields";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { api } from "@/lib/convex-api";
 
 type CategoryOption = {
-  _id: Id<"categories">
-  name: string
-  prefix: string | null
-  color: string
-}
+  _id: Id<"categories">;
+  name: string;
+  prefix: string | null;
+  color: string;
+};
 
 function isEmptyValue(value: FieldValue) {
   if (value === null || value === undefined) {
-    return true
+    return true;
   }
 
   if (typeof value === "string") {
-    return value.trim() === ""
+    return value.trim() === "";
   }
 
-  return false
+  return false;
 }
 
 export function AssetForm({
@@ -48,49 +53,69 @@ export function AssetForm({
   assetTag,
   submitting,
   submitLabel,
+  serviceSchedulingEnabled,
+  serviceScheduleDraft,
+  onServiceScheduleChange,
+  onClearServiceSchedule,
   onSubmit,
 }: {
-  mode: "create" | "edit"
-  categories: CategoryOption[]
-  locations: LocationPickerOption[]
-  tags: TagPickerOption[]
-  fieldDefinitions: FieldDefinition[]
-  initialValues: AssetFormValues
-  assetTag?: string | null
-  submitting: boolean
-  submitLabel: string
-  onSubmit: (values: AssetFormValues) => Promise<void>
+  mode: "create" | "edit";
+  categories: CategoryOption[];
+  locations: LocationPickerOption[];
+  tags: TagPickerOption[];
+  fieldDefinitions: FieldDefinition[];
+  initialValues: AssetFormValues;
+  assetTag?: string | null;
+  submitting: boolean;
+  submitLabel: string;
+  serviceSchedulingEnabled?: boolean;
+  serviceScheduleDraft?: ServiceScheduleDraft;
+  onServiceScheduleChange?: (next: ServiceScheduleDraft) => void;
+  onClearServiceSchedule?: () => void;
+  onSubmit: (values: AssetFormValues) => Promise<void>;
 }) {
-  const [values, setValues] = useState<AssetFormValues>(initialValues)
-  const [errors, setErrors] = useState<Record<string, string>>({})
+  const [values, setValues] = useState<AssetFormValues>(initialValues);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const preview = useQuery(
     api.assets.generateAssetTag,
     mode === "create" ? { categoryId: values.categoryId } : "skip",
-  )
+  );
 
-  const activeAssetTag = mode === "create" ? preview?.assetTag ?? "Generating..." : assetTag ?? "—"
-  const showTagLoading = mode === "create" && preview === undefined
+  const activeAssetTag =
+    mode === "create"
+      ? (preview?.assetTag ?? "Generating...")
+      : (assetTag ?? "—");
+  const showTagLoading = mode === "create" && preview === undefined;
 
   const fieldDefinitionsById = useMemo(
-    () => new Map(fieldDefinitions.map((definition) => [definition._id as string, definition])),
+    () =>
+      new Map(
+        fieldDefinitions.map((definition) => [
+          definition._id as string,
+          definition,
+        ]),
+      ),
     [fieldDefinitions],
-  )
+  );
 
-  function setFieldValue(field: keyof AssetFormValues, nextValue: AssetFormValues[typeof field]) {
+  function setFieldValue(
+    field: keyof AssetFormValues,
+    nextValue: AssetFormValues[typeof field],
+  ) {
     setValues((prev) => ({
       ...prev,
       [field]: nextValue,
-    }))
+    }));
     setErrors((prev) => {
       if (!prev[field]) {
-        return prev
+        return prev;
       }
 
-      const next = { ...prev }
-      delete next[field]
-      return next
-    })
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
   }
 
   function setCustomFieldValue(fieldId: string, value: FieldValue) {
@@ -100,55 +125,55 @@ export function AssetForm({
         ...prev.customFieldValues,
         [fieldId]: value as string | number | boolean | null,
       },
-    }))
+    }));
 
     setErrors((prev) => {
       if (!prev[`custom:${fieldId}`]) {
-        return prev
+        return prev;
       }
 
-      const next = { ...prev }
-      delete next[`custom:${fieldId}`]
-      return next
-    })
+      const next = { ...prev };
+      delete next[`custom:${fieldId}`];
+      return next;
+    });
   }
 
   function validate() {
-    const nextErrors: Record<string, string> = {}
+    const nextErrors: Record<string, string> = {};
 
     if (!values.name.trim()) {
-      nextErrors.name = "Name is required"
+      nextErrors.name = "Name is required";
     }
 
     for (const definition of fieldDefinitions) {
       if (!definition.required) {
-        continue
+        continue;
       }
 
-      const fieldId = definition._id as string
-      const value = values.customFieldValues[fieldId]
+      const fieldId = definition._id as string;
+      const value = values.customFieldValues[fieldId];
 
       if (definition.fieldType === "checkbox") {
         if (value === null || value === undefined) {
-          nextErrors[`custom:${fieldId}`] = `${definition.name} is required`
+          nextErrors[`custom:${fieldId}`] = `${definition.name} is required`;
         }
-        continue
+        continue;
       }
 
       if (isEmptyValue(value)) {
-        nextErrors[`custom:${fieldId}`] = `${definition.name} is required`
+        nextErrors[`custom:${fieldId}`] = `${definition.name} is required`;
       }
     }
 
-    setErrors(nextErrors)
-    return Object.keys(nextErrors).length === 0
+    setErrors(nextErrors);
+    return Object.keys(nextErrors).length === 0;
   }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault()
+    event.preventDefault();
 
     if (!validate()) {
-      return
+      return;
     }
 
     await onSubmit({
@@ -157,19 +182,19 @@ export function AssetForm({
       notes: values.notes,
       customFieldValues: Object.fromEntries(
         Object.entries(values.customFieldValues).filter(([fieldId, value]) => {
-          const definition = fieldDefinitionsById.get(fieldId)
+          const definition = fieldDefinitionsById.get(fieldId);
           if (!definition) {
-            return false
+            return false;
           }
 
           if (definition.fieldType === "checkbox") {
-            return value !== null && value !== undefined
+            return value !== null && value !== undefined;
           }
 
-          return !isEmptyValue(value)
+          return !isEmptyValue(value);
         }),
       ),
-    })
+    });
   }
 
   return (
@@ -188,7 +213,9 @@ export function AssetForm({
             disabled={submitting}
             aria-invalid={Boolean(errors.name)}
           />
-          {errors.name ? <p className="text-xs text-destructive">{errors.name}</p> : null}
+          {errors.name ? (
+            <p className="text-xs text-destructive">{errors.name}</p>
+          ) : null}
         </div>
 
         <div className="space-y-1.5">
@@ -202,7 +229,9 @@ export function AssetForm({
             onChange={(event) =>
               setFieldValue(
                 "categoryId",
-                event.target.value ? (event.target.value as Id<"categories">) : null,
+                event.target.value
+                  ? (event.target.value as Id<"categories">)
+                  : null,
               )
             }
             disabled={submitting}
@@ -221,7 +250,9 @@ export function AssetForm({
             Asset tag
           </label>
           <div className="flex h-9 items-center rounded-md border border-border/70 bg-muted/20 px-3 text-sm font-mono tracking-wide">
-            {showTagLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+            {showTagLoading ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : null}
             {activeAssetTag}
           </div>
         </div>
@@ -289,16 +320,22 @@ export function AssetForm({
 
       <section className="space-y-3 rounded-lg border border-border/60 bg-muted/10 p-4">
         <div>
-          <h3 className="text-sm font-semibold tracking-tight">Custom fields</h3>
-          <p className="text-xs text-muted-foreground">Values are based on your field definitions.</p>
+          <h3 className="text-sm font-semibold tracking-tight">
+            Custom fields
+          </h3>
+          <p className="text-xs text-muted-foreground">
+            Values are based on your field definitions.
+          </p>
         </div>
 
         {fieldDefinitions.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No custom fields defined.</p>
+          <p className="text-sm text-muted-foreground">
+            No custom fields defined.
+          </p>
         ) : (
           <div className="grid gap-4 lg:grid-cols-2">
             {fieldDefinitions.map((definition) => {
-              const fieldId = definition._id as string
+              const fieldId = definition._id as string;
 
               return (
                 <div key={definition._id} className="space-y-1">
@@ -309,14 +346,28 @@ export function AssetForm({
                     disabled={submitting}
                   />
                   {errors[`custom:${fieldId}`] ? (
-                    <p className="text-xs text-destructive">{errors[`custom:${fieldId}`]}</p>
+                    <p className="text-xs text-destructive">
+                      {errors[`custom:${fieldId}`]}
+                    </p>
                   ) : null}
                 </div>
-              )
+              );
             })}
           </div>
         )}
       </section>
+
+      {serviceSchedulingEnabled &&
+      serviceScheduleDraft &&
+      onServiceScheduleChange &&
+      onClearServiceSchedule ? (
+        <ServiceScheduleFields
+          value={serviceScheduleDraft}
+          disabled={submitting}
+          onChange={onServiceScheduleChange}
+          onClear={onClearServiceSchedule}
+        />
+      ) : null}
 
       <div className="flex items-center justify-end gap-2">
         <Button type="submit" className="cursor-pointer" disabled={submitting}>
@@ -325,5 +376,5 @@ export function AssetForm({
         </Button>
       </div>
     </form>
-  )
+  );
 }

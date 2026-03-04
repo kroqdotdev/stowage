@@ -1,5 +1,5 @@
-import { FieldsPageClient } from "@/components/fields/fields-page-client"
-import { PageHeader } from "@/components/layout/page-header"
+import { FieldsPageClient } from "@/components/fields/fields-page-client";
+import { PageHeader } from "@/components/layout/page-header";
 
 export default function FieldsPage() {
   return (
@@ -10,5 +10,5 @@ export default function FieldsPage() {
       />
       <FieldsPageClient />
     </div>
-  )
+  );
 }

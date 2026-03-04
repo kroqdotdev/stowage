@@ -1,32 +1,32 @@
-"use client"
+"use client";
 
-import { ArrowDownUp, ArrowUp, ArrowDown } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { StatusBadge } from "@/components/assets/status-badge"
-import type { AssetListItem } from "@/components/assets/types"
-import { formatDateFromTimestamp } from "@/lib/date-format"
-import { useAppDateFormat } from "@/lib/use-app-date-format"
+import { ArrowDownUp, ArrowUp, ArrowDown } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { StatusBadge } from "@/components/assets/status-badge";
+import type { AssetListItem } from "@/components/assets/types";
+import { formatDateFromTimestamp } from "@/lib/date-format";
+import { useAppDateFormat } from "@/lib/use-app-date-format";
 
-export type AssetSortBy = "createdAt" | "name" | "assetTag" | "status"
-export type AssetSortDirection = "asc" | "desc"
+export type AssetSortBy = "createdAt" | "name" | "assetTag" | "status";
+export type AssetSortDirection = "asc" | "desc";
 
 function SortIcon({
   active,
   direction,
 }: {
-  active: boolean
-  direction: AssetSortDirection
+  active: boolean;
+  direction: AssetSortDirection;
 }) {
   if (!active) {
-    return <ArrowDownUp className="h-3.5 w-3.5 text-muted-foreground" />
+    return <ArrowDownUp className="h-3.5 w-3.5 text-muted-foreground" />;
   }
 
   if (direction === "asc") {
-    return <ArrowUp className="h-3.5 w-3.5" />
+    return <ArrowUp className="h-3.5 w-3.5" />;
   }
 
-  return <ArrowDown className="h-3.5 w-3.5" />
+  return <ArrowDown className="h-3.5 w-3.5" />;
 }
 
 function SortButton({
@@ -36,13 +36,13 @@ function SortButton({
   activeDirection,
   onSort,
 }: {
-  label: string
-  field: AssetSortBy
-  activeField: AssetSortBy
-  activeDirection: AssetSortDirection
-  onSort: (field: AssetSortBy) => void
+  label: string;
+  field: AssetSortBy;
+  activeField: AssetSortBy;
+  activeDirection: AssetSortDirection;
+  onSort: (field: AssetSortBy) => void;
 }) {
-  const active = activeField === field
+  const active = activeField === field;
 
   return (
     <Button
@@ -56,7 +56,7 @@ function SortButton({
       <span>{label}</span>
       <SortIcon active={active} direction={activeDirection} />
     </Button>
-  )
+  );
 }
 
 export function AssetTable({
@@ -70,18 +70,19 @@ export function AssetTable({
   onSelectAll,
   onRowOpen,
 }: {
-  rows: AssetListItem[]
-  loading: boolean
-  sortBy: AssetSortBy
-  sortDirection: AssetSortDirection
-  selectedIds: Set<string>
-  onSort: (field: AssetSortBy) => void
-  onSelectRow: (assetId: string, checked: boolean) => void
-  onSelectAll: (checked: boolean) => void
-  onRowOpen: (assetId: string) => void
+  rows: AssetListItem[];
+  loading: boolean;
+  sortBy: AssetSortBy;
+  sortDirection: AssetSortDirection;
+  selectedIds: Set<string>;
+  onSort: (field: AssetSortBy) => void;
+  onSelectRow: (assetId: string, checked: boolean) => void;
+  onSelectAll: (checked: boolean) => void;
+  onRowOpen: (assetId: string) => void;
 }) {
-  const dateFormat = useAppDateFormat()
-  const allSelected = rows.length > 0 && rows.every((row) => selectedIds.has(row._id))
+  const dateFormat = useAppDateFormat();
+  const allSelected =
+    rows.length > 0 && rows.every((row) => selectedIds.has(row._id));
 
   return (
     <div className="overflow-x-auto rounded-xl border border-border/70 bg-background shadow-sm">
@@ -140,19 +141,25 @@ export function AssetTable({
         <tbody>
           {loading ? (
             <tr>
-              <td colSpan={7} className="px-3 py-10 text-center text-muted-foreground">
+              <td
+                colSpan={7}
+                className="px-3 py-10 text-center text-muted-foreground"
+              >
                 Loading assets...
               </td>
             </tr>
           ) : rows.length === 0 ? (
             <tr>
-              <td colSpan={7} className="px-3 py-10 text-center text-muted-foreground">
+              <td
+                colSpan={7}
+                className="px-3 py-10 text-center text-muted-foreground"
+              >
                 No assets match your filters.
               </td>
             </tr>
           ) : (
             rows.map((asset) => {
-              const selected = selectedIds.has(asset._id)
+              const selected = selectedIds.has(asset._id);
 
               return (
                 <tr
@@ -161,18 +168,23 @@ export function AssetTable({
                   onClick={() => onRowOpen(asset._id)}
                   onKeyDown={(event) => {
                     if (event.key === "Enter" || event.key === " ") {
-                      event.preventDefault()
-                      onRowOpen(asset._id)
+                      event.preventDefault();
+                      onRowOpen(asset._id);
                     }
                   }}
                   tabIndex={0}
                 >
-                  <td className="px-3 py-2" onClick={(event) => event.stopPropagation()}>
+                  <td
+                    className="px-3 py-2"
+                    onClick={(event) => event.stopPropagation()}
+                  >
                     <input
                       type="checkbox"
                       aria-label={`Select ${asset.name}`}
                       checked={selected}
-                      onChange={(event) => onSelectRow(asset._id, event.target.checked)}
+                      onChange={(event) =>
+                        onSelectRow(asset._id, event.target.checked)
+                      }
                     />
                   </td>
                   <td className="px-3 py-2 font-mono text-xs font-semibold tracking-wide text-muted-foreground">
@@ -183,7 +195,10 @@ export function AssetTable({
                     {asset.tagNames.length > 0 ? (
                       <div className="mt-1 flex flex-wrap gap-1">
                         {asset.tagNames.slice(0, 2).map((tagName) => (
-                          <Badge key={tagName} className="border border-border/70 bg-muted/20 text-[10px]">
+                          <Badge
+                            key={tagName}
+                            className="border border-border/70 bg-muted/20 text-[10px]"
+                          >
                             {tagName}
                           </Badge>
                         ))}
@@ -197,7 +212,9 @@ export function AssetTable({
                   </td>
                   <td className="px-3 py-2">
                     {asset.categoryName ? (
-                      <Badge className="border border-border/60 bg-muted/20 text-xs">{asset.categoryName}</Badge>
+                      <Badge className="border border-border/60 bg-muted/20 text-xs">
+                        {asset.categoryName}
+                      </Badge>
                     ) : (
                       <span className="text-muted-foreground">—</span>
                     )}
@@ -205,16 +222,18 @@ export function AssetTable({
                   <td className="px-3 py-2">
                     <StatusBadge status={asset.status} />
                   </td>
-                  <td className="px-3 py-2 text-muted-foreground">{asset.locationPath ?? "—"}</td>
+                  <td className="px-3 py-2 text-muted-foreground">
+                    {asset.locationPath ?? "—"}
+                  </td>
                   <td className="px-3 py-2 text-right text-muted-foreground">
                     {formatDateFromTimestamp(asset.createdAt, dateFormat)}
                   </td>
                 </tr>
-              )
+              );
             })
           )}
         </tbody>
       </table>
     </div>
-  )
+  );
 }

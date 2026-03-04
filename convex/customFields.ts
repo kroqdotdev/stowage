@@ -1,13 +1,13 @@
-import { ConvexError, v } from "convex/values"
-import type { Id } from "./_generated/dataModel"
-import { mutation, query } from "./_generated/server"
-import { requireAdminUser, requireAuthenticatedUser } from "./authz"
+import { ConvexError, v } from "convex/values";
+import type { Id } from "./_generated/dataModel";
+import { mutation, query } from "./_generated/server";
+import { requireAdminUser, requireAuthenticatedUser } from "./authz";
 import {
   ensureFieldNotInUse,
   ensureSafeTypeChange,
   normalizeFieldOptions,
   requireCustomFieldName,
-} from "./custom_fields_helpers"
+} from "./custom_fields_helpers";
 
 const fieldTypeValidator = v.union(
   v.literal("text"),
@@ -17,7 +17,7 @@ const fieldTypeValidator = v.union(
   v.literal("checkbox"),
   v.literal("url"),
   v.literal("currency"),
-)
+);
 
 const fieldDefinitionViewValidator = v.object({
   _id: v.id("customFieldDefinitions"),
@@ -30,20 +30,27 @@ const fieldDefinitionViewValidator = v.object({
   usageCount: v.number(),
   createdAt: v.number(),
   updatedAt: v.number(),
-})
+});
 
 type FieldDefinitionRow = {
-  _id: Id<"customFieldDefinitions">
-  _creationTime: number
-  name: string
-  fieldType: "text" | "number" | "date" | "dropdown" | "checkbox" | "url" | "currency"
-  options: string[]
-  required: boolean
-  sortOrder: number
-  usageCount: number
-  createdAt: number
-  updatedAt: number
-}
+  _id: Id<"customFieldDefinitions">;
+  _creationTime: number;
+  name: string;
+  fieldType:
+    | "text"
+    | "number"
+    | "date"
+    | "dropdown"
+    | "checkbox"
+    | "url"
+    | "currency";
+  options: string[];
+  required: boolean;
+  sortOrder: number;
+  usageCount: number;
+  createdAt: number;
+  updatedAt: number;
+};
 
 function toFieldDefinitionView(fieldDefinition: FieldDefinitionRow) {
   return {
@@ -57,23 +64,23 @@ function toFieldDefinitionView(fieldDefinition: FieldDefinitionRow) {
     usageCount: fieldDefinition.usageCount,
     createdAt: fieldDefinition.createdAt,
     updatedAt: fieldDefinition.updatedAt,
-  }
+  };
 }
 
 export const listFieldDefinitions = query({
   args: {},
   returns: v.array(fieldDefinitionViewValidator),
   handler: async (ctx) => {
-    await requireAuthenticatedUser(ctx)
+    await requireAuthenticatedUser(ctx);
 
     const rows = (await ctx.db
       .query("customFieldDefinitions")
       .withIndex("by_sortOrder")
-      .collect()) as FieldDefinitionRow[]
+      .collect()) as FieldDefinitionRow[];
 
-    return rows.map((row) => toFieldDefinitionView(row))
+    return rows.map((row) => toFieldDefinitionView(row));
   },
-})
+});
 
 export const createFieldDefinition = mutation({
   args: {
@@ -84,19 +91,19 @@ export const createFieldDefinition = mutation({
   },
   returns: v.object({ fieldDefinitionId: v.id("customFieldDefinitions") }),
   handler: async (ctx, args) => {
-    await requireAdminUser(ctx)
+    await requireAdminUser(ctx);
 
-    const name = requireCustomFieldName(args.name)
-    const options = normalizeFieldOptions(args.fieldType, args.options)
-    const now = Date.now()
+    const name = requireCustomFieldName(args.name);
+    const options = normalizeFieldOptions(args.fieldType, args.options);
+    const now = Date.now();
 
     const lastDefinition = (await ctx.db
       .query("customFieldDefinitions")
       .withIndex("by_sortOrder")
       .order("desc")
-      .first()) as FieldDefinitionRow | null
+      .first()) as FieldDefinitionRow | null;
 
-    const nextSortOrder = lastDefinition ? lastDefinition.sortOrder + 1 : 0
+    const nextSortOrder = lastDefinition ? lastDefinition.sortOrder + 1 : 0;
 
     const fieldDefinitionId = await ctx.db.insert("customFieldDefinitions", {
       name,
@@ -107,11 +114,11 @@ export const createFieldDefinition = mutation({
       usageCount: 0,
       createdAt: now,
       updatedAt: now,
-    })
+    });
 
-    return { fieldDefinitionId }
+    return { fieldDefinitionId };
   },
-})
+});
 
 export const updateFieldDefinition = mutation({
   args: {
@@ -123,17 +130,23 @@ export const updateFieldDefinition = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    await requireAdminUser(ctx)
+    await requireAdminUser(ctx);
 
-    const existing = (await ctx.db.get(args.fieldDefinitionId)) as FieldDefinitionRow | null
+    const existing = (await ctx.db.get(
+      args.fieldDefinitionId,
+    )) as FieldDefinitionRow | null;
     if (!existing) {
-      throw new ConvexError("Field definition not found")
+      throw new ConvexError("Field definition not found");
     }
 
-    ensureSafeTypeChange(existing.fieldType, args.fieldType, existing.usageCount)
+    ensureSafeTypeChange(
+      existing.fieldType,
+      args.fieldType,
+      existing.usageCount,
+    );
 
-    const name = requireCustomFieldName(args.name)
-    const options = normalizeFieldOptions(args.fieldType, args.options)
+    const name = requireCustomFieldName(args.name);
+    const options = normalizeFieldOptions(args.fieldType, args.options);
 
     await ctx.db.patch(args.fieldDefinitionId, {
       name,
@@ -141,71 +154,78 @@ export const updateFieldDefinition = mutation({
       options,
       required: args.required,
       updatedAt: Date.now(),
-    })
+    });
 
-    return null
+    return null;
   },
-})
+});
 
 export const deleteFieldDefinition = mutation({
   args: { fieldDefinitionId: v.id("customFieldDefinitions") },
   returns: v.null(),
   handler: async (ctx, args) => {
-    await requireAdminUser(ctx)
+    await requireAdminUser(ctx);
 
-    const fieldDefinition = (await ctx.db.get(args.fieldDefinitionId)) as FieldDefinitionRow | null
+    const fieldDefinition = (await ctx.db.get(
+      args.fieldDefinitionId,
+    )) as FieldDefinitionRow | null;
     if (!fieldDefinition) {
-      throw new ConvexError("Field definition not found")
+      throw new ConvexError("Field definition not found");
     }
 
-    ensureFieldNotInUse(fieldDefinition.usageCount)
-    await ctx.db.delete(args.fieldDefinitionId)
-    return null
+    ensureFieldNotInUse(fieldDefinition.usageCount);
+    await ctx.db.delete(args.fieldDefinitionId);
+    return null;
   },
-})
+});
 
 export const reorderFieldDefinitions = mutation({
   args: { fieldDefinitionIds: v.array(v.id("customFieldDefinitions")) },
   returns: v.null(),
   handler: async (ctx, args) => {
-    await requireAdminUser(ctx)
+    await requireAdminUser(ctx);
 
-    const rows = (await ctx.db.query("customFieldDefinitions").collect()) as FieldDefinitionRow[]
-    const rowIdSet = new Set(rows.map((row) => row._id))
-    const nextIdSet = new Set(args.fieldDefinitionIds)
+    const rows = (await ctx.db
+      .query("customFieldDefinitions")
+      .collect()) as FieldDefinitionRow[];
+    const rowIdSet = new Set(rows.map((row) => row._id));
+    const nextIdSet = new Set(args.fieldDefinitionIds);
 
     if (
       rows.length !== args.fieldDefinitionIds.length ||
       rowIdSet.size !== nextIdSet.size
     ) {
-      throw new ConvexError("Provide all field definitions when reordering")
+      throw new ConvexError("Provide all field definitions when reordering");
     }
 
     for (const fieldDefinitionId of args.fieldDefinitionIds) {
       if (!rowIdSet.has(fieldDefinitionId)) {
-        throw new ConvexError("Reorder payload contains an unknown field")
+        throw new ConvexError("Reorder payload contains an unknown field");
       }
     }
 
     const currentSortById = new Map(
       rows.map((row) => [row._id, row.sortOrder]),
-    )
-    const now = Date.now()
-    const updates: Promise<void>[] = []
+    );
+    const now = Date.now();
+    const updates: Promise<void>[] = [];
 
-    for (const [index, fieldDefinitionId] of args.fieldDefinitionIds.entries()) {
+    for (const [
+      index,
+      fieldDefinitionId,
+    ] of args.fieldDefinitionIds.entries()) {
       if (currentSortById.get(fieldDefinitionId) === index) {
-        continue
+        continue;
       }
       updates.push(
         ctx.db.patch(fieldDefinitionId, {
           sortOrder: index,
           updatedAt: now,
         }),
-      )
+      );
     }
 
-    await Promise.all(updates)
-    return null
+    await Promise.all(updates);
+    return null;
   },
-})
+});

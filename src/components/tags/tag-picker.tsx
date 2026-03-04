@@ -1,24 +1,24 @@
-"use client"
+"use client";
 
-import type { Id } from "@/lib/convex-api"
-import { Badge } from "@/components/ui/badge"
+import type { Id } from "@/lib/convex-api";
+import { Badge } from "@/components/ui/badge";
 
 export type TagPickerOption = {
-  _id: Id<"tags">
-  name: string
-  color: string
-}
+  _id: Id<"tags">;
+  name: string;
+  color: string;
+};
 
 function addTagId(tagIds: Id<"tags">[], tagId: Id<"tags">) {
   if (tagIds.includes(tagId)) {
-    return tagIds
+    return tagIds;
   }
 
-  return [...tagIds, tagId]
+  return [...tagIds, tagId];
 }
 
 function removeTagId(tagIds: Id<"tags">[], tagId: Id<"tags">) {
-  return tagIds.filter((candidate) => candidate !== tagId)
+  return tagIds.filter((candidate) => candidate !== tagId);
 }
 
 export function TagPicker({
@@ -27,12 +27,12 @@ export function TagPicker({
   disabled = false,
   onChange,
 }: {
-  value: Id<"tags">[]
-  options: TagPickerOption[]
-  disabled?: boolean
-  onChange: (tagIds: Id<"tags">[]) => void
+  value: Id<"tags">[];
+  options: TagPickerOption[];
+  disabled?: boolean;
+  onChange: (tagIds: Id<"tags">[]) => void;
 }) {
-  const selectedById = new Set(value)
+  const selectedById = new Set(value);
 
   return (
     <div className="space-y-2">
@@ -41,7 +41,7 @@ export function TagPicker({
           <p className="text-sm text-muted-foreground">No tags defined.</p>
         ) : (
           options.map((tag) => {
-            const checked = selectedById.has(tag._id)
+            const checked = selectedById.has(tag._id);
 
             return (
               <label key={tag._id} className="flex items-center gap-2 text-sm">
@@ -59,7 +59,7 @@ export function TagPicker({
                 />
                 <span>{tag.name}</span>
               </label>
-            )
+            );
           })
         )}
       </div>
@@ -67,19 +67,22 @@ export function TagPicker({
       {value.length > 0 ? (
         <div className="flex flex-wrap gap-1">
           {value.map((tagId) => {
-            const tag = options.find((option) => option._id === tagId)
+            const tag = options.find((option) => option._id === tagId);
             if (!tag) {
-              return null
+              return null;
             }
 
             return (
-              <Badge key={tag._id} className="border border-border/60 bg-muted/20 text-xs">
+              <Badge
+                key={tag._id}
+                className="border border-border/60 bg-muted/20 text-xs"
+              >
                 {tag.name}
               </Badge>
-            )
+            );
           })}
         </div>
       ) : null}
     </div>
-  )
+  );
 }
