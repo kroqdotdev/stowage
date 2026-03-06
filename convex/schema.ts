@@ -27,6 +27,14 @@ const serviceIntervalUnitValidator = v.union(
   v.literal("months"),
   v.literal("years"),
 );
+const serviceGroupFieldTypeValidator = v.union(
+  v.literal("text"),
+  v.literal("textarea"),
+  v.literal("number"),
+  v.literal("date"),
+  v.literal("checkbox"),
+  v.literal("select"),
+);
 const customFieldValueValidator = v.union(
   v.string(),
   v.number(),
@@ -118,6 +126,7 @@ export default defineSchema({
     status: assetStatusValidator,
     categoryId: v.union(v.id("categories"), v.null()),
     locationId: v.union(v.id("locations"), v.null()),
+    serviceGroupId: v.optional(v.union(v.id("serviceGroups"), v.null())),
     notes: v.union(v.string(), v.null()),
     customFieldValues: customFieldValuesValidator,
     createdBy: v.id("users"),
@@ -130,6 +139,7 @@ export default defineSchema({
     .index("by_categoryId", ["categoryId"])
     .index("by_status", ["status"])
     .index("by_locationId", ["locationId"])
+    .index("by_serviceGroupId", ["serviceGroupId"])
     .index("by_normalizedName", ["normalizedName"]),
   assetTags: defineTable({
     assetId: v.id("assets"),
@@ -175,4 +185,55 @@ export default defineSchema({
   })
     .index("by_assetId", ["assetId"])
     .index("by_nextServiceDate", ["nextServiceDate"]),
+  serviceGroups: defineTable({
+    name: v.string(),
+    normalizedName: v.string(),
+    description: v.union(v.string(), v.null()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    createdBy: v.id("users"),
+    updatedBy: v.id("users"),
+  }).index("by_normalizedName", ["normalizedName"]),
+  serviceGroupFields: defineTable({
+    groupId: v.id("serviceGroups"),
+    label: v.string(),
+    normalizedLabel: v.string(),
+    fieldType: serviceGroupFieldTypeValidator,
+    required: v.boolean(),
+    options: v.array(v.string()),
+    sortOrder: v.number(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    createdBy: v.id("users"),
+    updatedBy: v.id("users"),
+  })
+    .index("by_groupId_and_sortOrder", ["groupId", "sortOrder"])
+    .index("by_groupId_and_normalizedLabel", ["groupId", "normalizedLabel"]),
+  serviceRecords: defineTable({
+    assetId: v.id("assets"),
+    serviceGroupId: v.id("serviceGroups"),
+    values: customFieldValuesValidator,
+    scheduleId: v.union(v.id("serviceSchedules"), v.null()),
+    scheduledForDate: v.union(v.string(), v.null()),
+    completedAt: v.number(),
+    completedBy: v.id("users"),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_assetId_and_completedAt", ["assetId", "completedAt"])
+    .index("by_serviceGroupId_and_completedAt", ["serviceGroupId", "completedAt"]),
+  serviceRecordAttachments: defineTable({
+    serviceRecordId: v.id("serviceRecords"),
+    storageId: v.id("_storage"),
+    fileName: v.string(),
+    fileType: v.string(),
+    fileExtension: v.string(),
+    fileKind: attachmentKindValidator,
+    fileSize: v.number(),
+    uploadedBy: v.id("users"),
+    uploadedAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_serviceRecordId", ["serviceRecordId"])
+    .index("by_serviceRecordId_and_uploadedAt", ["serviceRecordId", "uploadedAt"]),
 });

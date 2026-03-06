@@ -28,6 +28,7 @@ const options = {
       updatedAt: 1,
     },
   ],
+  serviceGroups: [],
 };
 
 const emptyFilters: AssetFiltersState = {

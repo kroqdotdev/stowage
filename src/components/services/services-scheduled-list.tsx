@@ -1,14 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "convex/react";
+import { CrudModal } from "@/components/crud/modal";
+import { ServiceRecordDynamicForm } from "@/components/services/service-record-dynamic-form";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import type { Id } from "@/lib/convex-api";
 import { api } from "@/lib/convex-api";
 
 type ScheduledRow = {
-  scheduleId: string;
-  assetId: string;
+  scheduleId: Id<"serviceSchedules">;
+  assetId: Id<"assets">;
   assetName: string;
   assetTag: string;
   assetStatus:
@@ -69,6 +73,11 @@ const STATUS_CLASSNAMES: Record<
 
 export function ServicesScheduledList() {
   const rows = useQuery(api.serviceSchedules.listScheduledAssets, {});
+  const [activeRecordTarget, setActiveRecordTarget] = useState<{
+    assetId: Id<"assets">;
+    assetName: string;
+    nextServiceDate: string;
+  } | null>(null);
 
   const today = getTodayIsoDate();
 
@@ -91,42 +100,77 @@ export function ServicesScheduledList() {
   }
 
   return (
-    <div className="space-y-3">
-      {items.map((row) => {
-        const status = getScheduleStatus({
-          nextServiceDate: row.nextServiceDate,
-          reminderStartDate: row.reminderStartDate,
-          today,
-        });
+    <>
+      <div className="space-y-3">
+        {items.map((row) => {
+          const status = getScheduleStatus({
+            nextServiceDate: row.nextServiceDate,
+            reminderStartDate: row.reminderStartDate,
+            today,
+          });
 
-        return (
-          <article
-            key={row.scheduleId}
-            className="rounded-xl border border-border/70 bg-background px-4 py-3 shadow-sm"
-          >
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <p className="text-sm font-semibold tracking-tight">
-                  {row.assetName}
-                </p>
-                <p className="text-xs text-muted-foreground">{row.assetTag}</p>
+          return (
+            <article
+              key={row.scheduleId}
+              className="rounded-xl border border-border/70 bg-background px-4 py-3 shadow-sm"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold tracking-tight">
+                    {row.assetName}
+                  </p>
+                  <p className="text-xs text-muted-foreground">{row.assetTag}</p>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge className={STATUS_CLASSNAMES[status]}>
+                    {STATUS_LABELS[status]}
+                  </Badge>
+                  <p className="text-sm font-medium">{row.nextServiceDate}</p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="cursor-pointer"
+                    onClick={() =>
+                      setActiveRecordTarget({
+                        assetId: row.assetId,
+                        assetName: row.assetName,
+                        nextServiceDate: row.nextServiceDate,
+                      })
+                    }
+                  >
+                    Log record
+                  </Button>
+                  <Link
+                    href={`/assets/${row.assetId}`}
+                    className="text-sm text-primary underline-offset-2 hover:underline"
+                  >
+                    Open asset
+                  </Link>
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <Badge className={STATUS_CLASSNAMES[status]}>
-                  {STATUS_LABELS[status]}
-                </Badge>
-                <p className="text-sm font-medium">{row.nextServiceDate}</p>
-                <Link
-                  href={`/assets/${row.assetId}`}
-                  className="text-sm text-primary underline-offset-2 hover:underline"
-                >
-                  Open asset
-                </Link>
-              </div>
-            </div>
-          </article>
-        );
-      })}
-    </div>
+            </article>
+          );
+        })}
+      </div>
+
+      <CrudModal
+        open={activeRecordTarget !== null}
+        onClose={() => setActiveRecordTarget(null)}
+        title={
+          activeRecordTarget
+            ? `Log service record: ${activeRecordTarget.assetName}`
+            : "Log service record"
+        }
+        description="Complete required service fields and optionally attach service reports."
+      >
+        {activeRecordTarget ? (
+          <ServiceRecordDynamicForm
+            assetId={activeRecordTarget.assetId}
+            scheduledForDate={activeRecordTarget.nextServiceDate}
+          />
+        ) : null}
+      </CrudModal>
+    </>
   );
 }

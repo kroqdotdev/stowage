@@ -65,6 +65,7 @@ export function AssetsPageClient() {
     categories: [],
     locations: [],
     tags: [],
+    serviceGroups: [],
   }) as AssetFilterOptions;
 
   function handleSort(field: AssetSortBy) {

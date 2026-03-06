@@ -7,15 +7,19 @@ import { cn } from "@/lib/utils";
 const tabs = [
   { href: "/services", label: "List" },
   { href: "/services/calendar", label: "Calendar" },
+  { href: "/services/groups", label: "Groups" },
 ];
 
 export function ServicesNavTabs() {
-  const pathname = usePathname();
+  const pathname = usePathname() ?? "";
 
   return (
     <div className="inline-flex rounded-lg border border-border/70 bg-muted/20 p-1">
       {tabs.map((tab) => {
-        const active = pathname === tab.href;
+        const active =
+          tab.href === "/services"
+            ? pathname === tab.href
+            : pathname === tab.href || pathname.startsWith(`${tab.href}/`);
         return (
           <Link
             key={tab.href}

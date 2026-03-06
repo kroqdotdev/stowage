@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { Pencil, Printer, Trash2, Wrench } from "lucide-react";
+import { Pencil, Printer, Trash2 } from "lucide-react";
 import type { FieldDefinition } from "@/components/fields/types";
 import { DynamicFieldDisplay } from "@/components/fields/dynamic-field-display";
 import { ConfirmDialog } from "@/components/crud/confirm-dialog";
 import { AttachmentsPanel } from "@/components/attachments/attachments-panel";
+import { AssetServiceRecordsPanel } from "@/components/services/asset-service-records-panel";
 import { StatusBadge } from "@/components/assets/status-badge";
 import {
   ASSET_STATUS_LABELS,
@@ -176,6 +177,14 @@ export function AssetDetail({
                     {asset.location?.path ?? "—"}
                   </p>
                 </div>
+                <div className="space-y-1">
+                  <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                    Service group
+                  </p>
+                  <p className="text-sm font-medium">
+                    {asset.serviceGroup?.name ?? "—"}
+                  </p>
+                </div>
                 <div className="space-y-1 md:col-span-2">
                   <p className="text-xs uppercase tracking-wide text-muted-foreground">
                     Tags
@@ -245,13 +254,7 @@ export function AssetDetail({
           </TabsContent>
 
           <TabsContent value="service">
-            <div className="rounded-lg border border-dashed border-border/70 bg-muted/10 p-5 text-sm text-muted-foreground">
-              <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-border/70 bg-background px-3 py-1 text-xs font-medium">
-                <Wrench className="h-3.5 w-3.5" />
-                Service history
-              </div>
-              Service lifecycle tools will be added in the service phases.
-            </div>
+            <AssetServiceRecordsPanel assetId={asset._id} />
           </TabsContent>
 
           <TabsContent value="attachments">

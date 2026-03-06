@@ -122,13 +122,15 @@ test.describe.serial("phase 7 service scheduling", () => {
 
     await page.goto("/settings");
     await expect(
-      page.getByRole("heading", { name: "Regional preferences" }),
+      page.getByRole("heading", { name: "Features", exact: true }),
     ).toBeVisible();
 
-    const schedulingCheckbox = page.getByRole("checkbox", { name: "Enabled" });
-    await expect(schedulingCheckbox).toBeChecked();
-    await schedulingCheckbox.uncheck();
-    await page.getByRole("button", { name: "Save settings" }).click();
+    const schedulingSwitch = page.getByRole("switch", {
+      name: "Toggle service scheduling",
+    });
+    await expect(schedulingSwitch).toBeChecked();
+    await schedulingSwitch.click();
+    await expect(page.getByText("Service scheduling disabled")).toBeVisible();
 
     await page.goto("/services");
     await expect(
@@ -141,8 +143,12 @@ test.describe.serial("phase 7 service scheduling", () => {
     await expect(page.getByText("Preventive schedule")).toHaveCount(0);
 
     await page.goto("/settings");
-    await schedulingCheckbox.check();
-    await page.getByRole("button", { name: "Save settings" }).click();
+    const reenabledSchedulingSwitch = page.getByRole("switch", {
+      name: "Toggle service scheduling",
+    });
+    await expect(reenabledSchedulingSwitch).not.toBeChecked();
+    await reenabledSchedulingSwitch.click();
+    await expect(page.getByText("Service scheduling enabled")).toBeVisible();
 
     await page.goto("/assets/new");
     await expect(page.getByText("Preventive schedule")).toBeVisible();
@@ -178,10 +184,12 @@ test.describe.serial("phase 7 service scheduling", () => {
     await expect(scheduleRow).toContainText(dueDate);
 
     await page.goto("/dashboard");
-    await expect(
-      page.getByRole("heading", { name: "Upcoming services (7 days)" }),
-    ).toBeVisible();
-    await expect(page.getByText(assetName)).toBeVisible();
+    const upcomingServicesSection = page
+      .locator("section")
+      .filter({ hasText: "Upcoming services (7 days)" })
+      .first();
+    await expect(upcomingServicesSection).toBeVisible();
+    await expect(upcomingServicesSection.getByText(assetName).first()).toBeVisible();
 
     await page.goto("/services/calendar");
     await expect(

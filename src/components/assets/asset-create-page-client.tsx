@@ -25,6 +25,7 @@ const INITIAL_VALUES: AssetFormValues = {
   name: "",
   categoryId: null,
   locationId: null,
+  serviceGroupId: null,
   status: "active",
   notes: "",
   customFieldValues: {},
@@ -52,6 +53,7 @@ export function AssetCreatePageClient() {
     categories: [],
     locations: [],
     tags: [],
+    serviceGroups: [],
   }) as AssetFilterOptions;
 
   const customFieldDefinitions = useMemo(
@@ -85,6 +87,7 @@ export function AssetCreatePageClient() {
         name: values.name,
         categoryId: values.categoryId,
         locationId: values.locationId,
+        serviceGroupId: values.serviceGroupId,
         status: values.status,
         notes: values.notes.trim() ? values.notes : null,
         customFieldValues: values.customFieldValues,
@@ -178,13 +181,14 @@ export function AssetCreatePageClient() {
 
   return (
     <section className="rounded-xl border border-border/70 bg-background p-5 shadow-sm">
-      <AssetForm
-        mode="create"
-        categories={options.categories}
-        locations={options.locations}
-        tags={options.tags}
-        fieldDefinitions={customFieldDefinitions}
-        initialValues={INITIAL_VALUES}
+        <AssetForm
+          mode="create"
+          categories={options.categories}
+          locations={options.locations}
+          serviceGroups={options.serviceGroups}
+          tags={options.tags}
+          fieldDefinitions={customFieldDefinitions}
+          initialValues={INITIAL_VALUES}
         submitLabel="Create asset"
         submitting={submitting}
         serviceSchedulingEnabled={serviceSchedulingEnabled}

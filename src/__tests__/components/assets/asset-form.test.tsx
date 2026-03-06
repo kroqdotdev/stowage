@@ -12,6 +12,7 @@ const initialValues: AssetFormValues = {
   name: "",
   categoryId: null,
   locationId: null,
+  serviceGroupId: null,
   status: "active",
   notes: "",
   customFieldValues: {},
@@ -28,6 +29,7 @@ describe("AssetForm", () => {
         mode="create"
         categories={[]}
         locations={[]}
+        serviceGroups={[]}
         tags={[]}
         fieldDefinitions={[
           {
@@ -66,6 +68,7 @@ describe("AssetForm", () => {
         mode="create"
         categories={[]}
         locations={[]}
+        serviceGroups={[]}
         tags={[]}
         fieldDefinitions={[]}
         initialValues={initialValues}
@@ -96,6 +99,7 @@ describe("AssetForm", () => {
         mode="edit"
         categories={[]}
         locations={[]}
+        serviceGroups={[]}
         tags={[]}
         fieldDefinitions={[]}
         initialValues={{
@@ -117,6 +121,7 @@ describe("AssetForm", () => {
         mode="edit"
         categories={[]}
         locations={[]}
+        serviceGroups={[]}
         tags={[]}
         fieldDefinitions={[]}
         initialValues={{

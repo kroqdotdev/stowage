@@ -119,6 +119,8 @@ test.describe.serial("auth flow", () => {
 
     await page.getByLabel("Open user menu").click();
     await page.getByRole("menuitem", { name: "Log out" }).click();
+
+    await page.goto("/dashboard");
     await expect
       .poll(() => getLeafPathSegment(page.url()), { timeout: 30_000 })
       .toBe("login");

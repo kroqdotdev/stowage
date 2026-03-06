@@ -38,6 +38,11 @@ type CategoryOption = {
   color: string;
 };
 
+type ServiceGroupOption = {
+  _id: Id<"serviceGroups">;
+  name: string;
+};
+
 function isEmptyValue(value: FieldValue) {
   if (value === null || value === undefined) {
     return true;
@@ -54,6 +59,7 @@ export function AssetForm({
   mode,
   categories,
   locations,
+  serviceGroups,
   tags,
   fieldDefinitions,
   initialValues,
@@ -69,6 +75,7 @@ export function AssetForm({
   mode: "create" | "edit";
   categories: CategoryOption[];
   locations: LocationPickerOption[];
+  serviceGroups: ServiceGroupOption[];
   tags: TagPickerOption[];
   fieldDefinitions: FieldDefinition[];
   initialValues: AssetFormValues;
@@ -266,7 +273,9 @@ export function AssetForm({
         </div>
 
         <div className="space-y-1.5">
-          <label className="text-sm font-medium">Status</label>
+          <label htmlFor="asset-status" className="text-sm font-medium">
+            Status
+          </label>
           <Select
             value={values.status}
             onValueChange={(value) =>
@@ -274,7 +283,7 @@ export function AssetForm({
             }
             disabled={submitting}
           >
-            <SelectTrigger className="w-full">
+            <SelectTrigger id="asset-status" className="w-full">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -300,6 +309,34 @@ export function AssetForm({
             onChange={(locationId) => setFieldValue("locationId", locationId)}
             disabled={submitting}
           />
+        </div>
+
+        <div className="space-y-1.5">
+          <label htmlFor="asset-service-group" className="text-sm font-medium">
+            Service group
+          </label>
+          <Select
+            value={values.serviceGroupId ?? "__none__"}
+            onValueChange={(value) =>
+              setFieldValue(
+                "serviceGroupId",
+                value === "__none__" ? null : (value as Id<"serviceGroups">),
+              )
+            }
+            disabled={submitting}
+          >
+            <SelectTrigger id="asset-service-group" className="w-full">
+              <SelectValue placeholder="No service group" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__none__">No service group</SelectItem>
+              {serviceGroups.map((group) => (
+                <SelectItem key={group._id} value={group._id}>
+                  {group.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         <div className="space-y-1.5">
