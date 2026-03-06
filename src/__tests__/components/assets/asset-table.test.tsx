@@ -19,6 +19,7 @@ const rows: AssetListItem[] = [
     categoryColor: null,
     locationId: null,
     locationPath: null,
+    serviceGroupId: null,
     notes: null,
     tagIds: [],
     tagNames: [],

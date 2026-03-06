@@ -39,6 +39,7 @@ export type AssetListItem = {
   categoryColor: string | null;
   locationId: Id<"locations"> | null;
   locationPath: string | null;
+  serviceGroupId: Id<"serviceGroups"> | null;
   notes: string | null;
   tagIds: Id<"tags">[];
   tagNames: string[];
@@ -54,6 +55,7 @@ export type AssetDetail = {
   status: AssetStatus;
   categoryId: Id<"categories"> | null;
   locationId: Id<"locations"> | null;
+  serviceGroupId: Id<"serviceGroups"> | null;
   notes: string | null;
   customFieldValues: Record<string, string | number | boolean | null>;
   createdBy: Id<"users">;
@@ -71,6 +73,10 @@ export type AssetDetail = {
     name: string;
     parentId: Id<"locations"> | null;
     path: string;
+  } | null;
+  serviceGroup: {
+    _id: Id<"serviceGroups">;
+    name: string;
   } | null;
   tags: {
     _id: Id<"tags">;
@@ -103,12 +109,17 @@ export type AssetFilterOptions = {
     createdAt: number;
     updatedAt: number;
   }[];
+  serviceGroups: {
+    _id: Id<"serviceGroups">;
+    name: string;
+  }[];
 };
 
 export type AssetFormValues = {
   name: string;
   categoryId: Id<"categories"> | null;
   locationId: Id<"locations"> | null;
+  serviceGroupId: Id<"serviceGroups"> | null;
   status: AssetStatus;
   notes: string;
   customFieldValues: Record<string, string | number | boolean | null>;

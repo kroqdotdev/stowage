@@ -5,6 +5,13 @@ import { Loader2 } from "lucide-react";
 import { CrudModal } from "@/components/crud/modal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import type { LocationTreeItem } from "@/components/locations/location-tree";
 
@@ -122,30 +129,28 @@ export function LocationFormDialog({
         </div>
 
         <div className="space-y-1.5">
-          <label
-            htmlFor="create-location-parent"
-            className="text-sm font-medium"
-          >
-            Parent location
-          </label>
-          <select
-            id="create-location-parent"
-            className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
-            value={values.parentId ?? ""}
-            onChange={(event) =>
+          <label className="text-sm font-medium">Parent location</label>
+          <Select
+            value={values.parentId ?? "__none__"}
+            onValueChange={(value) =>
               onChange({
                 ...values,
-                parentId: event.target.value ? event.target.value : null,
+                parentId: value === "__none__" ? null : value,
               })
             }
           >
-            <option value="">No parent (root)</option>
-            {sortedLocations.map((location) => (
-              <option key={location._id} value={location._id}>
-                {location.path}
-              </option>
-            ))}
-          </select>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="No parent (root)" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__none__">No parent (root)</SelectItem>
+              {sortedLocations.map((location) => (
+                <SelectItem key={location._id} value={location._id}>
+                  {location.path}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         <div className="space-y-1.5">

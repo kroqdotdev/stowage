@@ -1062,7 +1062,7 @@ Implementation note: added `appSettings` schema and `convex/appSettings.ts` so a
 - Service record completion flow that blocks submission until all required group fields are provided
 - Service-report attachments on service records
 
-### Task 7.5.1: Add service-group and configurable record schema/functions
+### Task 7.5.1 [completed]: Add service-group and configurable record schema/functions
 
 **Files:**
 
@@ -1086,7 +1086,7 @@ Implementation note: added `appSettings` schema and `convex/appSettings.ts` so a
 4. Ensure record creation validates required fields from the assigned group.
 5. Commit: "feat: add service groups and configurable service record backend"
 
-### Task 7.5.2: Build Services > Groups sub-tab and management UI
+### Task 7.5.2 [completed]: Build Services > Groups sub-tab and management UI
 
 **Files:**
 
@@ -1107,7 +1107,7 @@ Implementation note: added `appSettings` schema and `convex/appSettings.ts` so a
 4. Add group assignment UI to assets (single selected group).
 5. Commit: "feat: add services groups pages and assignment UI"
 
-### Task 7.5.3: Build configurable service record completion flow with attachments
+### Task 7.5.3 [completed]: Build configurable service record completion flow with attachments
 
 **Files:**
 
@@ -1124,7 +1124,7 @@ Implementation note: added `appSettings` schema and `convex/appSettings.ts` so a
 4. Wire record creation from services and asset contexts.
 5. Commit: "feat: add configurable service record form with attachments"
 
-### Task 7.5.4: Phase 7.5 tests
+### Task 7.5.4 [completed]: Phase 7.5 tests
 
 **Files:**
 

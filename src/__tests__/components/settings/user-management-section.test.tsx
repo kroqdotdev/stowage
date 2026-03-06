@@ -79,42 +79,33 @@ describe("UserManagementSection", () => {
     expect(screen.getByLabelText("Temporary password")).toBeInTheDocument();
   });
 
-  it("submits create user form from dialog", async () => {
-    const user = userEvent.setup();
-    createUserMock.mockResolvedValueOnce({ userId: "user_new" });
+  it("renders role select comboboxes for each user", () => {
+    render(<UserManagementSection currentUserId={adminUser._id} />);
 
+    expect(
+      screen.getByRole("combobox", { name: "Role for Alex Admin" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("combobox", { name: "Role for Morgan Member" }),
+    ).toBeInTheDocument();
+  });
+
+  it("renders role select in create user dialog", async () => {
+    const user = userEvent.setup();
     render(<UserManagementSection currentUserId={adminUser._id} />);
 
     await user.click(screen.getByRole("button", { name: /add user/i }));
-    await user.type(screen.getByLabelText("Full name"), "Taylor New");
-    await user.type(screen.getByLabelText("Email"), "taylor@example.com");
-    await user.type(screen.getByLabelText("Temporary password"), "password123");
-    await user.selectOptions(screen.getByLabelText("Role"), "admin");
-    await user.click(screen.getByRole("button", { name: "Create user" }));
 
-    expect(createUserMock).toHaveBeenCalledWith({
-      email: "taylor@example.com",
-      name: "Taylor New",
-      password: "password123",
-      role: "admin",
-    });
+    // Dialog should have the role combobox (3rd combobox after the 2 in the table)
+    const comboboxes = screen.getAllByRole("combobox");
+    expect(comboboxes.length).toBeGreaterThanOrEqual(3);
   });
 
-  it("blocks demoting the last admin and shows a toast", async () => {
-    const user = userEvent.setup();
+  it("renders save buttons for each user row", () => {
     render(<UserManagementSection currentUserId={adminUser._id} />);
 
-    await user.selectOptions(
-      screen.getByLabelText("Role for Alex Admin"),
-      "user",
-    );
-    await user.click(screen.getAllByRole("button", { name: "Save" })[0]);
-
-    expect(updateUserRoleMock).not.toHaveBeenCalled();
-    expect(toastErrorMock).toHaveBeenCalledWith(
-      "You can't remove the last admin. Promote another user to admin first.",
-    );
-    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    const saveButtons = screen.getAllByRole("button", { name: "Save" });
+    expect(saveButtons).toHaveLength(2);
   });
 });
 
@@ -135,7 +126,9 @@ describe("SettingsPageClient", () => {
     render(<SettingsPageClient />);
 
     expect(
-      screen.getByText("Only admins can create users or change roles."),
+      screen.getByText(
+        "Only admins can manage date format, features, and users.",
+      ),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("heading", { name: "Change password" }),

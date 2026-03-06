@@ -4,8 +4,16 @@ import { useMemo, useState } from "react";
 import { Loader2, Plus } from "lucide-react";
 import { useAction, useMutation, useQuery } from "convex/react";
 import { toast } from "sonner";
+import { CrudModal } from "@/components/crud/modal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { api, type Id } from "@/lib/convex-api";
 import { getConvexUiMessage } from "@/lib/convex-errors";
 import { formatDateFromTimestamp, type AppDateFormat } from "@/lib/date-format";
@@ -213,24 +221,27 @@ export function UserManagementSection({
                       {user.email}
                     </td>
                     <td className="px-3 py-2">
-                      <label className="sr-only" htmlFor={`role-${user._id}`}>
-                        Role for {user.name}
-                      </label>
-                      <select
-                        id={`role-${user._id}`}
-                        className="h-9 rounded-md border border-input bg-background px-2 text-sm"
+                      <Select
                         value={pendingRole}
-                        onChange={(event) =>
+                        onValueChange={(value) =>
                           setRoleEdits((prev) => ({
                             ...prev,
-                            [user._id]: event.target.value as "admin" | "user",
+                            [user._id]: value as "admin" | "user",
                           }))
                         }
                         disabled={isSaving}
                       >
-                        <option value="user">User</option>
-                        <option value="admin">Admin</option>
-                      </select>
+                        <SelectTrigger
+                          className="h-8 w-28"
+                          aria-label={`Role for ${user.name}`}
+                        >
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="user">User</SelectItem>
+                          <SelectItem value="admin">Admin</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </td>
                     <td className="px-3 py-2 text-muted-foreground">
                       {formatCreatedDate(user.createdAt, dateFormat)}
@@ -258,131 +269,122 @@ export function UserManagementSection({
         </table>
       </div>
 
-      {isDialogOpen ? (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="add-user-dialog-title"
+      <CrudModal
+        open={isDialogOpen}
+        onClose={closeDialog}
+        title="Add user"
+        description="Create a new account with a temporary password."
+        footer={
+          <>
+            <Button
+              type="button"
+              variant="outline"
+              className="cursor-pointer"
+              onClick={closeDialog}
+              disabled={creating}
+            >
+              Cancel
+            </Button>
+            <Button
+              form="create-user-form"
+              type="submit"
+              className="cursor-pointer"
+              disabled={creating}
+            >
+              {creating ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : null}
+              {creating ? "Creating..." : "Create user"}
+            </Button>
+          </>
+        }
+      >
+        <form
+          id="create-user-form"
+          onSubmit={handleCreateUser}
+          className="space-y-4"
         >
-          <div className="w-full max-w-md rounded-xl border border-border bg-background p-5 shadow-lg">
-            <div className="mb-4 space-y-1">
-              <h3
-                id="add-user-dialog-title"
-                className="text-lg font-semibold tracking-tight"
-              >
-                Add user
-              </h3>
-              <p className="text-sm text-muted-foreground">
-                Create a new account with a temporary password.
-              </p>
-            </div>
-
-            <form onSubmit={handleCreateUser} className="space-y-4">
-              <div className="space-y-1.5">
-                <label htmlFor="new-user-name" className="text-sm font-medium">
-                  Full name
-                </label>
-                <Input
-                  id="new-user-name"
-                  value={createForm.name}
-                  onChange={(event) =>
-                    setCreateForm((prev) => ({
-                      ...prev,
-                      name: event.target.value,
-                    }))
-                  }
-                  placeholder="Taylor Smith"
-                  required
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <label htmlFor="new-user-email" className="text-sm font-medium">
-                  Email
-                </label>
-                <Input
-                  id="new-user-email"
-                  type="email"
-                  value={createForm.email}
-                  onChange={(event) =>
-                    setCreateForm((prev) => ({
-                      ...prev,
-                      email: event.target.value,
-                    }))
-                  }
-                  placeholder="taylor@example.com"
-                  required
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <label
-                  htmlFor="new-user-password"
-                  className="text-sm font-medium"
-                >
-                  Temporary password
-                </label>
-                <Input
-                  id="new-user-password"
-                  type="password"
-                  value={createForm.password}
-                  onChange={(event) =>
-                    setCreateForm((prev) => ({
-                      ...prev,
-                      password: event.target.value,
-                    }))
-                  }
-                  placeholder="At least 8 characters"
-                  required
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <label htmlFor="new-user-role" className="text-sm font-medium">
-                  Role
-                </label>
-                <select
-                  id="new-user-role"
-                  className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
-                  value={createForm.role}
-                  onChange={(event) =>
-                    setCreateForm((prev) => ({
-                      ...prev,
-                      role: event.target.value as "admin" | "user",
-                    }))
-                  }
-                >
-                  <option value="user">User</option>
-                  <option value="admin">Admin</option>
-                </select>
-              </div>
-
-              <div className="flex justify-end gap-2">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="cursor-pointer"
-                  onClick={closeDialog}
-                  disabled={creating}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  className="cursor-pointer"
-                  disabled={creating}
-                >
-                  {creating ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : null}
-                  {creating ? "Creating..." : "Create user"}
-                </Button>
-              </div>
-            </form>
+          <div className="space-y-1.5">
+            <label htmlFor="new-user-name" className="text-sm font-medium">
+              Full name
+            </label>
+            <Input
+              id="new-user-name"
+              value={createForm.name}
+              onChange={(event) =>
+                setCreateForm((prev) => ({
+                  ...prev,
+                  name: event.target.value,
+                }))
+              }
+              placeholder="Taylor Smith"
+              required
+            />
           </div>
-        </div>
-      ) : null}
+
+          <div className="space-y-1.5">
+            <label htmlFor="new-user-email" className="text-sm font-medium">
+              Email
+            </label>
+            <Input
+              id="new-user-email"
+              type="email"
+              value={createForm.email}
+              onChange={(event) =>
+                setCreateForm((prev) => ({
+                  ...prev,
+                  email: event.target.value,
+                }))
+              }
+              placeholder="taylor@example.com"
+              required
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <label
+              htmlFor="new-user-password"
+              className="text-sm font-medium"
+            >
+              Temporary password
+            </label>
+            <Input
+              id="new-user-password"
+              type="password"
+              value={createForm.password}
+              onChange={(event) =>
+                setCreateForm((prev) => ({
+                  ...prev,
+                  password: event.target.value,
+                }))
+              }
+              placeholder="At least 8 characters"
+              required
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium">Role</label>
+            <Select
+              value={createForm.role}
+              onValueChange={(value) =>
+                setCreateForm((prev) => ({
+                  ...prev,
+                  role: value as "admin" | "user",
+                }))
+              }
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="user">User</SelectItem>
+                <SelectItem value="admin">Admin</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </form>
+      </CrudModal>
     </section>
   );
 }

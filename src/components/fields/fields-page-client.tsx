@@ -1,12 +1,13 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   GripVertical,
   Loader2,
   MoreHorizontal,
   Pencil,
   Plus,
+  SlidersHorizontal,
   Trash2,
 } from "lucide-react";
 import { useMutation, useQuery } from "convex/react";
@@ -17,12 +18,25 @@ import { FieldDefinitionForm } from "@/components/fields/field-definition-form";
 import type { FieldDefinition } from "@/components/fields/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { getConvexErrorCode } from "@/lib/convex-errors";
 import { api } from "@/lib/convex-api";
 
@@ -232,105 +246,165 @@ export function FieldsPageClient() {
                 </tr>
               ) : rows.length === 0 ? (
                 <tr>
-                  <td
-                    colSpan={6}
-                    className="px-3 py-8 text-center text-muted-foreground"
-                  >
-                    No custom fields yet.
+                  <td colSpan={6} className="p-0">
+                    <EmptyState
+                      icon={SlidersHorizontal}
+                      title="No custom fields"
+                      description="Define reusable fields to capture extra asset data."
+                      action={
+                        canManage ? (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="cursor-pointer"
+                            onClick={openCreate}
+                          >
+                            <Plus className="h-4 w-4" />
+                            Add field
+                          </Button>
+                        ) : undefined
+                      }
+                      className="rounded-none border-0"
+                    />
                   </td>
                 </tr>
               ) : (
-                rows.map((definition) => (
-                  <tr
-                    key={definition._id}
-                    className="border-t border-border/50"
-                    draggable={canManage && !reordering}
-                    onDragStart={(event) => {
-                      setDraggingId(definition._id);
-                      event.dataTransfer.effectAllowed = "move";
-                    }}
-                    onDragOver={(event) => {
-                      if (canManage) {
+                rows.map((definition) => {
+                  const rowContent = (
+                    <tr
+                      className="border-t border-border/50"
+                      draggable={canManage && !reordering}
+                      onDragStart={(event) => {
+                        setDraggingId(definition._id);
+                        event.dataTransfer.effectAllowed = "move";
+                      }}
+                      onDragOver={(event) => {
+                        if (canManage) {
+                          event.preventDefault();
+                        }
+                      }}
+                      onDrop={(event) => {
                         event.preventDefault();
-                      }
-                    }}
-                    onDrop={(event) => {
-                      event.preventDefault();
-                      if (!canManage || !draggingId) {
-                        return;
-                      }
-                      const orderedIds = moveId(
-                        rows.map((row) => row._id as string),
-                        draggingId,
-                        definition._id as string,
-                      );
-                      void saveOrder(orderedIds);
-                    }}
-                  >
-                    <td className="px-3 py-2">
-                      <div className="inline-flex items-center gap-1 rounded-md border border-border/70 bg-muted/20 px-1.5 py-1 text-xs text-muted-foreground">
-                        <GripVertical className="h-3.5 w-3.5" />
-                        <span className="font-mono">
-                          {definition.sortOrder + 1}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-3 py-2 font-medium">{definition.name}</td>
-                    <td className="px-3 py-2">
-                      <Badge className="bg-muted/20 capitalize">
-                        {definition.fieldType}
-                      </Badge>
-                    </td>
-                    <td className="px-3 py-2">
-                      {definition.required ? (
-                        <Badge className="bg-muted/20">Required</Badge>
-                      ) : (
-                        <span className="text-muted-foreground">Optional</span>
-                      )}
-                    </td>
-                    <td className="px-3 py-2 text-muted-foreground">
-                      {definition.usageCount}
-                    </td>
-                    <td className="px-3 py-2 text-right">
-                      {canManage ? (
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon-sm"
-                              className="cursor-pointer"
-                              aria-label={`Actions for ${definition.name}`}
-                            >
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem
-                              onClick={() => openEdit(definition._id as string)}
-                            >
-                              <Pencil className="h-4 w-4" />
-                              Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              variant="destructive"
-                              onClick={() =>
-                                setDeleteId(definition._id as string)
-                              }
-                            >
-                              <Trash2 className="h-4 w-4" />
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      ) : (
-                        <span className="text-xs text-muted-foreground">
-                          Read only
-                        </span>
-                      )}
-                    </td>
-                  </tr>
-                ))
+                        if (!canManage || !draggingId) {
+                          return;
+                        }
+                        const orderedIds = moveId(
+                          rows.map((row) => row._id as string),
+                          draggingId,
+                          definition._id as string,
+                        );
+                        void saveOrder(orderedIds);
+                      }}
+                    >
+                      <td className="px-3 py-2">
+                        <div className="inline-flex items-center gap-1 rounded-md border border-border/70 bg-muted/20 px-1.5 py-1 text-xs text-muted-foreground">
+                          <GripVertical className="h-3.5 w-3.5" />
+                          <span className="font-mono">
+                            {definition.sortOrder + 1}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-3 py-2 font-medium">
+                        {definition.name}
+                      </td>
+                      <td className="px-3 py-2">
+                        <Badge className="bg-muted/20 capitalize">
+                          {definition.fieldType}
+                        </Badge>
+                      </td>
+                      <td className="px-3 py-2">
+                        {definition.required ? (
+                          <Badge className="bg-muted/20">Required</Badge>
+                        ) : (
+                          <span className="text-muted-foreground">
+                            Optional
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-3 py-2 text-muted-foreground">
+                        {definition.usageCount}
+                      </td>
+                      <td className="px-3 py-2 text-right">
+                        {canManage ? (
+                          <DropdownMenu>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <DropdownMenuTrigger asChild>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon-sm"
+                                    className="cursor-pointer"
+                                    aria-label={`Actions for ${definition.name}`}
+                                  >
+                                    <MoreHorizontal className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                              </TooltipTrigger>
+                              <TooltipContent>Actions</TooltipContent>
+                            </Tooltip>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  openEdit(definition._id as string)
+                                }
+                              >
+                                <Pencil className="h-4 w-4" />
+                                Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                variant="destructive"
+                                onClick={() =>
+                                  setDeleteId(definition._id as string)
+                                }
+                              >
+                                <Trash2 className="h-4 w-4" />
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">
+                            Read only
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+
+                  return canManage ? (
+                    <ContextMenu key={definition._id}>
+                      <ContextMenuTrigger asChild>
+                        {rowContent}
+                      </ContextMenuTrigger>
+                      <ContextMenuContent>
+                        <ContextMenuItem
+                          onClick={() =>
+                            openEdit(definition._id as string)
+                          }
+                        >
+                          <Pencil className="h-4 w-4" />
+                          Edit
+                        </ContextMenuItem>
+                        <ContextMenuSeparator />
+                        <ContextMenuItem
+                          variant="destructive"
+                          onClick={() =>
+                            setDeleteId(definition._id as string)
+                          }
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          Delete
+                        </ContextMenuItem>
+                      </ContextMenuContent>
+                    </ContextMenu>
+                  ) : (
+                    <React.Fragment key={definition._id}>
+                      {rowContent}
+                    </React.Fragment>
+                  );
+                })
               )}
             </tbody>
           </table>

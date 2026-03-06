@@ -28,6 +28,7 @@ function toFormValues(asset: AssetDetail): AssetFormValues {
     name: asset.name,
     categoryId: asset.categoryId,
     locationId: asset.locationId,
+    serviceGroupId: asset.serviceGroupId,
     status: asset.status,
     notes: asset.notes ?? "",
     customFieldValues: asset.customFieldValues,
@@ -65,6 +66,7 @@ export function AssetEditPageClient({ assetId }: { assetId: Id<"assets"> }) {
     categories: [],
     locations: [],
     tags: [],
+    serviceGroups: [],
   }) as AssetFilterOptions;
 
   const customFieldDefinitions = useMemo(
@@ -118,6 +120,7 @@ export function AssetEditPageClient({ assetId }: { assetId: Id<"assets"> }) {
         name: values.name,
         categoryId: values.categoryId,
         locationId: values.locationId,
+        serviceGroupId: values.serviceGroupId,
         status: values.status,
         notes: values.notes.trim() ? values.notes : null,
         customFieldValues: values.customFieldValues,
@@ -179,6 +182,7 @@ export function AssetEditPageClient({ assetId }: { assetId: Id<"assets"> }) {
           mode="edit"
           categories={options.categories}
           locations={options.locations}
+          serviceGroups={options.serviceGroups}
           tags={options.tags}
           fieldDefinitions={customFieldDefinitions}
           initialValues={initialValues}

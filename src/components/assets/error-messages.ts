@@ -16,6 +16,10 @@ export function getAssetUiErrorMessage(error: unknown, fallback: string) {
     return "The selected location no longer exists.";
   }
 
+  if (code === "SERVICE_GROUP_NOT_FOUND") {
+    return "The selected service group no longer exists.";
+  }
+
   if (code === "TAG_NOT_FOUND") {
     return "One or more selected tags no longer exist.";
   }

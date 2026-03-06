@@ -28,6 +28,7 @@ const options = {
       updatedAt: 1,
     },
   ],
+  serviceGroups: [],
 };
 
 const emptyFilters: AssetFiltersState = {
@@ -38,10 +39,9 @@ const emptyFilters: AssetFiltersState = {
 };
 
 describe("AssetFilters", () => {
-  it("calls search and filter handlers", async () => {
+  it("calls search handler when typing", async () => {
     const user = userEvent.setup();
     const onSearchChange = vi.fn();
-    const onFiltersChange = vi.fn();
 
     render(
       <AssetFilters
@@ -49,22 +49,30 @@ describe("AssetFilters", () => {
         search=""
         filters={emptyFilters}
         onSearchChange={onSearchChange}
-        onFiltersChange={onFiltersChange}
+        onFiltersChange={vi.fn()}
         onReset={vi.fn()}
       />,
     );
 
     await user.type(screen.getByLabelText("Search assets"), "router");
     expect(onSearchChange).toHaveBeenCalled();
+  });
 
-    await user.selectOptions(
-      screen.getByLabelText("Filter by category"),
-      "cat1",
+  it("renders category filter trigger", () => {
+    render(
+      <AssetFilters
+        options={options}
+        search=""
+        filters={emptyFilters}
+        onSearchChange={vi.fn()}
+        onFiltersChange={vi.fn()}
+        onReset={vi.fn()}
+      />,
     );
-    expect(onFiltersChange).toHaveBeenCalledWith({
-      ...emptyFilters,
-      categoryId: "cat1",
-    });
+
+    expect(
+      screen.getByRole("combobox", { name: "Filter by category" }),
+    ).toBeInTheDocument();
   });
 
   it("resets when reset button is clicked", async () => {

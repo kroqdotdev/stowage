@@ -28,7 +28,7 @@ export function PageHeader({
       : [{ label: "Stowage", href: "/dashboard" }, { label: title }];
 
   return (
-    <div className="mb-6">
+    <div>
       <Breadcrumb>
         <BreadcrumbList>
           {resolvedBreadcrumbs.map((breadcrumb, index) => {

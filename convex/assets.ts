@@ -54,6 +54,9 @@ const optionalCategoryIdValidator = v.optional(
 const optionalLocationIdValidator = v.optional(
   v.union(v.id("locations"), v.null()),
 );
+const optionalServiceGroupIdValidator = v.optional(
+  v.union(v.id("serviceGroups"), v.null()),
+);
 const optionalStatusValidator = v.optional(assetStatusValidator);
 const optionalSortByValidator = v.optional(
   v.union(
@@ -87,6 +90,11 @@ const locationViewValidator = v.object({
   path: v.string(),
 });
 
+const serviceGroupViewValidator = v.object({
+  _id: v.id("serviceGroups"),
+  name: v.string(),
+});
+
 const tagViewValidator = v.object({
   _id: v.id("tags"),
   _creationTime: v.number(),
@@ -107,6 +115,7 @@ const assetListItemValidator = v.object({
   categoryColor: v.union(v.string(), v.null()),
   locationId: v.union(v.id("locations"), v.null()),
   locationPath: v.union(v.string(), v.null()),
+  serviceGroupId: v.union(v.id("serviceGroups"), v.null()),
   notes: v.union(v.string(), v.null()),
   tagIds: v.array(v.id("tags")),
   tagNames: v.array(v.string()),
@@ -122,6 +131,7 @@ const assetDetailValidator = v.object({
   status: assetStatusValidator,
   categoryId: v.union(v.id("categories"), v.null()),
   locationId: v.union(v.id("locations"), v.null()),
+  serviceGroupId: v.union(v.id("serviceGroups"), v.null()),
   notes: v.union(v.string(), v.null()),
   customFieldValues: customFieldValuesValidator,
   createdBy: v.id("users"),
@@ -130,6 +140,7 @@ const assetDetailValidator = v.object({
   updatedAt: v.number(),
   category: v.union(categoryViewValidator, v.null()),
   location: v.union(locationViewValidator, v.null()),
+  serviceGroup: v.union(serviceGroupViewValidator, v.null()),
   tags: v.array(tagViewValidator),
 });
 
@@ -142,6 +153,7 @@ type AssetRow = {
   status: AssetStatus;
   categoryId: Id<"categories"> | null;
   locationId: Id<"locations"> | null;
+  serviceGroupId?: Id<"serviceGroups"> | null;
   notes: string | null;
   customFieldValues: Record<string, AssetCustomFieldValue>;
   createdBy: Id<"users">;
@@ -162,6 +174,11 @@ type LocationRow = {
   name: string;
   parentId: Id<"locations"> | null;
   path: string;
+};
+
+type ServiceGroupRow = {
+  _id: Id<"serviceGroups">;
+  name: string;
 };
 
 type TagRow = {
@@ -296,6 +313,18 @@ async function requireLocation(
   }
 
   return location;
+}
+
+async function requireServiceGroup(
+  ctx: QueryCtx | MutationCtx,
+  serviceGroupId: Id<"serviceGroups">,
+) {
+  const serviceGroup = (await ctx.db.get(serviceGroupId)) as ServiceGroupRow | null;
+  if (!serviceGroup) {
+    throwAssetError("SERVICE_GROUP_NOT_FOUND", "Service group not found");
+  }
+
+  return serviceGroup;
 }
 
 async function requireAsset(
@@ -595,6 +624,7 @@ type AssetListView = {
   categoryColor: string | null;
   locationId: Id<"locations"> | null;
   locationPath: string | null;
+  serviceGroupId: Id<"serviceGroups"> | null;
   notes: string | null;
   tagIds: Id<"tags">[];
   tagNames: string[];
@@ -843,6 +873,7 @@ async function buildAssetListViews(ctx: QueryCtx, assetRows: AssetRow[]) {
       categoryColor: category?.color ?? null,
       locationId: asset.locationId,
       locationPath: location?.path ?? null,
+      serviceGroupId: asset.serviceGroupId ?? null,
       notes: asset.notes,
       tagIds: tagIdsForAsset,
       tagNames,
@@ -884,6 +915,7 @@ export const createAsset = mutation({
     name: v.string(),
     categoryId: optionalCategoryIdValidator,
     locationId: optionalLocationIdValidator,
+    serviceGroupId: optionalServiceGroupIdValidator,
     status: optionalStatusValidator,
     notes: v.optional(v.union(v.string(), v.null())),
     customFieldValues: v.optional(customFieldValuesValidator),
@@ -897,6 +929,7 @@ export const createAsset = mutation({
     const normalizedName = normalizeAssetNameKey(name);
     const categoryId = args.categoryId ?? null;
     const locationId = args.locationId ?? null;
+    const serviceGroupId = args.serviceGroupId ?? null;
 
     if (categoryId) {
       await requireCategory(ctx, categoryId);
@@ -904,6 +937,10 @@ export const createAsset = mutation({
 
     if (locationId) {
       await requireLocation(ctx, locationId);
+    }
+
+    if (serviceGroupId) {
+      await requireServiceGroup(ctx, serviceGroupId);
     }
 
     const status = (args.status ?? "active") as AssetStatus;
@@ -928,6 +965,7 @@ export const createAsset = mutation({
       status,
       categoryId,
       locationId,
+      serviceGroupId,
       notes,
       customFieldValues,
       createdBy: actor._id as Id<"users">,
@@ -960,10 +998,12 @@ export const getAsset = query({
     if (!asset) {
       return null;
     }
+    const serviceGroupId = asset.serviceGroupId ?? null;
 
-    const [category, location, tags] = await Promise.all([
+    const [category, location, serviceGroup, tags] = await Promise.all([
       asset.categoryId ? ctx.db.get(asset.categoryId) : Promise.resolve(null),
       asset.locationId ? ctx.db.get(asset.locationId) : Promise.resolve(null),
+      serviceGroupId ? ctx.db.get(serviceGroupId) : Promise.resolve(null),
       listTagsForAsset(ctx, asset._id),
     ]);
 
@@ -975,6 +1015,7 @@ export const getAsset = query({
       status: asset.status,
       categoryId: asset.categoryId,
       locationId: asset.locationId,
+      serviceGroupId,
       notes: asset.notes,
       customFieldValues: asset.customFieldValues,
       createdBy: asset.createdBy,
@@ -996,6 +1037,12 @@ export const getAsset = query({
             parentId: ((location as LocationRow).parentId ??
               null) as Id<"locations"> | null,
             path: String((location as LocationRow).path),
+          }
+        : null,
+      serviceGroup: serviceGroup
+        ? {
+            _id: serviceGroup._id as Id<"serviceGroups">,
+            name: String((serviceGroup as ServiceGroupRow).name),
           }
         : null,
       tags,
@@ -1074,6 +1121,7 @@ export const updateAsset = mutation({
     name: v.optional(v.string()),
     categoryId: optionalCategoryIdValidator,
     locationId: optionalLocationIdValidator,
+    serviceGroupId: optionalServiceGroupIdValidator,
     status: optionalStatusValidator,
     notes: v.optional(v.union(v.string(), v.null())),
     customFieldValues: v.optional(customFieldValuesValidator),
@@ -1095,6 +1143,10 @@ export const updateAsset = mutation({
       args.locationId === undefined
         ? asset.locationId
         : (args.locationId ?? null);
+    const serviceGroupId =
+      args.serviceGroupId === undefined
+        ? (asset.serviceGroupId ?? null)
+        : (args.serviceGroupId ?? null);
     const status = (args.status ?? asset.status) as AssetStatus;
 
     if (!isAssetStatus(status)) {
@@ -1107,6 +1159,10 @@ export const updateAsset = mutation({
 
     if (locationId) {
       await requireLocation(ctx, locationId);
+    }
+
+    if (serviceGroupId) {
+      await requireServiceGroup(ctx, serviceGroupId);
     }
 
     const notes =
@@ -1124,6 +1180,7 @@ export const updateAsset = mutation({
       normalizedName,
       categoryId,
       locationId,
+      serviceGroupId,
       status,
       notes,
       customFieldValues,
@@ -1222,6 +1279,45 @@ export const deleteAsset = mutation({
       }),
     );
 
+    const serviceSchedule = await ctx.db
+      .query("serviceSchedules")
+      .withIndex("by_assetId", (q) => q.eq("assetId", asset._id))
+      .first();
+    if (serviceSchedule) {
+      await ctx.db.delete(serviceSchedule._id as Id<"serviceSchedules">);
+    }
+
+    const serviceRecords = await ctx.db
+      .query("serviceRecords")
+      .withIndex("by_assetId_and_completedAt", (q) => q.eq("assetId", asset._id))
+      .collect();
+
+    await Promise.all(
+      serviceRecords.map(async (record) => {
+        const recordAttachments = await ctx.db
+          .query("serviceRecordAttachments")
+          .withIndex("by_serviceRecordId", (q) =>
+            q.eq("serviceRecordId", record._id as Id<"serviceRecords">),
+          )
+          .collect();
+
+        await Promise.all(
+          recordAttachments.map(async (recordAttachment) => {
+            await ctx.db.delete(recordAttachment._id as Id<"serviceRecordAttachments">);
+            try {
+              await ctx.storage.delete(
+                (recordAttachment as { storageId: Id<"_storage"> }).storageId,
+              );
+            } catch {
+              // File may have already been removed.
+            }
+          }),
+        );
+
+        await ctx.db.delete(record._id as Id<"serviceRecords">);
+      }),
+    );
+
     await ctx.db.delete(asset._id);
 
     return null;
@@ -1234,14 +1330,16 @@ export const getAssetFilterOptions = query({
     categories: v.array(categoryViewValidator),
     locations: v.array(locationViewValidator),
     tags: v.array(tagViewValidator),
+    serviceGroups: v.array(serviceGroupViewValidator),
   }),
   handler: async (ctx) => {
     await requireAuthenticatedUser(ctx);
 
-    const [categories, locations, tags] = await Promise.all([
+    const [categories, locations, tags, serviceGroups] = await Promise.all([
       ctx.db.query("categories").collect(),
       ctx.db.query("locations").collect(),
       ctx.db.query("tags").collect(),
+      ctx.db.query("serviceGroups").collect(),
     ]);
 
     const sortedCategories = (categories as CategoryRow[])
@@ -1282,10 +1380,82 @@ export const getAssetFilterOptions = query({
         updatedAt: tag.updatedAt,
       }));
 
+    const sortedServiceGroups = (serviceGroups as ServiceGroupRow[])
+      .slice()
+      .sort((a, b) =>
+        a.name.localeCompare(b.name, undefined, { sensitivity: "base" }),
+      )
+      .map((group) => ({
+        _id: group._id,
+        name: group.name,
+      }));
+
     return {
       categories: sortedCategories,
       locations: sortedLocations,
       tags: sortedTags,
+      serviceGroups: sortedServiceGroups,
+    };
+  },
+});
+
+export const getDashboardStats = query({
+  args: {},
+  returns: v.object({
+    totalAssets: v.number(),
+    totalCategories: v.number(),
+    totalLocations: v.number(),
+    statusBreakdown: v.array(
+      v.object({ status: assetStatusValidator, count: v.number() }),
+    ),
+    recentAssets: v.array(
+      v.object({
+        _id: v.id("assets"),
+        name: v.string(),
+        assetTag: v.string(),
+        status: assetStatusValidator,
+        createdAt: v.number(),
+      }),
+    ),
+  }),
+  handler: async (ctx) => {
+    await requireAuthenticatedUser(ctx);
+
+    const [allAssets, categories, locations] = await Promise.all([
+      ctx.db.query("assets").collect() as Promise<AssetRow[]>,
+      ctx.db.query("categories").collect(),
+      ctx.db.query("locations").collect(),
+    ]);
+
+    const statusCounts = new Map<AssetStatus, number>();
+    for (const asset of allAssets) {
+      statusCounts.set(asset.status, (statusCounts.get(asset.status) ?? 0) + 1);
+    }
+
+    const statusBreakdown = ASSET_STATUSES.filter((s) =>
+      statusCounts.has(s),
+    ).map((status) => ({
+      status,
+      count: statusCounts.get(status) ?? 0,
+    }));
+
+    const recentAssets = allAssets
+      .sort((a, b) => b.createdAt - a.createdAt)
+      .slice(0, 5)
+      .map((asset) => ({
+        _id: asset._id,
+        name: asset.name,
+        assetTag: asset.assetTag,
+        status: asset.status,
+        createdAt: asset.createdAt,
+      }));
+
+    return {
+      totalAssets: allAssets.length,
+      totalCategories: categories.length,
+      totalLocations: locations.length,
+      statusBreakdown,
+      recentAssets,
     };
   },
 });

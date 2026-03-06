@@ -96,14 +96,18 @@ test.describe.serial("phase 3 pages", () => {
     let locationDialog = page.getByRole("dialog");
     await locationDialog.getByLabel("Name").fill(rootName);
     await page.getByRole("button", { name: "Create location" }).click();
-    await expect(page.getByText(rootName)).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: `Actions for ${rootName}` }),
+    ).toBeVisible();
 
     await page.getByRole("button", { name: `Actions for ${rootName}` }).click();
     await page.getByRole("menuitem", { name: "Add child" }).click();
     locationDialog = page.getByRole("dialog");
     await locationDialog.getByLabel("Name").fill(childName);
     await page.getByRole("button", { name: "Create location" }).click();
-    await expect(page.getByText(`${rootName} / ${childName}`)).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: `Actions for ${childName}` }),
+    ).toBeVisible();
 
     await page
       .getByRole("button", { name: `Actions for ${childName}` })
@@ -113,7 +117,7 @@ test.describe.serial("phase 3 pages", () => {
     await locationDialog.getByLabel("Name").fill(grandchildName);
     await page.getByRole("button", { name: "Create location" }).click();
     await expect(
-      page.getByText(`${rootName} / ${childName} / ${grandchildName}`),
+      page.getByRole("button", { name: `Actions for ${grandchildName}` }),
     ).toBeVisible();
   });
 });

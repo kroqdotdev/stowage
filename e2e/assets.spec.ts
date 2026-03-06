@@ -136,7 +136,8 @@ test.describe.serial("phase 5 assets", () => {
       page.getByRole("heading", { name: updatedName }),
     ).toBeVisible();
 
-    await page.getByLabel("Change status").selectOption("retired");
+    await page.getByLabel("Change status").click();
+    await page.getByRole("option", { name: "Retired" }).click();
     await expect(
       page
         .locator("[data-slot='badge']")
@@ -150,7 +151,8 @@ test.describe.serial("phase 5 assets", () => {
       page.locator("tbody tr").filter({ hasText: updatedName }),
     ).toBeVisible();
 
-    await page.getByLabel("Filter by status").selectOption("retired");
+    await page.getByLabel("Filter by status").click();
+    await page.getByRole("option", { name: "Retired" }).click();
     await expect(
       page.locator("tbody tr").filter({ hasText: updatedName }),
     ).toBeVisible();
