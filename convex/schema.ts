@@ -149,7 +149,12 @@ export default defineSchema({
     .index("by_status", ["status"])
     .index("by_locationId", ["locationId"])
     .index("by_serviceGroupId", ["serviceGroupId"])
-    .index("by_normalizedName", ["normalizedName"]),
+    .index("by_normalizedName", ["normalizedName"])
+    .index("by_updatedAt", ["updatedAt"])
+    .searchIndex("search_assets", {
+      searchField: "name",
+      filterFields: ["status", "categoryId", "locationId"],
+    }),
   assetTags: defineTable({
     assetId: v.id("assets"),
     tagId: v.id("tags"),
@@ -239,7 +244,8 @@ export default defineSchema({
     .index("by_serviceGroupId_and_completedAt", [
       "serviceGroupId",
       "completedAt",
-    ]),
+    ])
+    .index("by_providerId", ["providerId"]),
   serviceProviders: defineTable({
     name: v.string(),
     normalizedName: v.string(),

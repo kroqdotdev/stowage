@@ -4,7 +4,7 @@ import Link from "next/link";
 import { AlertTriangle } from "lucide-react";
 import type { Id } from "@/lib/convex-api";
 import type { AppDateFormat } from "@/lib/date-format";
-import { formatDateFromIsoDateOnly } from "@/lib/date-format";
+import { formatDateFromIsoDateOnly, getDaysUntil } from "@/lib/date-format";
 import { useTodayIsoDate } from "@/lib/use-today-iso-date";
 
 type UpcomingServiceItem = {
@@ -14,14 +14,6 @@ type UpcomingServiceItem = {
   assetTag: string;
   nextServiceDate: string;
 };
-
-function getDaysUntil(dateStr: string, todayIsoDate: string) {
-  const today = new Date(`${todayIsoDate}T00:00:00Z`);
-  const target = new Date(`${dateStr}T00:00:00Z`);
-  return Math.round(
-    (target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
-  );
-}
 
 function getQueueAccent(dateStr: string, todayIsoDate: string) {
   const daysUntil = getDaysUntil(dateStr, todayIsoDate);

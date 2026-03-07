@@ -370,6 +370,10 @@ async function getCategoryPrefix(
   return normalizeAssetTagPrefix(category.prefix);
 }
 
+// TODO: Consider maintaining a counter document per prefix for better scalability.
+// Convex does not support prefix queries on string indexes, so we must scan all
+// assets to find the max tag number for a given prefix. At scale, a dedicated
+// "assetTagCounters" table keyed by prefix would eliminate this full-table scan.
 async function getNextAssetTagForPrefix(
   ctx: QueryCtx | MutationCtx,
   prefix: string,
@@ -1207,6 +1211,9 @@ export const searchAssets = query({
   },
 });
 
+// Access control: All authenticated users can modify any asset. This is by
+// design -- Stowage is a collaborative asset management tool where every team
+// member can update asset details, status, and metadata.
 export const updateAsset = mutation({
   args: {
     assetId: v.id("assets"),
@@ -1298,6 +1305,9 @@ export const updateAsset = mutation({
   },
 });
 
+// Access control: All authenticated users can change asset status. This
+// supports collaborative workflows where any team member can mark assets as
+// active, in storage, under repair, retired, or disposed.
 export const updateAssetStatus = mutation({
   args: {
     assetId: v.id("assets"),

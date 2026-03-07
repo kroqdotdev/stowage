@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useMutation } from "convex/react";
 import { Plus, Sparkles } from "lucide-react";
 import { toast } from "sonner";
@@ -116,6 +116,9 @@ export function TemplateDesigner({
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
+  // Intentional sync effect for the template editing workflow: keeps draft,
+  // baseline, and selectedElementId in sync when the reactive `templates`
+  // array changes (e.g. after save/delete) or when no template is selected.
   useEffect(() => {
     if (selectedTemplateId === "new") {
       return;
@@ -229,21 +232,26 @@ export function TemplateDesigner({
     setSelectedElementId(element.id);
   }
 
-  function handleChangeElement(
-    elementId: string,
-    updater: (element: LabelTemplateElement) => LabelTemplateElement,
-  ) {
-    if (!draft) {
-      return;
-    }
+  const handleChangeElement = useCallback(
+    (
+      elementId: string,
+      updater: (element: LabelTemplateElement) => LabelTemplateElement,
+    ) => {
+      setDraft((prev) => {
+        if (!prev) {
+          return prev;
+        }
 
-    applyDraft({
-      ...draft,
-      elements: draft.elements.map((element) =>
-        element.id === elementId ? updater(element) : element,
-      ),
-    });
-  }
+        return sanitizeTemplate({
+          ...prev,
+          elements: prev.elements.map((element) =>
+            element.id === elementId ? updater(element) : element,
+          ),
+        });
+      });
+    },
+    [],
+  );
 
   function handleDeleteElement(elementId: string) {
     if (!draft) {

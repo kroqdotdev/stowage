@@ -1,4 +1,5 @@
 import { v } from "convex/values";
+import type { Id } from "./_generated/dataModel";
 import { mutation, query } from "./_generated/server";
 import { requireAdminUser, requireAuthenticatedUser } from "./authz";
 import { type AppDateFormat } from "./custom_fields_helpers";
@@ -16,12 +17,12 @@ const appSettingsViewValidator = v.object({
 });
 
 type AppSettingsRow = {
-  _id: string;
+  _id: Id<"appSettings">;
   key: "global";
   dateFormat: AppDateFormat;
   serviceSchedulingEnabled?: boolean;
   updatedAt: number;
-  updatedBy: string;
+  updatedBy: Id<"users">;
 };
 
 const DEFAULT_DATE_FORMAT: AppDateFormat = "DD-MM-YYYY";
@@ -76,11 +77,11 @@ export const updateDateFormat = mutation({
       existing?.serviceSchedulingEnabled ?? DEFAULT_SERVICE_SCHEDULING_ENABLED;
 
     if (existing) {
-      await ctx.db.patch(existing._id as never, {
+      await ctx.db.patch(existing._id, {
         dateFormat,
         serviceSchedulingEnabled,
         updatedAt: now,
-        updatedBy: actor._id as never,
+        updatedBy: actor._id as Id<"users">,
       });
     } else {
       await ctx.db.insert("appSettings", {
@@ -88,7 +89,7 @@ export const updateDateFormat = mutation({
         dateFormat,
         serviceSchedulingEnabled,
         updatedAt: now,
-        updatedBy: actor._id as never,
+        updatedBy: actor._id as Id<"users">,
       });
     }
 
@@ -115,11 +116,11 @@ export const updateServiceSchedulingEnabled = mutation({
     const now = Date.now();
 
     if (existing) {
-      await ctx.db.patch(existing._id as never, {
+      await ctx.db.patch(existing._id, {
         dateFormat,
         serviceSchedulingEnabled: args.enabled,
         updatedAt: now,
-        updatedBy: actor._id as never,
+        updatedBy: actor._id as Id<"users">,
       });
     } else {
       await ctx.db.insert("appSettings", {
@@ -127,7 +128,7 @@ export const updateServiceSchedulingEnabled = mutation({
         dateFormat,
         serviceSchedulingEnabled: args.enabled,
         updatedAt: now,
-        updatedBy: actor._id as never,
+        updatedBy: actor._id as Id<"users">,
       });
     }
 

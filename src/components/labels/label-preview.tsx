@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import type { FieldDefinition } from "@/components/fields/types";
 import { BarcodeRenderer } from "@/components/labels/barcode-renderer";
 import {
+  FONT_WEIGHT_CLASS,
   MM_TO_PX,
   buildLabelAssetUrl,
   getLabelElementAriaLabel,
@@ -17,13 +18,6 @@ import type {
 } from "@/components/labels/types";
 import { useLabelOrigin } from "@/components/labels/use-label-origin";
 import { cn } from "@/lib/utils";
-
-const FONT_WEIGHT_CLASS: Record<string, number> = {
-  normal: 400,
-  medium: 500,
-  semibold: 600,
-  bold: 700,
-};
 
 function renderLabelElement({
   element,

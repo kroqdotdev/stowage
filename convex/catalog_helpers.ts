@@ -2,6 +2,22 @@ import { ConvexError } from "convex/values";
 
 const HEX_COLOR_PATTERN = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
 
+/**
+ * Throws a ConvexError if `value` exceeds `maxLength` characters.
+ * Use this to enforce string length limits on user-supplied input.
+ */
+export function requireMaxLength(
+  value: string,
+  maxLength: number,
+  fieldName: string,
+) {
+  if (value.length > maxLength) {
+    throw new ConvexError(
+      `${fieldName} must be ${maxLength} characters or fewer`,
+    );
+  }
+}
+
 function expandShortHex(hex: string) {
   if (hex.length !== 4) {
     return hex;
@@ -20,6 +36,7 @@ export function requireCatalogName(value: string) {
   if (!normalized) {
     throw new ConvexError("Name is required");
   }
+  requireMaxLength(normalized, 200, "Name");
   return normalized;
 }
 

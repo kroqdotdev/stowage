@@ -52,7 +52,7 @@ export function AssetEditPageClient({ assetId }: { assetId: Id<"assets"> }) {
 
   const [submitting, setSubmitting] = useState(false);
   const [serviceScheduleDraft, setServiceScheduleDraft] =
-    useState<ServiceScheduleDraft>(getDefaultServiceScheduleDraft());
+    useState<ServiceScheduleDraft>(getDefaultServiceScheduleDraft);
   const [scheduleSeeded, setScheduleSeeded] = useState(false);
 
   const loading =
@@ -82,6 +82,9 @@ export function AssetEditPageClient({ assetId }: { assetId: Id<"assets"> }) {
   const serviceSchedulingEnabled =
     appSettings?.serviceSchedulingEnabled ?? true;
 
+  // One-time seed: populate the service schedule draft from the async query
+  // result. The `scheduleSeeded` flag ensures we only set the draft once so
+  // subsequent user edits are not overwritten by reactive query updates.
   useEffect(() => {
     if (existingSchedule === undefined || scheduleSeeded) {
       return;
@@ -115,32 +118,38 @@ export function AssetEditPageClient({ assetId }: { assetId: Id<"assets"> }) {
 
     setSubmitting(true);
     try {
-      await updateAsset({
-        assetId,
-        name: values.name,
-        categoryId: values.categoryId,
-        locationId: values.locationId,
-        serviceGroupId: values.serviceGroupId,
-        status: values.status,
-        notes: values.notes.trim() ? values.notes : null,
-        customFieldValues: values.customFieldValues,
-        tagIds: values.tagIds,
-      });
+      const promises: Promise<unknown>[] = [
+        updateAsset({
+          assetId,
+          name: values.name,
+          categoryId: values.categoryId,
+          locationId: values.locationId,
+          serviceGroupId: values.serviceGroupId,
+          status: values.status,
+          notes: values.notes.trim() ? values.notes : null,
+          customFieldValues: values.customFieldValues,
+          tagIds: values.tagIds,
+        }),
+      ];
 
       if (serviceSchedulingEnabled) {
         if (parsedSchedule.value) {
-          await upsertSchedule({
-            assetId,
-            nextServiceDate: parsedSchedule.value.nextServiceDate,
-            intervalValue: parsedSchedule.value.intervalValue,
-            intervalUnit: parsedSchedule.value.intervalUnit,
-            reminderLeadValue: parsedSchedule.value.reminderLeadValue,
-            reminderLeadUnit: parsedSchedule.value.reminderLeadUnit,
-          });
+          promises.push(
+            upsertSchedule({
+              assetId,
+              nextServiceDate: parsedSchedule.value.nextServiceDate,
+              intervalValue: parsedSchedule.value.intervalValue,
+              intervalUnit: parsedSchedule.value.intervalUnit,
+              reminderLeadValue: parsedSchedule.value.reminderLeadValue,
+              reminderLeadUnit: parsedSchedule.value.reminderLeadUnit,
+            }),
+          );
         } else if (existingSchedule) {
-          await deleteSchedule({ assetId });
+          promises.push(deleteSchedule({ assetId }));
         }
       }
+
+      await Promise.all(promises);
 
       toast.success("Asset updated");
       router.push(`/assets/${assetId}`);

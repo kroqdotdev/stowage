@@ -10,6 +10,7 @@ import { requireAdminUser, requireAuthenticatedUser } from "./authz";
 import {
   normalizeServiceName,
   normalizeServiceNameKey,
+  requireGroup,
   throwServiceRecordError,
 } from "./service_record_helpers";
 
@@ -65,17 +66,6 @@ type ServiceGroupRow = {
   updatedBy: Id<"users">;
 };
 
-async function requireGroup(
-  ctx: QueryCtx | MutationCtx,
-  groupId: Id<"serviceGroups">,
-) {
-  const group = (await ctx.db.get(groupId)) as ServiceGroupRow | null;
-  if (!group) {
-    throwServiceRecordError("GROUP_NOT_FOUND", "Service group not found");
-  }
-  return group;
-}
-
 async function requireUniqueGroupName(
   ctx: QueryCtx | MutationCtx,
   name: string,
@@ -109,7 +99,6 @@ export const listGroups = query({
       .query("serviceGroups")
       .collect()) as ServiceGroupRow[];
     const sortedGroups = groups
-      .slice()
       .sort((a, b) =>
         a.name.localeCompare(b.name, undefined, { sensitivity: "base" }),
       );
@@ -161,7 +150,6 @@ export const listAssignableGroups = query({
       .query("serviceGroups")
       .collect()) as ServiceGroupRow[];
     return groups
-      .slice()
       .sort((a, b) =>
         a.name.localeCompare(b.name, undefined, { sensitivity: "base" }),
       )
@@ -211,6 +199,12 @@ export const createGroup = mutation({
     const description = args.description?.trim()
       ? args.description.trim()
       : null;
+    if (description && description.length > 2000) {
+      throwServiceRecordError(
+        "INVALID_FIELD_VALUE",
+        "Description must be 2000 characters or fewer",
+      );
+    }
     const now = Date.now();
     const groupId = await ctx.db.insert("serviceGroups", {
       name,
@@ -243,6 +237,12 @@ export const updateGroup = mutation({
     const description = args.description?.trim()
       ? args.description.trim()
       : null;
+    if (description && description.length > 2000) {
+      throwServiceRecordError(
+        "INVALID_FIELD_VALUE",
+        "Description must be 2000 characters or fewer",
+      );
+    }
 
     await ctx.db.patch(group._id, {
       name,
@@ -311,7 +311,6 @@ export const listGroupAssets = query({
       .collect();
 
     return assets
-      .slice()
       .sort((a, b) =>
         String((a as { name: string }).name).localeCompare(
           String((b as { name: string }).name),

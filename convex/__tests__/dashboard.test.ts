@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { convexTest } from "convex-test";
 import { api } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
@@ -26,7 +26,7 @@ function asUser(t: ReturnType<typeof convexTest>, userId: Id<"users">) {
 }
 
 function isoDaysFromNow(daysFromNow: number) {
-  const date = new Date();
+  const date = new Date("2026-03-07T12:00:00.000Z");
   date.setUTCDate(date.getUTCDate() + daysFromNow);
   return date.toISOString().slice(0, 10);
 }
@@ -36,8 +36,14 @@ describe("dashboard functions", () => {
   let adminId: Id<"users">;
 
   beforeEach(async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-03-07T12:00:00.000Z"));
     t = convexTest(schema, modules);
     adminId = await insertUser(t, "admin");
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it("returns asset counts by status and keeps zero-count statuses", async () => {

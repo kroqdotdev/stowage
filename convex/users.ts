@@ -18,6 +18,7 @@ import {
   type MutationCtx,
   type QueryCtx,
 } from "./_generated/server";
+import { requireAdminUser } from "./authz";
 import {
   requireValidEmail,
   requireValidName,
@@ -148,10 +149,7 @@ export const listUsers = query({
   args: {},
   returns: v.array(userSummaryValidator),
   handler: async (ctx) => {
-    const currentUser = await requireAuthenticatedUser(ctx);
-    if (currentUser.role !== "admin") {
-      throw new ConvexError("Admin access required");
-    }
+    await requireAdminUser(ctx);
 
     const users = await ctx.db.query("users").order("desc").collect();
     return users.map((user) => toUserSummary(user as UserSummary)!);
@@ -165,10 +163,7 @@ export const updateUserRole = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const currentUser = await requireAuthenticatedUser(ctx);
-    if (currentUser.role !== "admin") {
-      throw new ConvexError("Admin access required");
-    }
+    await requireAdminUser(ctx);
 
     const targetUser = (await ctx.db.get(args.userId)) as UserSummary | null;
     if (!targetUser) {

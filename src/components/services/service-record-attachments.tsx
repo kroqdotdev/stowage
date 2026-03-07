@@ -118,16 +118,18 @@ export function ServiceRecordAttachments({
 
     setUploading(true);
     try {
-      for (const file of files) {
-        const { uploadUrl } = await generateUploadUrl({});
-        const storageId = await uploadFile(uploadUrl, file);
-        await createAttachment({
-          serviceRecordId,
-          storageId,
-          fileName: file.name,
-          fileType: file.type || null,
-        });
-      }
+      await Promise.all(
+        files.map(async (file) => {
+          const { uploadUrl } = await generateUploadUrl({});
+          const storageId = await uploadFile(uploadUrl, file);
+          await createAttachment({
+            serviceRecordId,
+            storageId,
+            fileName: file.name,
+            fileType: file.type || null,
+          });
+        }),
+      );
       toast.success(
         files.length === 1 ? "Attachment uploaded" : "Attachments uploaded",
       );

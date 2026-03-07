@@ -1,7 +1,6 @@
 "use node";
 
 import { PDFDocument } from "pdf-lib";
-import { makeFunctionReference, type FunctionReference } from "convex/server";
 import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import { internal } from "./_generated/api";
@@ -12,24 +11,12 @@ import {
   MAX_ATTACHMENT_UPLOAD_BYTES,
   getAttachmentRetryDelayMs,
   normalizeOptimizationErrorMessage,
+  processAttachmentOptimizationRef,
   replaceAttachmentExtension,
 } from "./attachments_helpers";
 
 const JPEG_QUALITY_STEPS = [84, 76, 68, 60, 52, 44];
 const PNG_COMPRESSION_STEPS = [9, 8, 7, 6];
-
-const processAttachmentOptimizationRef = makeFunctionReference<
-  "action",
-  { attachmentId: Id<"attachments"> },
-  null
->(
-  "attachmentsProcessing:processAttachmentOptimization",
-) as unknown as FunctionReference<
-  "action",
-  "internal",
-  { attachmentId: Id<"attachments"> },
-  null
->;
 
 type JimpImage = {
   bitmap: {

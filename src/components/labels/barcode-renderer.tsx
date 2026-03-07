@@ -14,6 +14,7 @@ type BarcodeRendererProps = {
 };
 
 const svgCache = new Map<string, string>();
+const MAX_CACHE_SIZE = 200;
 
 async function generateBarcodeSvg({
   type,
@@ -37,6 +38,11 @@ async function generateBarcodeSvg({
     paddingheight: 0,
     scale: type === "code128" ? 2 : 3,
   });
+
+  if (svgCache.size >= MAX_CACHE_SIZE) {
+    const firstKey = svgCache.keys().next().value;
+    if (firstKey !== undefined) svgCache.delete(firstKey);
+  }
   svgCache.set(cacheKey, svg);
   return svg;
 }

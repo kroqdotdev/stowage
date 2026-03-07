@@ -179,7 +179,7 @@ export function FieldDefinitionForm({
             <div className="space-y-2">
               {options.map((option, index) => (
                 <div
-                  key={`${index}-${option}`}
+                  key={option}
                   className="flex items-center gap-2"
                 >
                   <Input

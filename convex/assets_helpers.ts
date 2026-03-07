@@ -1,4 +1,6 @@
 import { ConvexError } from "convex/values";
+import type { QueryCtx, MutationCtx } from "./_generated/server";
+import type { Id } from "./_generated/dataModel";
 
 export const ASSET_STATUSES = [
   "active",
@@ -39,6 +41,12 @@ export function requireAssetName(name: string) {
   if (!normalized) {
     throwAssetError("INVALID_ASSET_NAME", "Asset name is required");
   }
+  if (normalized.length > 500) {
+    throwAssetError(
+      "INVALID_ASSET_NAME",
+      "Asset name must be 500 characters or fewer",
+    );
+  }
   return normalized;
 }
 
@@ -52,7 +60,18 @@ export function normalizeAssetNotes(notes: string | null | undefined) {
   }
 
   const normalized = notes.trim();
-  return normalized ? normalized : null;
+  if (!normalized) {
+    return null;
+  }
+
+  if (normalized.length > 5000) {
+    throwAssetError(
+      "INVALID_ASSET_NAME",
+      "Asset notes must be 5000 characters or fewer",
+    );
+  }
+
+  return normalized;
 }
 
 function sanitizeTagPrefix(rawPrefix: string) {
@@ -177,4 +196,15 @@ export function isCustomFieldValueSet(
   value: AssetCustomFieldValue | undefined,
 ) {
   return !isCustomFieldValueEmpty(value);
+}
+
+export async function requireAssetExists(
+  ctx: QueryCtx | MutationCtx,
+  assetId: Id<"assets">,
+) {
+  const asset = await ctx.db.get(assetId);
+  if (!asset) {
+    throw new ConvexError({ code: "ASSET_NOT_FOUND", message: "Asset not found" });
+  }
+  return asset;
 }

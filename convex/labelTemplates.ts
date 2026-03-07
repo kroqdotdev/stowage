@@ -141,14 +141,14 @@ async function patchDefaultState({
   ctx: MutationCtx;
   templateId: Id<"labelTemplates">;
 }) {
-  const templates = await listAllTemplates(ctx);
-  await Promise.all(
-    templates.map((template) =>
-      ctx.db.patch(template._id, {
-        isDefault: template._id === templateId,
-      }),
-    ),
-  );
+  const currentDefault = (await ctx.db
+    .query("labelTemplates")
+    .withIndex("by_isDefault", (q) => q.eq("isDefault", true))
+    .first()) as LabelTemplateRecord | null;
+  if (currentDefault && currentDefault._id !== templateId) {
+    await ctx.db.patch(currentDefault._id, { isDefault: false });
+  }
+  await ctx.db.patch(templateId, { isDefault: true });
 }
 
 async function ensureDefaultTemplatesExist(

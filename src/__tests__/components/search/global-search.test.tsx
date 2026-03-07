@@ -56,13 +56,9 @@ describe("GlobalSearch", () => {
       "bridge",
     );
 
-    await act(async () => {
-      await new Promise((resolve) => window.setTimeout(resolve, 180));
-    });
-
     await waitFor(() => {
       expect(screen.getByText("Bridge server")).toBeVisible();
-    });
+    }, { timeout: 2000 });
 
     await user.click(screen.getByText("Bridge server"));
 
@@ -98,12 +94,8 @@ describe("GlobalSearch", () => {
       "zz",
     );
 
-    await act(async () => {
-      await new Promise((resolve) => window.setTimeout(resolve, 180));
-    });
-
     await waitFor(() => {
       expect(screen.getByText("No assets found.")).toBeVisible();
-    });
+    }, { timeout: 2000 });
   });
 });
