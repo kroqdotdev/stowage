@@ -6,7 +6,7 @@ Open an issue before starting work on anything non-trivial. This saves everyone 
 
 1. Fork and clone the repo
 2. `pnpm install`
-3. Copy `.env.example` to `.env.local` and fill in your Convex credentials
+3. run `npx convex dev` and connect your convex account (free tier is avalible and quite generous)
 4. `pnpm dev` to start the dev server (runs Next.js + Convex via mprocs)
 
 ## Before submitting a PR
