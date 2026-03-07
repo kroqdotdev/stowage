@@ -9,6 +9,10 @@ function secureCookieAttribute() {
   return window.location.protocol === "https:" ? "; Secure" : "";
 }
 
+// The cookie is intentionally non-HttpOnly because the Convex client-side auth
+// bridge must read the token from JavaScript to include it in WebSocket frames.
+// SameSite=Lax provides CSRF protection, and the Secure flag is set when the
+// page is served over HTTPS.
 export function setAuthTokenCookie(token: string) {
   if (typeof document === "undefined") {
     return;

@@ -38,6 +38,13 @@ const TEXT_ELEMENT_TYPES = new Set<LabelElementType>([
   "staticText",
 ]);
 
+export const FONT_WEIGHT_CLASS: Record<string, number> = {
+  normal: 400,
+  medium: 500,
+  semibold: 600,
+  bold: 700,
+};
+
 export function formatLabelDimensions(widthMm: number, heightMm: number) {
   return `${stripTrailingZeros(widthMm)} x ${stripTrailingZeros(heightMm)} mm`;
 }

@@ -4,9 +4,11 @@ export function normalizeEmail(email: string) {
   return email.trim().toLowerCase();
 }
 
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export function requireValidEmail(email: string) {
   const normalized = normalizeEmail(email);
-  if (!normalized || !normalized.includes("@")) {
+  if (!normalized || !EMAIL_PATTERN.test(normalized)) {
     throw new ConvexError("Enter a valid email address");
   }
   return normalized;
@@ -16,6 +18,9 @@ export function requireValidName(name: string) {
   const trimmed = name.trim();
   if (!trimmed) {
     throw new ConvexError("Name is required");
+  }
+  if (trimmed.length > 200) {
+    throw new ConvexError("Name must be 200 characters or fewer");
   }
   return trimmed;
 }

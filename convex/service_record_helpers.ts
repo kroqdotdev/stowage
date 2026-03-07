@@ -1,4 +1,6 @@
 import { ConvexError } from "convex/values";
+import type { QueryCtx, MutationCtx } from "./_generated/server";
+import type { Id } from "./_generated/dataModel";
 import { requireIsoDate } from "./service_schedule_helpers";
 
 export const SERVICE_GROUP_FIELD_TYPES = [
@@ -38,7 +40,14 @@ export function throwServiceRecordError(
 }
 
 export function normalizeServiceName(value: string) {
-  return value.trim().replace(/\s+/g, " ");
+  const normalized = value.trim().replace(/\s+/g, " ");
+  if (normalized.length > 200) {
+    throwServiceRecordError(
+      "INVALID_FIELD_VALUE",
+      "Name must be 200 characters or fewer",
+    );
+  }
+  return normalized;
 }
 
 export function normalizeServiceNameKey(value: string) {
@@ -212,6 +221,13 @@ export function normalizeServiceRecordValues({
       continue;
     }
 
+    if (trimmedValue.length > 2000) {
+      throwServiceRecordError(
+        "INVALID_FIELD_VALUE",
+        `${field.label} must be 2000 characters or fewer`,
+      );
+    }
+
     if (field.fieldType === "date") {
       normalizedValues[field._id] = requireIsoDate(trimmedValue);
       continue;
@@ -232,4 +248,15 @@ export function normalizeServiceRecordValues({
   }
 
   return normalizedValues;
+}
+
+export async function requireGroup(
+  ctx: QueryCtx | MutationCtx,
+  groupId: Id<"serviceGroups">,
+) {
+  const group = await ctx.db.get(groupId);
+  if (!group) {
+    throwServiceRecordError("GROUP_NOT_FOUND", "Service group not found");
+  }
+  return group;
 }

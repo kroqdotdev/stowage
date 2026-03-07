@@ -207,7 +207,6 @@ export const listLocations = query({
       .query("locations")
       .collect()) as LocationRow[];
     return locations
-      .slice()
       .sort((a, b) =>
         a.path.localeCompare(b.path, undefined, { sensitivity: "base" }),
       )
@@ -227,7 +226,6 @@ export const getLocationChildren = query({
       .collect()) as LocationRow[];
 
     return children
-      .slice()
       .sort((a, b) =>
         a.name.localeCompare(b.name, undefined, { sensitivity: "base" }),
       )

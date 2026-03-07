@@ -6,6 +6,7 @@ import {
   type MutationCtx,
   type QueryCtx,
 } from "./_generated/server";
+import { requireAssetExists } from "./assets_helpers";
 import { requireAuthenticatedUser } from "./authz";
 import {
   addIntervalToIsoDate,
@@ -212,17 +213,6 @@ function normalizeServiceCost(value: number | null | undefined) {
   }
 
   return value;
-}
-
-async function requireAsset(
-  ctx: QueryCtx | MutationCtx,
-  assetId: Id<"assets">,
-) {
-  const asset = (await ctx.db.get(assetId)) as AssetRow | null;
-  if (!asset) {
-    throwServiceRecordError("ASSET_NOT_FOUND", "Asset not found");
-  }
-  return asset;
 }
 
 async function requireServiceGroup(
@@ -454,7 +444,7 @@ export const getRecordFormDefinition = query({
   returns: recordFormDefinitionValidator,
   handler: async (ctx, args) => {
     await requireAuthenticatedUser(ctx);
-    const asset = await requireAsset(ctx, args.assetId);
+    const asset = await requireAssetExists(ctx, args.assetId);
     const record = args.recordId
       ? await requireRecord(ctx, args.recordId)
       : null;
@@ -521,7 +511,7 @@ export const listAssetRecords = query({
   returns: v.array(serviceRecordValidator),
   handler: async (ctx, args) => {
     await requireAuthenticatedUser(ctx);
-    await requireAsset(ctx, args.assetId);
+    await requireAssetExists(ctx, args.assetId);
 
     const records = (await ctx.db
       .query("serviceRecords")
@@ -596,7 +586,6 @@ export const listAssetRecords = query({
     }
 
     return records
-      .slice()
       .sort((left, right) => {
         const leftDate =
           left.serviceDate ?? timestampToIsoDate(left.completedAt);
@@ -666,7 +655,7 @@ export const createRecord = mutation({
   }),
   handler: async (ctx, args) => {
     const actor = await requireAuthenticatedUser(ctx);
-    const asset = await requireAsset(ctx, args.assetId);
+    const asset = await requireAssetExists(ctx, args.assetId);
     const schedule = await getScheduleForAsset(ctx, asset._id);
 
     const groupContext = await getRecordGroupContext(
@@ -815,7 +804,7 @@ export const completeScheduledService = mutation({
   handler: async (ctx, args) => {
     const actor = await requireAuthenticatedUser(ctx);
     const schedule = await requireSchedule(ctx, args.scheduleId);
-    const asset = await requireAsset(ctx, schedule.assetId);
+    const asset = await requireAssetExists(ctx, schedule.assetId);
     const groupContext = await getRecordGroupContext(
       ctx,
       asset.serviceGroupId ?? null,

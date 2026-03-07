@@ -103,6 +103,11 @@ export const searchAssets = query({
     }
 
     const limit = Math.max(1, Math.min(args.limit ?? 10, 10));
+
+    // Full table scan is intentional: Convex search indexes support only a
+    // single searchField, but we need to match across name, assetTag, and
+    // notes simultaneously with weighted scoring. The search_assets index is
+    // available for simple name-only lookups elsewhere.
     const assets = (await ctx.db.query("assets").collect()) as AssetRow[];
 
     const matches: SearchMatch[] = assets

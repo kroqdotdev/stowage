@@ -120,6 +120,14 @@ function createEmptyStatusCounts(): StatusCounts {
   };
 }
 
+const ALL_STATUSES: AssetStatus[] = [
+  "active",
+  "in_storage",
+  "under_repair",
+  "retired",
+  "disposed",
+];
+
 async function readAssets(ctx: QueryCtx) {
   return (await ctx.db.query("assets").collect()) as AssetRow[];
 }
@@ -294,7 +302,24 @@ async function buildUpcomingServicesPreview(
 }
 
 async function buildDashboardOverview(ctx: QueryCtx) {
-  const [assets, settings] = await Promise.all([readAssets(ctx), readSettings(ctx)]);
+  const [assets, settings, recentAssets] = await Promise.all([
+    readAssets(ctx),
+    readSettings(ctx),
+    (async () => {
+      const recent = (await ctx.db
+        .query("assets")
+        .withIndex("by_updatedAt")
+        .order("desc")
+        .take(10)) as AssetRow[];
+      return recent.map((asset) => ({
+        _id: asset._id,
+        name: asset.name,
+        assetTag: asset.assetTag,
+        status: asset.status,
+        updatedAt: asset.updatedAt,
+      }));
+    })(),
+  ]);
   const [categoryBreakdown, locationBreakdown, upcomingPreview] =
     await Promise.all([
       buildCategoryBreakdown(ctx, assets),
@@ -306,7 +331,7 @@ async function buildDashboardOverview(ctx: QueryCtx) {
     dateFormat: settings.dateFormat,
     totalAssets: assets.length,
     statusCounts: buildStatusCounts(assets),
-    recentAssets: buildRecentAssets(assets),
+    recentAssets,
     categoryBreakdown,
     locationBreakdown,
     serviceSchedulingEnabled: upcomingPreview.serviceSchedulingEnabled,
@@ -324,11 +349,24 @@ export const getAssetCountsByStatus = query({
   handler: async (ctx) => {
     await requireAuthenticatedUser(ctx);
 
-    const assets = await readAssets(ctx);
-    return {
-      totalAssets: assets.length,
-      statusCounts: buildStatusCounts(assets),
-    };
+    const statusCountEntries = await Promise.all(
+      ALL_STATUSES.map(async (status) => {
+        const rows = await ctx.db
+          .query("assets")
+          .withIndex("by_status", (q) => q.eq("status", status))
+          .collect();
+        return [status, rows.length] as [AssetStatus, number];
+      }),
+    );
+
+    const statusCounts = createEmptyStatusCounts();
+    let totalAssets = 0;
+    for (const [status, count] of statusCountEntries) {
+      statusCounts[status] = count;
+      totalAssets += count;
+    }
+
+    return { totalAssets, statusCounts };
   },
 });
 
@@ -338,8 +376,19 @@ export const getRecentAssets = query({
   handler: async (ctx) => {
     await requireAuthenticatedUser(ctx);
 
-    const assets = await readAssets(ctx);
-    return buildRecentAssets(assets);
+    const assets = (await ctx.db
+      .query("assets")
+      .withIndex("by_updatedAt")
+      .order("desc")
+      .take(10)) as AssetRow[];
+
+    return assets.map((asset) => ({
+      _id: asset._id,
+      name: asset.name,
+      assetTag: asset.assetTag,
+      status: asset.status,
+      updatedAt: asset.updatedAt,
+    }));
   },
 });
 

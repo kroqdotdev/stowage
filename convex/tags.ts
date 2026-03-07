@@ -53,7 +53,6 @@ export const listTags = query({
 
     const tags = (await ctx.db.query("tags").collect()) as TagRow[];
     return tags
-      .slice()
       .sort((a, b) =>
         a.name.localeCompare(b.name, undefined, { sensitivity: "base" }),
       )

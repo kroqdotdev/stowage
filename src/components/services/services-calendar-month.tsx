@@ -94,7 +94,7 @@ export function ServicesCalendarMonth() {
   return (
     <section className="space-y-4">
       <div className="flex items-center justify-between gap-2">
-        <h2 className="text-base font-semibold tracking-tight">
+        <h2 data-testid="calendar-month-heading" className="text-base font-semibold tracking-tight">
           {monthLabel(state)}
         </h2>
         <div className="flex items-center gap-2">
@@ -152,6 +152,7 @@ export function ServicesCalendarMonth() {
             return (
               <div
                 key={dateKey}
+                data-testid="calendar-day-cell"
                 className={`min-h-28 rounded-lg border p-2 ${
                   isToday
                     ? "border-primary/50 bg-orange-50/50 dark:bg-stone-800/50"

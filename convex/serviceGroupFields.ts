@@ -10,6 +10,7 @@ import { requireAdminUser, requireAuthenticatedUser } from "./authz";
 import {
   SERVICE_GROUP_FIELD_TYPES,
   normalizeServiceFieldInput,
+  requireGroup,
   throwServiceRecordError,
   type ServiceGroupFieldType,
 } from "./service_record_helpers";
@@ -48,16 +49,6 @@ type ServiceGroupFieldRow = {
   createdBy: Id<"users">;
   updatedBy: Id<"users">;
 };
-
-async function requireGroup(
-  ctx: QueryCtx | MutationCtx,
-  groupId: Id<"serviceGroups">,
-) {
-  const group = await ctx.db.get(groupId);
-  if (!group) {
-    throwServiceRecordError("GROUP_NOT_FOUND", "Service group not found");
-  }
-}
 
 async function requireField(
   ctx: QueryCtx | MutationCtx,
@@ -287,10 +278,15 @@ export const reorderFields = mutation({
       );
     }
 
+    const currentSortById = new Map(
+      fields.map((f) => [String(f._id), f.sortOrder]),
+    );
     await Promise.all(
-      args.fieldIds.map((fieldId, index) =>
-        ctx.db.patch(fieldId, { sortOrder: index }),
-      ),
+      args.fieldIds.map((fieldId, index) => {
+        if (currentSortById.get(String(fieldId)) === index)
+          return Promise.resolve();
+        return ctx.db.patch(fieldId, { sortOrder: index });
+      }),
     );
 
     return null;

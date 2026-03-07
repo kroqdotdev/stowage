@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo } from "react";
 import { useQuery } from "convex/react";
 import { api } from "@/lib/convex-api";
+import { getDaysUntil } from "@/lib/date-format";
 import { useTodayIsoDate } from "@/lib/use-today-iso-date";
 
 type UpcomingRow = {
@@ -13,14 +14,6 @@ type UpcomingRow = {
   assetTag: string;
   nextServiceDate: string;
 };
-
-function getDaysUntil(dateStr: string, todayIsoDate: string): number {
-  const today = new Date(`${todayIsoDate}T00:00:00Z`);
-  const target = new Date(`${dateStr}T00:00:00Z`);
-  return Math.round(
-    (target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
-  );
-}
 
 function getUrgencyStripe(dateStr: string, todayIsoDate: string): string {
   const days = getDaysUntil(dateStr, todayIsoDate);

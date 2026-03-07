@@ -96,7 +96,6 @@ export const listProviders = query({
       .collect()) as ServiceProviderRow[];
 
     return providers
-      .slice()
       .sort((a, b) =>
         a.name.localeCompare(b.name, undefined, { sensitivity: "base" }),
       )
@@ -126,7 +125,6 @@ export const listProviderOptions = query({
       .collect()) as ServiceProviderRow[];
 
     return providers
-      .slice()
       .sort((a, b) =>
         a.name.localeCompare(b.name, undefined, { sensitivity: "base" }),
       )
@@ -222,10 +220,11 @@ export const deleteProvider = mutation({
     await requireAdminUser(ctx);
     const provider = await requireProvider(ctx, args.providerId);
 
-    const records = (await ctx.db
+    const inUseRecord = await ctx.db
       .query("serviceRecords")
-      .collect()) as ServiceRecordRow[];
-    const inUse = records.some((record) => record.providerId === provider._id);
+      .withIndex("by_providerId", (q) => q.eq("providerId", provider._id))
+      .first();
+    const inUse = inUseRecord !== null;
     if (inUse) {
       throwServiceRecordError(
         "PROVIDER_IN_USE",

@@ -103,6 +103,12 @@ describe("search functions", () => {
     expect(results.every((result) => result.name.includes("Server Rack"))).toBe(
       true,
     );
+
+    const limitedResults = await admin.query(api.search.searchAssets, {
+      term: "SERVER",
+      limit: 5,
+    });
+    expect(limitedResults).toHaveLength(5);
   });
 
   it("returns an empty array for too-short or non-matching terms", async () => {

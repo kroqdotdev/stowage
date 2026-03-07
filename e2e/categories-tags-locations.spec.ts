@@ -1,34 +1,5 @@
-import { expect, test, type Page } from "@playwright/test";
-
-function getLeafPathSegment(urlString: string) {
-  const segments = new URL(urlString).pathname.split("/").filter(Boolean);
-  return segments.at(-1) ?? "";
-}
-
-async function getLanding(page: Page): Promise<"login" | "setup"> {
-  await page.goto("/dashboard");
-  await page.waitForURL(
-    (url) => {
-      const leaf = url.pathname.split("/").filter(Boolean).at(-1);
-      return leaf === "login" || leaf === "setup";
-    },
-    { timeout: 15_000 },
-  );
-  return getLeafPathSegment(page.url()) === "setup" ? "setup" : "login";
-}
-
-async function signIn(page: Page, email: string, password: string) {
-  await page.goto("/login");
-  await page.getByLabel("Email").fill(email);
-  await page.getByLabel("Password").fill(password);
-  await page.getByRole("button", { name: "Sign in" }).click();
-  await page.waitForURL(
-    (url) => getLeafPathSegment(url.toString()) === "dashboard",
-    {
-      timeout: 20_000,
-    },
-  );
-}
+import { expect, test } from "@playwright/test";
+import { getLeafPathSegment, getLanding, signIn } from "./helpers";
 
 test.describe.serial("phase 3 pages", () => {
   test("protected category/tag/location pages redirect when unauthenticated", async ({

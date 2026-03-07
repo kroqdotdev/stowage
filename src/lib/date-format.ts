@@ -54,6 +54,14 @@ export function isIsoDateOnly(value: string) {
   return /^\d{4}-\d{2}-\d{2}$/.test(value);
 }
 
+export function getDaysUntil(dateStr: string, todayIsoDate: string): number {
+  const today = new Date(`${todayIsoDate}T00:00:00Z`);
+  const target = new Date(`${dateStr}T00:00:00Z`);
+  return Math.round(
+    (target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
+  );
+}
+
 export function formatDateFromIsoDateOnly(
   isoDate: string,
   format: AppDateFormat,

@@ -100,6 +100,9 @@ export function LabelPrintPageClient() {
   const [barcodeRenderState, setBarcodeRenderState] =
     useState<BarcodeRenderState>("loading");
 
+  // Sync local selection when the URL search param changes. The user can
+  // also change the selection via the dropdown, so we keep local state
+  // rather than deriving it purely from search params.
   useEffect(() => {
     setSelectedTemplateId(requestedTemplateId);
   }, [requestedTemplateId]);

@@ -1,4 +1,6 @@
 import { ConvexError } from "convex/values";
+import { makeFunctionReference, type FunctionReference } from "convex/server";
+import type { Id } from "./_generated/dataModel";
 
 export const ATTACHMENT_STATUSES = [
   "pending",
@@ -192,6 +194,19 @@ export function getAttachmentRetryDelayMs(attempt: number) {
 
   return 60_000;
 }
+
+export const processAttachmentOptimizationRef = makeFunctionReference<
+  "action",
+  { attachmentId: Id<"attachments"> },
+  null
+>(
+  "attachmentsProcessing:processAttachmentOptimization",
+) as unknown as FunctionReference<
+  "action",
+  "internal",
+  { attachmentId: Id<"attachments"> },
+  null
+>;
 
 export function normalizeOptimizationErrorMessage(error: unknown) {
   if (error instanceof Error && error.message) {

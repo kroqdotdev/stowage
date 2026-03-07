@@ -1,5 +1,4 @@
 import { v } from "convex/values";
-import { makeFunctionReference, type FunctionReference } from "convex/server";
 import type { Id } from "./_generated/dataModel";
 import {
   internalMutation,
@@ -9,6 +8,7 @@ import {
   type MutationCtx,
   type QueryCtx,
 } from "./_generated/server";
+import { requireAssetExists } from "./assets_helpers";
 import { requireAuthenticatedUser } from "./authz";
 import {
   ATTACHMENT_KINDS,
@@ -16,6 +16,7 @@ import {
   MAX_ATTACHMENT_RETRY_ATTEMPTS,
   MAX_ATTACHMENT_UPLOAD_BYTES,
   classifyAttachment,
+  processAttachmentOptimizationRef,
   sanitizeAttachmentFileName,
   throwAttachmentError,
 } from "./attachments_helpers";
@@ -88,29 +89,6 @@ type AttachmentRow = {
   updatedAt: number;
 };
 
-const processAttachmentOptimizationRef = makeFunctionReference<
-  "action",
-  { attachmentId: Id<"attachments"> },
-  null
->(
-  "attachmentsProcessing:processAttachmentOptimization",
-) as unknown as FunctionReference<
-  "action",
-  "internal",
-  { attachmentId: Id<"attachments"> },
-  null
->;
-
-async function requireAssetExists(
-  ctx: QueryCtx | MutationCtx,
-  assetId: Id<"assets">,
-) {
-  const asset = await ctx.db.get(assetId);
-  if (!asset) {
-    throwAttachmentError("ASSET_NOT_FOUND", "Asset not found");
-  }
-}
-
 async function requireAttachment(
   ctx: QueryCtx | MutationCtx,
   attachmentId: Id<"attachments">,
@@ -156,6 +134,8 @@ export const generateUploadUrl = mutation({
   },
 });
 
+// Access control: All authenticated users can upload attachments to any asset.
+// Stowage is a collaborative tool where team members freely manage asset files.
 export const createAttachment = mutation({
   args: {
     assetId: v.id("assets"),
@@ -325,6 +305,8 @@ export const getAttachmentUrl = query({
   },
 });
 
+// Access control: All authenticated users can delete any attachment.
+// This is intentional for a collaborative asset management workflow.
 export const deleteAttachment = mutation({
   args: {
     attachmentId: v.id("attachments"),

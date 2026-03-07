@@ -84,7 +84,6 @@ export const listCategories = query({
       .collect()) as CategoryRow[];
 
     return categories
-      .slice()
       .sort((a, b) =>
         a.name.localeCompare(b.name, undefined, { sensitivity: "base" }),
       )

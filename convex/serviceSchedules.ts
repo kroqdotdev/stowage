@@ -6,6 +6,7 @@ import {
   type MutationCtx,
   type QueryCtx,
 } from "./_generated/server";
+import { requireAssetExists } from "./assets_helpers";
 import { requireAuthenticatedUser } from "./authz";
 import {
   addIntervalToIsoDate,
@@ -112,17 +113,6 @@ function getRecordSortKey(record: ServiceRecordRow) {
   );
 }
 
-async function requireAsset(
-  ctx: QueryCtx | MutationCtx,
-  assetId: Id<"assets">,
-) {
-  const asset = (await ctx.db.get(assetId)) as AssetRow | null;
-  if (!asset) {
-    throwServiceScheduleError("ASSET_NOT_FOUND", "Asset not found");
-  }
-  return asset;
-}
-
 async function isServiceSchedulingEnabled(ctx: QueryCtx | MutationCtx) {
   const row = (await ctx.db
     .query("appSettings")
@@ -167,37 +157,24 @@ async function buildLatestRecordContext(
     >();
   }
 
-  const assetRecords = (await Promise.all(
+  const assetLatestRecords = (await Promise.all(
     assetIds.map((assetId) =>
       ctx.db
         .query("serviceRecords")
         .withIndex("by_assetId_and_completedAt", (q) =>
           q.eq("assetId", assetId),
         )
-        .collect(),
+        .order("desc")
+        .first(),
     ),
-  )) as Array<ServiceRecordRow[]>;
+  )) as Array<ServiceRecordRow | null>;
 
   const latestByAssetId = new Map<Id<"assets">, ServiceRecordRow>();
   assetIds.forEach((assetId, index) => {
-    const records = assetRecords[index] ?? [];
-    if (records.length === 0) {
-      return;
+    const record = assetLatestRecords[index];
+    if (record) {
+      latestByAssetId.set(assetId, record);
     }
-
-    const latestRecord = records.reduce((latest, candidate) => {
-      const latestKey = getRecordSortKey(latest);
-      const candidateKey = getRecordSortKey(candidate);
-      if (
-        candidateKey > latestKey ||
-        (candidateKey === latestKey &&
-          candidate.completedAt > latest.completedAt)
-      ) {
-        return candidate;
-      }
-      return latest;
-    });
-    latestByAssetId.set(assetId, latestRecord);
   });
 
   const providerIds = Array.from(
@@ -308,7 +285,7 @@ export const getScheduleByAssetId = query({
   returns: v.union(serviceScheduleViewValidator, v.null()),
   handler: async (ctx, args) => {
     await requireAuthenticatedUser(ctx);
-    await requireAsset(ctx, args.assetId);
+    await requireAssetExists(ctx, args.assetId);
 
     const row = (await ctx.db
       .query("serviceSchedules")
@@ -323,6 +300,8 @@ export const getScheduleByAssetId = query({
   },
 });
 
+// Access control: All authenticated users can create or update service
+// schedules. This is by design for collaborative service management.
 export const upsertSchedule = mutation({
   args: {
     assetId: v.id("assets"),
@@ -335,7 +314,7 @@ export const upsertSchedule = mutation({
   returns: serviceScheduleViewValidator,
   handler: async (ctx, args) => {
     const actor = await requireAuthenticatedUser(ctx);
-    await requireAsset(ctx, args.assetId);
+    await requireAssetExists(ctx, args.assetId);
 
     if (!(await isServiceSchedulingEnabled(ctx))) {
       throwServiceScheduleError(
@@ -415,12 +394,14 @@ export const upsertSchedule = mutation({
   },
 });
 
+// Access control: All authenticated users can remove service schedules.
+// Consistent with the collaborative access model used throughout Stowage.
 export const deleteSchedule = mutation({
   args: { assetId: v.id("assets") },
   returns: v.null(),
   handler: async (ctx, args) => {
     await requireAuthenticatedUser(ctx);
-    await requireAsset(ctx, args.assetId);
+    await requireAssetExists(ctx, args.assetId);
 
     if (!(await isServiceSchedulingEnabled(ctx))) {
       throwServiceScheduleError(

@@ -1,11 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-
-type Landing = "login" | "setup";
-
-function getLeafPathSegment(urlString: string) {
-  const segments = new URL(urlString).pathname.split("/").filter(Boolean);
-  return segments.at(-1) ?? "";
-}
+import { getLeafPathSegment, type Landing } from "./helpers";
 
 async function getUnauthenticatedLanding(page: Page): Promise<Landing> {
   await page.goto("/dashboard");

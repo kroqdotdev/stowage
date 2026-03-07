@@ -6,8 +6,8 @@ import {
   type MutationCtx,
   type QueryCtx,
 } from "./_generated/server";
+import { requireAssetExists, throwAssetError } from "./assets_helpers";
 import { requireAuthenticatedUser } from "./authz";
-import { throwAssetError } from "./assets_helpers";
 
 type AssetTagRow = {
   _id: Id<"assetTags">;
@@ -37,16 +37,6 @@ const assetTagViewValidator = v.object({
   updatedAt: v.number(),
 });
 
-async function requireAssetExists(
-  ctx: QueryCtx | MutationCtx,
-  assetId: Id<"assets">,
-) {
-  const asset = await ctx.db.get(assetId);
-  if (!asset) {
-    throwAssetError("ASSET_NOT_FOUND", "Asset not found");
-  }
-}
-
 function dedupeTagIds(tagIds: Id<"tags">[]) {
   const seen = new Set<string>();
   const deduped: Id<"tags">[] = [];
@@ -68,8 +58,8 @@ async function assertAllTagsExist(
   ctx: QueryCtx | MutationCtx,
   tagIds: Id<"tags">[],
 ) {
-  for (const tagId of tagIds) {
-    const tag = await ctx.db.get(tagId);
+  const tags = await Promise.all(tagIds.map((tagId) => ctx.db.get(tagId)));
+  for (const tag of tags) {
     if (!tag) {
       throwAssetError(
         "TAG_NOT_FOUND",
@@ -151,7 +141,6 @@ export async function listTagsForAsset(
   ).filter(Boolean) as TagRow[];
 
   return tags
-    .slice()
     .sort((a, b) =>
       a.name.localeCompare(b.name, undefined, { sensitivity: "base" }),
     )
@@ -165,6 +154,9 @@ export async function listTagsForAsset(
     }));
 }
 
+// Access control: All authenticated users can manage tags on any asset.
+// This is intentional -- Stowage uses a collaborative model where team
+// members can freely organize and tag assets.
 export const setAssetTags = mutation({
   args: {
     assetId: v.id("assets"),

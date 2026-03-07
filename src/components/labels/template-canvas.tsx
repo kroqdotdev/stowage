@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef } from "react";
 import type { FieldDefinition } from "@/components/fields/types";
 import { BarcodeRenderer } from "@/components/labels/barcode-renderer";
 import {
+  FONT_WEIGHT_CLASS,
   LABEL_GRID_STEP_MM,
   LABEL_MIN_ELEMENT_SIZE_MM,
   MM_TO_PX,
@@ -43,13 +44,6 @@ type ActiveInteraction = {
   startClientX: number;
   startClientY: number;
   startElement: LabelTemplateElement;
-};
-
-const FONT_WEIGHT_CLASS: Record<string, number> = {
-  normal: 400,
-  medium: 500,
-  semibold: 600,
-  bold: 700,
 };
 
 function renderElementContent({
