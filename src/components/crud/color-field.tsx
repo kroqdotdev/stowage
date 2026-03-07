@@ -5,18 +5,18 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
 export const PRESET_COLORS = [
-  "#2563EB",
-  "#0EA5E9",
-  "#0891B2",
-  "#059669",
-  "#65A30D",
-  "#CA8A04",
   "#EA580C",
+  "#CA8A04",
   "#DC2626",
   "#E11D48",
-  "#9333EA",
+  "#059669",
+  "#65A30D",
+  "#0891B2",
+  "#0EA5E9",
+  "#2563EB",
   "#4F46E5",
-  "#475569",
+  "#9333EA",
+  "#78716C",
 ] as const;
 
 function normalizeClientHex(value: string) {
@@ -67,7 +67,7 @@ export function ColorField({
           id={id}
           value={value}
           onChange={(event) => onChange(event.target.value)}
-          placeholder="#2563EB"
+          placeholder="#EA580C"
           autoCapitalize="characters"
           spellCheck={false}
         />

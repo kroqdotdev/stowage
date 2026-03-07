@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { AssetsPageClient } from "@/components/assets/assets-page-client";
 import { PageHeader } from "@/components/layout/page-header";
 
@@ -8,7 +9,9 @@ export default function AssetsPage() {
         title="Assets"
         description="Track, filter, and manage your inventory."
       />
-      <AssetsPageClient />
+      <Suspense>
+        <AssetsPageClient />
+      </Suspense>
     </div>
   );
 }

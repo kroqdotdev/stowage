@@ -6,9 +6,7 @@ import {
   LayoutDashboard,
   Package,
   MapPin,
-  FolderOpen,
-  Tags,
-  SlidersHorizontal,
+  Layers,
   Wrench,
   Printer,
   Settings,
@@ -16,6 +14,7 @@ import {
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
@@ -23,6 +22,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarSeparator,
 } from "@/components/ui/sidebar";
 
 type NavItem = {
@@ -31,26 +31,36 @@ type NavItem = {
   icon: React.ComponentType<{ className?: string }>;
 };
 
-const mainItems: NavItem[] = [
-  { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+const inventoryItems: NavItem[] = [
   { title: "Assets", href: "/assets", icon: Package },
-];
-
-const organizationItems: NavItem[] = [
   { title: "Locations", href: "/locations", icon: MapPin },
-  { title: "Categories", href: "/categories", icon: FolderOpen },
-  { title: "Tags", href: "/tags", icon: Tags },
-  { title: "Fields", href: "/fields", icon: SlidersHorizontal },
 ];
 
-const operationsItems: NavItem[] = [
+const organizeItems: NavItem[] = [
+  { title: "Taxonomy", href: "/taxonomy", icon: Layers },
+];
+
+const maintainItems: NavItem[] = [
   { title: "Services", href: "/services", icon: Wrench },
   { title: "Labels", href: "/labels", icon: Printer },
 ];
 
-const settingsItems: NavItem[] = [
-  { title: "Settings", href: "/settings", icon: Settings },
+const dashboardItems: NavItem[] = [
+  { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
 ];
+
+function isItemActive(pathname: string, href: string) {
+  if (href === "/dashboard") return pathname === "/dashboard";
+  if (href === "/taxonomy") {
+    return (
+      pathname.startsWith("/taxonomy") ||
+      pathname.startsWith("/categories") ||
+      pathname.startsWith("/tags") ||
+      pathname.startsWith("/fields")
+    );
+  }
+  return pathname.startsWith(href);
+}
 
 function NavGroup({
   label,
@@ -66,26 +76,20 @@ function NavGroup({
       {label ? <SidebarGroupLabel>{label}</SidebarGroupLabel> : null}
       <SidebarGroupContent>
         <SidebarMenu>
-          {items.map((item) => {
-            const isActive =
-              pathname === item.href ||
-              (item.href !== "/dashboard" && pathname.startsWith(item.href));
-
-            return (
-              <SidebarMenuItem key={item.href}>
-                <SidebarMenuButton
-                  asChild
-                  isActive={isActive}
-                  tooltip={item.title}
-                >
-                  <Link href={item.href}>
-                    <item.icon className="h-4 w-4" />
-                    <span>{item.title}</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            );
-          })}
+          {items.map((item) => (
+            <SidebarMenuItem key={item.href}>
+              <SidebarMenuButton
+                asChild
+                isActive={isItemActive(pathname, item.href)}
+                tooltip={item.title}
+              >
+                <Link href={item.href}>
+                  <item.icon className="h-4 w-4" />
+                  <span>{item.title}</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          ))}
         </SidebarMenu>
       </SidebarGroupContent>
     </SidebarGroup>
@@ -97,7 +101,7 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon">
-      <SidebarHeader className="border-b border-border px-4 py-3">
+      <SidebarHeader className="border-b border-sidebar-border px-4 py-3">
         <Link
           href="/dashboard"
           className="flex items-center gap-2 font-semibold text-foreground"
@@ -109,19 +113,28 @@ export function AppSidebar() {
         </Link>
       </SidebarHeader>
       <SidebarContent>
-        <NavGroup items={mainItems} pathname={pathname} />
-        <NavGroup
-          label="Organization"
-          items={organizationItems}
-          pathname={pathname}
-        />
-        <NavGroup
-          label="Operations"
-          items={operationsItems}
-          pathname={pathname}
-        />
-        <NavGroup items={settingsItems} pathname={pathname} />
+        <NavGroup items={dashboardItems} pathname={pathname} />
+        <NavGroup label="Inventory" items={inventoryItems} pathname={pathname} />
+        <NavGroup label="Organize" items={organizeItems} pathname={pathname} />
+        <NavGroup label="Maintain" items={maintainItems} pathname={pathname} />
       </SidebarContent>
+      <SidebarFooter>
+        <SidebarSeparator />
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              asChild
+              isActive={isItemActive(pathname, "/settings")}
+              tooltip="Settings"
+            >
+              <Link href="/settings">
+                <Settings className="h-4 w-4" />
+                <span>Settings</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarFooter>
     </Sidebar>
   );
 }

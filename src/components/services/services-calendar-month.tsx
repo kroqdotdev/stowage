@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { useQuery } from "convex/react";
 import { Button } from "@/components/ui/button";
 import { api } from "@/lib/convex-api";
+import { useTodayIsoDate } from "@/lib/use-today-iso-date";
 
 type CalendarRow = {
   scheduleId: string;
@@ -88,6 +89,7 @@ export function ServicesCalendarMonth() {
   }, [items]);
 
   const days = useMemo(() => buildCalendarDays(state), [state]);
+  const today = useTodayIsoDate();
 
   return (
     <section className="space-y-4">
@@ -145,13 +147,24 @@ export function ServicesCalendarMonth() {
               day,
             });
             const dayRows = rowsByDate.get(dateKey) ?? [];
+            const isToday = dateKey === today;
 
             return (
               <div
                 key={dateKey}
-                className="min-h-24 rounded-lg border border-border/70 bg-background p-2"
+                className={`min-h-24 rounded-lg border p-2 ${
+                  isToday
+                    ? "border-primary/50 bg-orange-50/50 dark:bg-stone-800/50"
+                    : "border-border/70 bg-background"
+                }`}
               >
-                <p className="text-xs font-medium text-muted-foreground">
+                <p
+                  className={`text-xs font-medium ${
+                    isToday
+                      ? "text-primary"
+                      : "text-muted-foreground"
+                  }`}
+                >
                   {day}
                 </p>
                 <div className="mt-1 space-y-1">
@@ -159,7 +172,7 @@ export function ServicesCalendarMonth() {
                     <Link
                       key={row.scheduleId}
                       href={`/assets/${row.assetId}`}
-                      className="block rounded bg-muted/30 px-1.5 py-1 text-xs hover:bg-muted/50"
+                      className="block rounded bg-primary/10 px-1.5 py-1 text-xs text-foreground hover:bg-primary/20"
                     >
                       {row.assetTag}
                     </Link>

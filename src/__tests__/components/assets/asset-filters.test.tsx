@@ -98,4 +98,24 @@ describe("AssetFilters", () => {
     await user.click(screen.getByRole("button", { name: "Reset" }));
     expect(onReset).toHaveBeenCalledOnce();
   });
+
+  it("exposes accessible labels for custom location and tag filters", async () => {
+    const user = userEvent.setup();
+
+    render(
+      <AssetFilters
+        options={options}
+        search=""
+        filters={emptyFilters}
+        onSearchChange={vi.fn()}
+        onFiltersChange={vi.fn()}
+        onReset={vi.fn()}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "More filters" }));
+
+    expect(screen.getByLabelText("Location")).toBeInTheDocument();
+    expect(screen.getByLabelText("Tags")).toBeInTheDocument();
+  });
 });

@@ -22,6 +22,7 @@ import type * as catalog_helpers from "../catalog_helpers.js";
 import type * as categories from "../categories.js";
 import type * as customFields from "../customFields.js";
 import type * as custom_fields_helpers from "../custom_fields_helpers.js";
+import type * as dashboardStats from "../dashboardStats.js";
 import type * as http from "../http.js";
 import type * as locations from "../locations.js";
 import type * as locations_helpers from "../locations_helpers.js";
@@ -57,6 +58,7 @@ declare const fullApi: ApiFromModules<{
   categories: typeof categories;
   customFields: typeof customFields;
   custom_fields_helpers: typeof custom_fields_helpers;
+  dashboardStats: typeof dashboardStats;
   http: typeof http;
   locations: typeof locations;
   locations_helpers: typeof locations_helpers;

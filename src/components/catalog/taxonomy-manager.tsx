@@ -1,22 +1,14 @@
 "use client";
 
+import Link from "next/link";
 import React, { useMemo, useState } from "react";
 import { Loader2, MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { CrudTable } from "@/components/crud/crud-table";
 import { ColorField } from "@/components/crud/color-field";
 import { ConfirmDialog } from "@/components/crud/confirm-dialog";
 import { getConvexUiErrorMessage } from "@/components/crud/error-messages";
 import { CrudModal } from "@/components/crud/modal";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  ContextMenu,
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuSeparator,
-  ContextMenuTrigger,
-} from "@/components/ui/context-menu";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,13 +17,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { formatDateFromTimestamp } from "@/lib/date-format";
-import { useAppDateFormat } from "@/lib/use-app-date-format";
 
 export type TaxonomyFormValues = {
   name: string;
@@ -73,7 +58,7 @@ function createInitialForm(
 ): TaxonomyFormValues {
   return {
     name: values?.name ?? "",
-    color: values?.color ?? "#2563EB",
+    color: values?.color ?? "#EA580C",
     prefix: variant === "categories" ? (values?.prefix ?? "") : "",
     description: variant === "categories" ? (values?.description ?? "") : "",
   };
@@ -96,7 +81,6 @@ export function TaxonomyManager({
   onUpdate: (id: string, values: TaxonomyFormValues) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
 }) {
-  const dateFormat = useAppDateFormat();
   const singular = variant === "categories" ? "category" : "tag";
   const singularTitle = variant === "categories" ? "Category" : "Tag";
   const pluralTitle = variant === "categories" ? "Categories" : "Tags";
@@ -190,23 +174,6 @@ export function TaxonomyManager({
     }
   }
 
-  const headers =
-    variant === "categories"
-      ? [
-          { key: "color", label: "Color" },
-          { key: "name", label: "Name" },
-          { key: "prefix", label: "Prefix" },
-          { key: "description", label: "Description" },
-          { key: "updated", label: "Updated" },
-          { key: "actions", label: "Actions", align: "right" as const },
-        ]
-      : [
-          { key: "color", label: "Color" },
-          { key: "name", label: "Name" },
-          { key: "updated", label: "Updated" },
-          { key: "actions", label: "Actions", align: "right" as const },
-        ];
-
   return (
     <section className="rounded-xl border border-border/70 bg-background p-5 shadow-sm">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -239,118 +206,118 @@ export function TaxonomyManager({
       </div>
 
       <div className="mt-4">
-        <CrudTable
-          headers={headers}
-          loading={loading}
-          emptyMessage={`No ${pluralLower} yet.`}
-          colSpan={headers.length}
-        >
-          {rows.length > 0
-            ? rows.map((row) => {
-                const rowContent = (
-                  <tr className="border-t border-border/50">
-                    <td className="px-3 py-2">
-                      <Badge className="gap-2 border-border/80 bg-muted/30 text-foreground">
-                        <span
-                          className="inline-block h-2.5 w-2.5 rounded-full border border-black/10"
-                          style={{ backgroundColor: row.color }}
-                          aria-hidden="true"
-                        />
-                        <span className="font-mono text-[11px]">
-                          {row.color}
-                        </span>
-                      </Badge>
-                    </td>
-                    <td className="px-3 py-2 font-medium">{row.name}</td>
-                    {variant === "categories" ? (
-                      <>
-                        <td className="px-3 py-2 text-muted-foreground">
-                          {"prefix" in row ? (row.prefix ?? "—") : "—"}
-                        </td>
-                        <td className="max-w-[22rem] px-3 py-2 text-muted-foreground">
-                          <div className="truncate">
-                            {"description" in row
-                              ? (row.description ?? "—")
-                              : "—"}
-                          </div>
-                        </td>
-                      </>
+        {loading ? (
+          <p className="py-6 text-center text-sm text-muted-foreground">
+            Loading...
+          </p>
+        ) : rows.length === 0 ? (
+          <p className="py-6 text-center text-sm text-muted-foreground">
+            No {pluralLower} yet.
+          </p>
+        ) : variant === "categories" ? (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {rows.map((row) => {
+              const catRow = row as CategoryRow;
+              return (
+                <div
+                  key={row._id}
+                  className="rounded-lg border border-border/60 bg-card p-4 shadow-sm transition hover:border-primary/30"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <Link
+                      href={`/assets?category=${row._id}`}
+                      className="flex items-center gap-2 hover:text-primary"
+                    >
+                      <span
+                        className="inline-block h-4 w-4 shrink-0 rounded-full border border-black/10"
+                        style={{ backgroundColor: row.color }}
+                      />
+                      <span className="font-semibold">{row.name}</span>
+                    </Link>
+                    {canManage ? (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon-sm"
+                            className="cursor-pointer"
+                            aria-label={`Actions for ${row.name}`}
+                          >
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => openEdit(row._id)}>
+                            <Pencil className="h-4 w-4" />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            variant="destructive"
+                            onClick={() => setDeleteId(row._id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     ) : null}
-                    <td className="px-3 py-2 text-muted-foreground">
-                      {formatDateFromTimestamp(row.updatedAt, dateFormat)}
-                    </td>
-                    <td className="px-3 py-2 text-right">
-                      {canManage ? (
-                        <DropdownMenu>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <DropdownMenuTrigger asChild>
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="icon-sm"
-                                  className="cursor-pointer"
-                                  aria-label={`Actions for ${row.name}`}
-                                >
-                                  <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                            </TooltipTrigger>
-                            <TooltipContent>Actions</TooltipContent>
-                          </Tooltip>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem
-                              onClick={() => openEdit(row._id)}
-                            >
-                              <Pencil className="h-4 w-4" />
-                              Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              variant="destructive"
-                              onClick={() => setDeleteId(row._id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      ) : (
-                        <span className="text-xs text-muted-foreground">
-                          Read only
-                        </span>
-                      )}
-                    </td>
-                  </tr>
-                );
-
-                return canManage ? (
-                  <ContextMenu key={row._id}>
-                    <ContextMenuTrigger asChild>
-                      {rowContent}
-                    </ContextMenuTrigger>
-                    <ContextMenuContent>
-                      <ContextMenuItem onClick={() => openEdit(row._id)}>
-                        <Pencil className="h-4 w-4" />
-                        Edit
-                      </ContextMenuItem>
-                      <ContextMenuSeparator />
-                      <ContextMenuItem
-                        variant="destructive"
-                        onClick={() => setDeleteId(row._id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                        Delete
-                      </ContextMenuItem>
-                    </ContextMenuContent>
-                  </ContextMenu>
-                ) : (
-                  <React.Fragment key={row._id}>
-                    {rowContent}
-                  </React.Fragment>
-                );
-              })
-            : null}
-        </CrudTable>
+                  </div>
+                  {catRow.prefix ? (
+                    <p className="mt-1 font-mono text-xs text-muted-foreground">
+                      Prefix: {catRow.prefix}
+                    </p>
+                  ) : null}
+                  {catRow.description ? (
+                    <p className="mt-1 truncate text-xs text-muted-foreground">
+                      {catRow.description}
+                    </p>
+                  ) : null}
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            {rows.map((row) => (
+              <div
+                key={row._id}
+                className="group inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-card px-3 py-1.5 text-sm shadow-sm transition hover:border-primary/30"
+              >
+                <Link
+                  href={`/assets?tag=${row._id}`}
+                  className="inline-flex items-center gap-1.5 hover:text-primary"
+                >
+                  <span
+                    className="inline-block h-2.5 w-2.5 rounded-full border border-black/10"
+                    style={{ backgroundColor: row.color }}
+                  />
+                  <span className="font-medium">{row.name}</span>
+                </Link>
+                {canManage ? (
+                  <div className="flex items-center gap-0.5 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">
+                    <button
+                      type="button"
+                      className="cursor-pointer rounded p-0.5 hover:bg-muted"
+                      onClick={() => openEdit(row._id)}
+                      aria-label={`Edit ${row.name}`}
+                    >
+                      <Pencil className="h-3 w-3 text-muted-foreground" />
+                    </button>
+                    <button
+                      type="button"
+                      className="cursor-pointer rounded p-0.5 hover:bg-destructive/10"
+                      onClick={() => setDeleteId(row._id)}
+                      aria-label={`Delete ${row.name}`}
+                    >
+                      <Trash2 className="h-3 w-3 text-destructive" />
+                    </button>
+                  </div>
+                ) : null}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <CrudModal

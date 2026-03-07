@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { ChevronDown, Filter, Search, X } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Check, ChevronDown, Filter, Search, X } from "lucide-react";
 import type { Id } from "@/lib/convex-api";
 import {
   ASSET_STATUS_LABELS,
@@ -9,15 +9,31 @@ import {
   type AssetFilterOptions,
   type AssetStatus,
 } from "@/components/assets/types";
+import {
+  LocationPicker,
+  type LocationPickerOption,
+} from "@/components/locations/location-picker";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 import { Input } from "@/components/ui/input";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -25,6 +41,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 
 export type AssetFiltersState = {
   categoryId: Id<"categories"> | null;
@@ -45,6 +62,91 @@ function addTagId(tagIds: Id<"tags">[], tagId: Id<"tags">) {
   return [...tagIds, tagId];
 }
 
+function TagsPicker({
+  id,
+  labelledBy,
+  tags,
+  selectedIds,
+  onChange,
+}: {
+  id?: string;
+  labelledBy?: string;
+  tags: AssetFilterOptions["tags"];
+  selectedIds: Id<"tags">[];
+  onChange: (tagIds: Id<"tags">[]) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const selectedCount = selectedIds.length;
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          id={id}
+          aria-labelledby={labelledBy}
+          className="flex h-9 w-full items-center justify-between rounded-md border border-input bg-background px-3 text-sm outline-none transition-colors data-[state=open]:border-ring data-[state=open]:ring-[3px] data-[state=open]:ring-ring/40"
+        >
+          <span
+            className={cn(
+              "truncate",
+              selectedCount > 0
+                ? "text-foreground"
+                : "text-muted-foreground",
+            )}
+          >
+            {selectedCount === 0
+              ? "All tags"
+              : selectedCount === 1
+                ? (tags.find((t) => t._id === selectedIds[0])?.name ??
+                  "1 tag")
+                : `${selectedCount} tags`}
+          </span>
+          <ChevronDown className="size-4 text-muted-foreground" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent
+        className="w-[var(--radix-popover-trigger-width)] min-w-56 p-0"
+        align="start"
+      >
+        <Command>
+          <CommandInput placeholder="Search tags..." />
+          <CommandList>
+            <CommandEmpty>No tags found.</CommandEmpty>
+            <CommandGroup>
+              {tags.map((tag) => {
+                const checked = selectedIds.includes(tag._id);
+                return (
+                  <CommandItem
+                    key={tag._id}
+                    value={tag.name}
+                    onSelect={() =>
+                      onChange(
+                        checked
+                          ? removeTagId(selectedIds, tag._id)
+                          : addTagId(selectedIds, tag._id),
+                      )
+                    }
+                  >
+                    <span
+                      className="inline-block h-2.5 w-2.5 shrink-0 rounded-full border border-black/10"
+                      style={{ backgroundColor: tag.color }}
+                    />
+                    <span className="truncate">{tag.name}</span>
+                    {checked ? (
+                      <Check className="ml-auto size-4 text-muted-foreground" />
+                    ) : null}
+                  </CommandItem>
+                );
+              })}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 function MoreFilters({
   filters,
   options,
@@ -57,6 +159,12 @@ function MoreFilters({
   const defaultOpen =
     filters.locationId !== null || filters.tagIds.length > 0;
   const [open, setOpen] = useState(defaultOpen);
+
+  const locationOptions = useMemo(
+    () =>
+      options.locations as LocationPickerOption[],
+    [options.locations],
+  );
 
   return (
     <Collapsible
@@ -77,67 +185,43 @@ function MoreFilters({
       <CollapsibleContent>
         <div className="grid gap-3 border-t border-border/60 px-3 py-3 lg:grid-cols-2">
           <div className="space-y-1.5">
-            <label className="text-sm font-medium">Location</label>
-            <Select
-              value={filters.locationId ?? "__all__"}
-              onValueChange={(value) =>
-                onFiltersChange({
-                  ...filters,
-                  locationId:
-                    value === "__all__"
-                      ? null
-                      : (value as Id<"locations">),
-                })
-              }
+            <label
+              htmlFor="asset-filter-location"
+              id="asset-filter-location-label"
+              className="text-sm font-medium"
             >
-              <SelectTrigger className="w-full" aria-label="Filter by location">
-                <SelectValue placeholder="All locations" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="__all__">All locations</SelectItem>
-                {options.locations.map((location) => (
-                  <SelectItem key={location._id} value={location._id}>
-                    {location.path}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              Location
+            </label>
+            <LocationPicker
+              id="asset-filter-location"
+              labelledBy="asset-filter-location-label"
+              value={filters.locationId}
+              options={locationOptions}
+              nullLabel="All locations"
+              onChange={(locationId) =>
+                onFiltersChange({ ...filters, locationId })
+              }
+            />
           </div>
 
-          <fieldset className="space-y-1.5">
-            <legend className="text-sm font-medium">Tags</legend>
-            <div className="max-h-32 space-y-1 overflow-auto rounded-md border border-border/60 bg-background p-2">
-              {options.tags.length === 0 ? (
-                <p className="text-xs text-muted-foreground">
-                  No tags available.
-                </p>
-              ) : (
-                options.tags.map((tag) => {
-                  const checked = filters.tagIds.includes(tag._id);
-                  return (
-                    <label
-                      key={tag._id}
-                      className="flex items-center gap-2 text-sm"
-                    >
-                      <Checkbox
-                        checked={checked}
-                        onCheckedChange={(nextChecked) =>
-                          onFiltersChange({
-                            ...filters,
-                            tagIds:
-                              nextChecked === true
-                                ? addTagId(filters.tagIds, tag._id)
-                                : removeTagId(filters.tagIds, tag._id),
-                          })
-                        }
-                      />
-                      <span>{tag.name}</span>
-                    </label>
-                  );
-                })
-              )}
-            </div>
-          </fieldset>
+          <div className="space-y-1.5">
+            <label
+              htmlFor="asset-filter-tags"
+              id="asset-filter-tags-label"
+              className="text-sm font-medium"
+            >
+              Tags
+            </label>
+            <TagsPicker
+              id="asset-filter-tags"
+              labelledBy="asset-filter-tags-label"
+              tags={options.tags}
+              selectedIds={filters.tagIds}
+              onChange={(tagIds) =>
+                onFiltersChange({ ...filters, tagIds })
+              }
+            />
+          </div>
         </div>
       </CollapsibleContent>
     </Collapsible>

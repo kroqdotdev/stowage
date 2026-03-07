@@ -37,7 +37,7 @@ describe("ServicesScheduledList", () => {
 
     expect(screen.getByText("Main Engine")).toBeInTheDocument();
     expect(screen.getByText("ENG-0001")).toBeInTheDocument();
-    expect(screen.getByText("2026-03-06")).toBeInTheDocument();
+    expect(screen.getByText("Due: 2026-03-06")).toBeInTheDocument();
   });
 
   it("renders empty state when no schedules exist", () => {

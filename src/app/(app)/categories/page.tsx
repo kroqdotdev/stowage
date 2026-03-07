@@ -1,14 +1,5 @@
-import { CategoriesPageClient } from "@/components/categories/categories-page-client";
-import { PageHeader } from "@/components/layout/page-header";
+import { redirect } from "next/navigation";
 
 export default function CategoriesPage() {
-  return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Categories"
-        description="Organize assets into categories."
-      />
-      <CategoriesPageClient />
-    </div>
-  );
+  redirect("/taxonomy?tab=categories");
 }

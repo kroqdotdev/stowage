@@ -1,8 +1,11 @@
 "use client";
 
+import { useMemo } from "react";
+import Link from "next/link";
 import {
   ChevronDown,
   ChevronRight,
+  Eye,
   FolderTree,
   MoreHorizontal,
   Pencil,
@@ -107,7 +110,10 @@ export function LocationTree({
   onAddChild: (parentId: string) => void;
   onDelete: (id: string) => void;
 }) {
-  const childrenByParent = buildLocationChildrenMap(locations);
+  const childrenByParent = useMemo(
+    () => buildLocationChildrenMap(locations),
+    [locations],
+  );
   const roots = childrenByParent.get(null) ?? [];
 
   if (locations.length === 0) {
@@ -197,6 +203,12 @@ export function LocationTree({
                   <TooltipContent>Actions</TooltipContent>
                 </Tooltip>
                 <DropdownMenuContent align="end">
+                  <DropdownMenuItem asChild>
+                    <Link href={`/assets?location=${node._id}`}>
+                      <Eye className="h-4 w-4" />
+                      View assets here
+                    </Link>
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => onSelect(node._id)}>
                     <Pencil className="h-4 w-4" />
                     Edit details
@@ -226,6 +238,13 @@ export function LocationTree({
           <ContextMenu>
             <ContextMenuTrigger asChild>{nodeContent}</ContextMenuTrigger>
             <ContextMenuContent>
+              <ContextMenuItem asChild>
+                <Link href={`/assets?location=${node._id}`}>
+                  <Eye className="h-4 w-4" />
+                  View assets here
+                </Link>
+              </ContextMenuItem>
+              <ContextMenuSeparator />
               <ContextMenuItem onClick={() => onSelect(node._id)}>
                 <Pencil className="h-4 w-4" />
                 Edit details

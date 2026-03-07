@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { Check, ChevronDown } from "lucide-react";
 import type { Id } from "@/lib/convex-api";
 import {
@@ -105,14 +106,21 @@ export function LocationPicker({
   disabled = false,
   onChange,
   id,
+  labelledBy,
+  nullLabel = "No location",
 }: {
   value: Id<"locations"> | null;
   options: LocationPickerOption[];
   disabled?: boolean;
   onChange: (locationId: Id<"locations"> | null) => void;
   id?: string;
+  labelledBy?: string;
+  nullLabel?: string;
 }) {
-  const { roots, optionsById } = buildLocationTree(options);
+  const { roots, optionsById } = useMemo(
+    () => buildLocationTree(options),
+    [options],
+  );
 
   if (options.length === 0) {
     return (
@@ -166,6 +174,7 @@ export function LocationPicker({
           <button
             type="button"
             id={id}
+            aria-labelledby={labelledBy}
             disabled={disabled}
             className="flex h-9 w-full items-center justify-between rounded-md border border-input bg-background px-3 text-sm outline-none transition-colors disabled:cursor-not-allowed disabled:opacity-50 data-[state=open]:border-ring data-[state=open]:ring-[3px] data-[state=open]:ring-ring/40"
           >
@@ -175,7 +184,7 @@ export function LocationPicker({
                 selectedPath ? "text-foreground" : "text-muted-foreground",
               )}
             >
-              {selectedPath ?? "No location"}
+              {selectedPath ?? nullLabel}
             </span>
             <ChevronDown className="size-4 text-muted-foreground" />
           </button>
@@ -185,7 +194,7 @@ export function LocationPicker({
           className="w-[var(--radix-dropdown-menu-trigger-width)] min-w-56"
         >
           <DropdownMenuItem onSelect={() => onChange(null)}>
-            <span>No location</span>
+            <span>{nullLabel}</span>
             {value === null ? (
               <Check className="ml-auto size-4 text-muted-foreground" />
             ) : null}

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { startTransition, useDeferredValue, useMemo, useState } from "react";
 import { Package, Plus, Printer, X } from "lucide-react";
 import { useQuery } from "convex/react";
@@ -20,22 +20,42 @@ import type {
 } from "@/components/assets/types";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
+import type { Id } from "@/lib/convex-api";
 import { api } from "@/lib/convex-api";
 
-const DEFAULT_FILTERS: AssetFiltersState = {
-  categoryId: null,
-  status: null,
-  locationId: null,
-  tagIds: [],
-};
+function getInitialFilters(
+  searchParams: URLSearchParams,
+): AssetFiltersState {
+  const category = searchParams.get("category");
+  const location = searchParams.get("location");
+  const tag = searchParams.get("tag");
+  return {
+    categoryId: category ? (category as Id<"categories">) : null,
+    status: null,
+    locationId: location ? (location as Id<"locations">) : null,
+    tagIds: tag ? [tag as Id<"tags">] : [],
+  };
+}
 
-export function AssetsPageClient() {
+function buildFiltersKey(searchParams: URLSearchParams) {
+  return [
+    searchParams.get("category") ?? "",
+    searchParams.get("location") ?? "",
+    searchParams.get("tag") ?? "",
+  ].join("|");
+}
+
+function AssetsPageClientContent({
+  initialFilters,
+}: {
+  initialFilters: AssetFiltersState;
+}) {
   const router = useRouter();
 
   const [searchInput, setSearchInput] = useState("");
   const deferredSearch = useDeferredValue(searchInput);
 
-  const [filters, setFilters] = useState<AssetFiltersState>(DEFAULT_FILTERS);
+  const [filters, setFilters] = useState<AssetFiltersState>(initialFilters);
   const [sortBy, setSortBy] = useState<AssetSortBy>("createdAt");
   const [sortDirection, setSortDirection] =
     useState<AssetSortDirection>("desc");
@@ -128,7 +148,12 @@ export function AssetsPageClient() {
         onReset={() => {
           startTransition(() => {
             setSearchInput("");
-            setFilters(DEFAULT_FILTERS);
+            setFilters({
+              categoryId: null,
+              status: null,
+              locationId: null,
+              tagIds: [],
+            });
           });
         }}
       />
@@ -215,5 +240,21 @@ export function AssetsPageClient() {
         </div>
       ) : null}
     </div>
+  );
+}
+
+export function AssetsPageClient() {
+  const searchParams = useSearchParams();
+  const filtersKey = buildFiltersKey(searchParams);
+  const initialFilters = useMemo(
+    () => getInitialFilters(searchParams),
+    [searchParams],
+  );
+
+  return (
+    <AssetsPageClientContent
+      key={filtersKey}
+      initialFilters={initialFilters}
+    />
   );
 }

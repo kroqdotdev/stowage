@@ -182,7 +182,7 @@ export function AssetTable({
                 <ContextMenu key={asset._id}>
                   <ContextMenuTrigger asChild>
                     <tr
-                      className="cursor-pointer border-t border-border/50 transition hover:bg-muted/25 focus-visible:bg-muted/25"
+                      className="cursor-pointer border-t border-border/50 transition hover:bg-orange-50/50 focus-visible:bg-orange-50/50 dark:hover:bg-stone-800/50 dark:focus-visible:bg-stone-800/50"
                       onClick={() => onRowOpen(asset._id)}
                       onKeyDown={(event) => {
                         if (event.key === "Enter" || event.key === " ") {
@@ -208,7 +208,7 @@ export function AssetTable({
                         {asset.assetTag}
                       </td>
                       <td className="px-3 py-2">
-                        <div className="font-medium">{asset.name}</div>
+                        <div className="text-sm font-semibold">{asset.name}</div>
                         {asset.tagNames.length > 0 ? (
                           <div className="mt-1 flex flex-wrap gap-1">
                             {asset.tagNames.slice(0, 2).map((tagName) => (
@@ -230,6 +230,12 @@ export function AssetTable({
                       <td className="px-3 py-2">
                         {asset.categoryName ? (
                           <Badge className="border border-border/60 bg-muted/20 text-xs">
+                            {asset.categoryColor ? (
+                              <span
+                                className="inline-block h-2 w-2 shrink-0 rounded-full"
+                                style={{ backgroundColor: asset.categoryColor }}
+                              />
+                            ) : null}
                             {asset.categoryName}
                           </Badge>
                         ) : (

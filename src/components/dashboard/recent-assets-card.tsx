@@ -20,8 +20,8 @@ export function RecentAssetsCard() {
   }
 
   return (
-    <section className="rounded-xl border border-border/70 bg-background p-5 shadow-sm">
-      <div className="flex items-center justify-between gap-2">
+    <section className="flex min-h-0 flex-col rounded-xl border border-border/70 bg-background p-5 shadow-sm">
+      <div className="flex shrink-0 items-center justify-between gap-2">
         <h2 className="text-base font-semibold tracking-tight">
           Recent assets
         </h2>
@@ -38,7 +38,7 @@ export function RecentAssetsCard() {
           No assets have been added yet.
         </p>
       ) : (
-        <div className="mt-3 space-y-2">
+        <div className="mt-3 min-h-0 flex-1 space-y-2 overflow-y-auto">
           {stats.recentAssets.map((asset) => (
             <article
               key={asset._id}

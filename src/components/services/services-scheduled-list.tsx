@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { Id } from "@/lib/convex-api";
 import { api } from "@/lib/convex-api";
+import { useTodayIsoDate } from "@/lib/use-today-iso-date";
 
 type ScheduledRow = {
   scheduleId: Id<"serviceSchedules">;
@@ -24,14 +25,6 @@ type ScheduledRow = {
   nextServiceDate: string;
   reminderStartDate: string;
 };
-
-function getTodayIsoDate() {
-  const now = new Date();
-  const year = String(now.getUTCFullYear()).padStart(4, "0");
-  const month = String(now.getUTCMonth() + 1).padStart(2, "0");
-  const day = String(now.getUTCDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
 
 function getScheduleStatus({
   nextServiceDate,
@@ -64,11 +57,17 @@ const STATUS_CLASSNAMES: Record<
   string
 > = {
   overdue:
-    "border-red-300/80 bg-red-500/10 text-red-700 dark:border-red-700/60 dark:text-red-300",
+    "border-rose-300/80 bg-rose-500/10 text-rose-800 dark:border-rose-700/60 dark:text-rose-300",
   due_soon:
-    "border-amber-300/80 bg-amber-500/10 text-amber-700 dark:border-amber-700/60 dark:text-amber-300",
+    "border-amber-300/80 bg-amber-500/10 text-amber-800 dark:border-amber-700/60 dark:text-amber-300",
   scheduled:
-    "border-emerald-300/80 bg-emerald-500/10 text-emerald-700 dark:border-emerald-700/60 dark:text-emerald-300",
+    "border-emerald-300/80 bg-emerald-500/10 text-emerald-800 dark:border-emerald-700/60 dark:text-emerald-300",
+};
+
+const URGENCY_STRIPE: Record<ReturnType<typeof getScheduleStatus>, string> = {
+  overdue: "border-l-4 border-l-rose-600 dark:border-l-rose-500",
+  due_soon: "border-l-4 border-l-amber-500 dark:border-l-amber-400",
+  scheduled: "border-l-4 border-l-emerald-500 dark:border-l-emerald-400",
 };
 
 export function ServicesScheduledList() {
@@ -79,7 +78,7 @@ export function ServicesScheduledList() {
     nextServiceDate: string;
   } | null>(null);
 
-  const today = getTodayIsoDate();
+  const today = useTodayIsoDate();
 
   const items = useMemo(() => (rows ?? []) as ScheduledRow[], [rows]);
 
@@ -112,20 +111,31 @@ export function ServicesScheduledList() {
           return (
             <article
               key={row.scheduleId}
-              className="rounded-xl border border-border/70 bg-background px-4 py-3 shadow-sm"
+              className={`rounded-xl border border-border/70 bg-background shadow-sm transition hover:border-primary/30 ${URGENCY_STRIPE[status]}`}
             >
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <p className="text-sm font-semibold tracking-tight">
-                    {row.assetName}
-                  </p>
-                  <p className="text-xs text-muted-foreground">{row.assetTag}</p>
+              <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+                <div className="flex items-center gap-3">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <Link
+                        href={`/assets/${row.assetId}`}
+                        className="text-sm font-semibold tracking-tight hover:text-primary"
+                      >
+                        {row.assetName}
+                      </Link>
+                      <span className="font-mono text-xs text-muted-foreground">
+                        {row.assetTag}
+                      </span>
+                    </div>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      Due: {row.nextServiceDate}
+                    </p>
+                  </div>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                   <Badge className={STATUS_CLASSNAMES[status]}>
                     {STATUS_LABELS[status]}
                   </Badge>
-                  <p className="text-sm font-medium">{row.nextServiceDate}</p>
                   <Button
                     type="button"
                     variant="outline"
@@ -141,12 +151,6 @@ export function ServicesScheduledList() {
                   >
                     Log record
                   </Button>
-                  <Link
-                    href={`/assets/${row.assetId}`}
-                    className="text-sm text-primary underline-offset-2 hover:underline"
-                  >
-                    Open asset
-                  </Link>
                 </div>
               </div>
             </article>

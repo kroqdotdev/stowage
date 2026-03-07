@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { Pencil, Printer, Trash2 } from "lucide-react";
+import { MapPin, Pencil, Printer, Trash2 } from "lucide-react";
 import type { FieldDefinition } from "@/components/fields/types";
 import { DynamicFieldDisplay } from "@/components/fields/dynamic-field-display";
 import { ConfirmDialog } from "@/components/crud/confirm-dialog";
@@ -60,23 +60,42 @@ export function AssetDetail({
 
   return (
     <div className="space-y-4">
-      <section className="rounded-xl border border-border/70 bg-background p-5 shadow-sm">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+      {/* Hero profile card */}
+      <section className="rounded-xl border border-border/70 bg-gradient-to-r from-orange-50/60 to-background shadow-sm dark:from-stone-900/40 dark:to-card">
+        <div className="flex flex-col gap-4 p-5 lg:flex-row lg:items-start lg:justify-between">
           <div className="space-y-2">
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge className="border border-border/70 bg-muted/20 font-mono text-xs tracking-wide">
+            <h2 className="text-2xl font-semibold tracking-tight">
+              {asset.name}
+            </h2>
+            <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+              <Badge className="border border-border/70 bg-background/80 font-mono text-xs tracking-wide">
                 {asset.assetTag}
               </Badge>
               <StatusBadge status={asset.status} />
+              {asset.category ? (
+                <span className="inline-flex items-center gap-1.5">
+                  <span
+                    className="inline-block h-2.5 w-2.5 rounded-full"
+                    style={{ backgroundColor: asset.category.color }}
+                  />
+                  {asset.category.name}
+                </span>
+              ) : null}
+              {asset.location ? (
+                <span className="inline-flex items-center gap-1">
+                  <MapPin className="h-3.5 w-3.5" />
+                  {asset.location.path}
+                </span>
+              ) : null}
             </div>
-            <div>
-              <h2 className="text-2xl font-semibold tracking-tight">
-                {asset.name}
-              </h2>
-              <p className="text-sm text-muted-foreground">
-                Created {formatDateFromTimestamp(asset.createdAt, dateFormat)}
+            {asset.serviceGroup ? (
+              <p className="text-xs text-muted-foreground">
+                Service group: {asset.serviceGroup.name}
               </p>
-            </div>
+            ) : null}
+            <p className="text-xs text-muted-foreground">
+              Created {formatDateFromTimestamp(asset.createdAt, dateFormat)}
+            </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
@@ -150,81 +169,56 @@ export function AssetDetail({
         </div>
       </section>
 
+      {/* Tabbed content */}
       <section className="rounded-xl border border-border/70 bg-background p-5 shadow-sm">
         <Tabs defaultValue="info">
           <TabsList className="mb-4">
-            <TabsTrigger value="info">Info</TabsTrigger>
+            <TabsTrigger value="info">Details</TabsTrigger>
             <TabsTrigger value="service">Service</TabsTrigger>
             <TabsTrigger value="attachments">Attachments</TabsTrigger>
           </TabsList>
 
           <TabsContent value="info">
             <div className="space-y-6">
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-1">
-                  <p className="text-xs uppercase tracking-wide text-muted-foreground">
-                    Category
-                  </p>
-                  <p className="text-sm font-medium">
-                    {asset.category?.name ?? "—"}
-                  </p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-xs uppercase tracking-wide text-muted-foreground">
-                    Location
-                  </p>
-                  <p className="text-sm font-medium">
-                    {asset.location?.path ?? "—"}
-                  </p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-xs uppercase tracking-wide text-muted-foreground">
-                    Service group
-                  </p>
-                  <p className="text-sm font-medium">
-                    {asset.serviceGroup?.name ?? "—"}
-                  </p>
-                </div>
-                <div className="space-y-1 md:col-span-2">
-                  <p className="text-xs uppercase tracking-wide text-muted-foreground">
+              {/* Tags */}
+              {asset.tags.length > 0 ? (
+                <div className="space-y-1.5">
+                  <h3 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                     Tags
-                  </p>
-                  {asset.tags.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">
-                      No tags assigned.
-                    </p>
-                  ) : (
-                    <div className="flex flex-wrap gap-1">
-                      {asset.tags.map((tag) => (
-                        <Badge
-                          key={tag._id}
-                          className="border border-border/70 bg-muted/20 text-xs"
-                        >
-                          {tag.name}
-                        </Badge>
-                      ))}
-                    </div>
-                  )}
+                  </h3>
+                  <div className="flex flex-wrap gap-1.5">
+                    {asset.tags.map((tag) => (
+                      <Badge
+                        key={tag._id}
+                        className="border border-border/70 bg-muted/20 text-xs"
+                      >
+                        <span
+                          className="inline-block h-2 w-2 rounded-full"
+                          style={{ backgroundColor: tag.color }}
+                        />
+                        {tag.name}
+                      </Badge>
+                    ))}
+                  </div>
                 </div>
-                <div className="space-y-1 md:col-span-2">
-                  <p className="text-xs uppercase tracking-wide text-muted-foreground">
-                    Notes
-                  </p>
-                  <p className="whitespace-pre-wrap text-sm text-muted-foreground">
-                    {asset.notes ?? "No notes"}
-                  </p>
-                </div>
+              ) : null}
+
+              {/* Notes */}
+              <div className="space-y-1.5">
+                <h3 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  Notes
+                </h3>
+                <p className="whitespace-pre-wrap text-sm text-muted-foreground">
+                  {asset.notes ?? "No notes"}
+                </p>
               </div>
 
-              <div className="space-y-3">
-                <h3 className="text-sm font-semibold tracking-tight">
-                  Custom fields
-                </h3>
-                {orderedFieldDefinitions.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">
-                    No custom fields defined.
-                  </p>
-                ) : (
+              {/* Custom fields */}
+              {orderedFieldDefinitions.length > 0 ? (
+                <div className="space-y-3">
+                  <h3 className="border-b border-primary/20 pb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    Custom fields
+                  </h3>
                   <div className="grid gap-3 md:grid-cols-2">
                     {orderedFieldDefinitions.map((definition) => (
                       <div
@@ -248,8 +242,8 @@ export function AssetDetail({
                       </div>
                     ))}
                   </div>
-                )}
-              </div>
+                </div>
+              ) : null}
             </div>
           </TabsContent>
 
