@@ -11,6 +11,10 @@ let listAttachmentsValue: Array<{
   status: "pending" | "processing" | "ready" | "failed";
   optimizationError: string | null;
 }> = [];
+let storageUsageValue: {
+  usedBytes: number;
+  limitBytes: number | null;
+} | null = null;
 
 vi.mock("convex/react", () => ({
   useMutation: (reference: unknown) => {
@@ -25,7 +29,14 @@ vi.mock("convex/react", () => ({
 
     throw new Error("Unexpected mutation reference");
   },
-  useQuery: () => listAttachmentsValue,
+  useQuery: (reference: unknown) => {
+    const functionName = getFunctionName(reference as never);
+    if (functionName === "storage_quota:getStorageUsage") {
+      return storageUsageValue;
+    }
+
+    return listAttachmentsValue;
+  },
 }));
 
 class MockXMLHttpRequest {
@@ -69,6 +80,7 @@ describe("FileUploadZone", () => {
     });
     mockCreateAttachment.mockResolvedValue({ attachmentId: "att1" });
     listAttachmentsValue = [];
+    storageUsageValue = null;
   });
 
   afterEach(() => {
@@ -160,5 +172,63 @@ describe("FileUploadZone", () => {
     });
 
     expect(setTimeoutSpy).toHaveBeenCalledWith(expect.any(Function), 30_000);
+  });
+
+  describe("storage quota UI", () => {
+    it("does not show storage bar when no limit is configured", () => {
+      storageUsageValue = { usedBytes: 1024, limitBytes: null };
+
+      render(<FileUploadZone assetId={"asset1" as never} />);
+
+      expect(screen.queryByText("Storage")).not.toBeInTheDocument();
+    });
+
+    it("shows storage usage bar when a limit is configured", () => {
+      const usedBytes = 5 * 1024 * 1024 * 1024;
+      const limitBytes = 15 * 1024 * 1024 * 1024;
+      storageUsageValue = { usedBytes, limitBytes };
+
+      render(<FileUploadZone assetId={"asset1" as never} />);
+
+      expect(screen.getByText("Storage")).toBeInTheDocument();
+      expect(screen.getByText("5.0 GB / 15.0 GB")).toBeInTheDocument();
+    });
+
+    it("shows MB for usage under 1 GB", () => {
+      const usedBytes = 200 * 1024 * 1024;
+      const limitBytes = 15 * 1024 * 1024 * 1024;
+      storageUsageValue = { usedBytes, limitBytes };
+
+      render(<FileUploadZone assetId={"asset1" as never} />);
+
+      expect(screen.getByText("200 MB / 15.0 GB")).toBeInTheDocument();
+    });
+
+    it("blocks uploads when quota is exceeded", async () => {
+      const user = userEvent.setup();
+      const limitBytes = 15 * 1024 * 1024 * 1024;
+      storageUsageValue = { usedBytes: limitBytes, limitBytes };
+
+      render(<FileUploadZone assetId={"asset1" as never} />);
+
+      const input = screen.getByTestId("attachment-file-input");
+      const file = new File(["pdf"], "manual.pdf", {
+        type: "application/pdf",
+      });
+      await user.upload(input, file);
+
+      await waitFor(() => {
+        expect(mockGenerateUploadUrl).not.toHaveBeenCalled();
+        expect(mockCreateAttachment).not.toHaveBeenCalled();
+      });
+    });
+
+    it("does not show storage bar when query has not loaded yet", () => {
+      storageUsageValue = null;
+
+      render(<FileUploadZone assetId={"asset1" as never} />);
+
+      expect(screen.queryByText("Storage")).not.toBeInTheDocument();
+    });
   });
 });

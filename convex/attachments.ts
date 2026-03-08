@@ -20,6 +20,7 @@ import {
   sanitizeAttachmentFileName,
   throwAttachmentError,
 } from "./attachments_helpers";
+import { enforceStorageQuota } from "./storage_quota";
 
 const attachmentStatusValidator = v.union(
   ...ATTACHMENT_STATUSES.map((status) => v.literal(status)),
@@ -165,6 +166,8 @@ export const createAttachment = mutation({
     const now = Date.now();
     const classification = classifyAttachment(fileName, fileType);
     const fileSize = uploadedMetadata.size;
+
+    await enforceStorageQuota(ctx, fileSize);
 
     if (fileSize > MAX_ATTACHMENT_UPLOAD_BYTES) {
       const errorMessage = "This file is too large. Upload files up to 25 MB.";

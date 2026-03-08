@@ -131,6 +131,18 @@ export const getUserByIdInternal = internalQuery({
   },
 });
 
+export const getUserByEmailInternal = internalQuery({
+  args: { email: v.string() },
+  returns: v.union(userSummaryValidator, v.null()),
+  handler: async (ctx, args) => {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("email", (q) => q.eq("email", args.email))
+      .unique();
+    return toUserSummary(user as UserSummary | null);
+  },
+});
+
 export const getCurrentUser = query({
   args: {},
   returns: v.union(userSummaryValidator, v.null()),

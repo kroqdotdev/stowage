@@ -1,5 +1,5 @@
 import { getConvexUiErrorMessage } from "@/components/crud/error-messages";
-import { getConvexErrorCode } from "@/lib/convex-errors";
+import { getConvexAppErrorPayload, getConvexErrorCode } from "@/lib/convex-errors";
 
 export function getAttachmentUiErrorMessage(error: unknown, fallback: string) {
   const code = getConvexErrorCode(error);
@@ -18,6 +18,10 @@ export function getAttachmentUiErrorMessage(error: unknown, fallback: string) {
 
   if (code === "FILE_TOO_LARGE") {
     return "This file is too large. Upload files up to 25 MB.";
+  }
+
+  if (code === "STORAGE_QUOTA_EXCEEDED") {
+    return getConvexAppErrorPayload(error)?.message ?? "Storage limit reached.";
   }
 
   if (code === "UPLOAD_NOT_FOUND") {

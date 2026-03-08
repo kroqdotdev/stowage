@@ -9,6 +9,15 @@ import { cn } from "@/lib/utils";
 import type { Id } from "@/lib/convex-api";
 import { api } from "@/lib/convex-api";
 
+function formatStorageSize(bytes: number) {
+  const gb = bytes / (1024 * 1024 * 1024);
+  if (gb >= 1) {
+    return `${gb.toFixed(1)} GB`;
+  }
+  const mb = bytes / (1024 * 1024);
+  return `${mb.toFixed(0)} MB`;
+}
+
 const MAX_FILE_SIZE_BYTES = 25 * 1024 * 1024;
 const MAX_FILES_PER_BATCH = 20;
 const UPLOAD_CONCURRENCY = 3;
@@ -121,6 +130,10 @@ export function FileUploadZone({ assetId }: { assetId: Id<"assets"> }) {
     api.attachments.listAttachmentQueueStatuses,
     { assetId },
   );
+  const storageUsage = useQuery(api.storage_quota.getStorageUsage);
+  const quotaExceeded =
+    storageUsage?.limitBytes != null &&
+    storageUsage.usedBytes >= storageUsage.limitBytes;
 
   const [dragActive, setDragActive] = useState(false);
   const [jobs, setJobs] = useState<UploadJob[]>([]);
@@ -373,6 +386,11 @@ export function FileUploadZone({ assetId }: { assetId: Id<"assets"> }) {
       return;
     }
 
+    if (quotaExceeded) {
+      toast.error("Storage limit reached. Delete files to free up space.");
+      return;
+    }
+
     void uploadBatch(Array.from(files));
   }
 
@@ -430,6 +448,29 @@ export function FileUploadZone({ assetId }: { assetId: Id<"assets"> }) {
           </p>
         </button>
       </div>
+
+      {storageUsage?.limitBytes != null ? (
+        <div className="space-y-1">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span>Storage</span>
+            <span>
+              {formatStorageSize(storageUsage.usedBytes)} /{" "}
+              {formatStorageSize(storageUsage.limitBytes)}
+            </span>
+          </div>
+          <div className="h-1.5 overflow-hidden rounded-full bg-muted">
+            <div
+              className={cn(
+                "h-full transition-[width] duration-200",
+                quotaExceeded ? "bg-destructive" : "bg-primary",
+              )}
+              style={{
+                width: `${Math.min(100, (storageUsage.usedBytes / storageUsage.limitBytes) * 100)}%`,
+              }}
+            />
+          </div>
+        </div>
+      ) : null}
 
       {queueJobs.length > 0 ? (
         <div className="space-y-2 rounded-lg border border-border/60 bg-background p-3">

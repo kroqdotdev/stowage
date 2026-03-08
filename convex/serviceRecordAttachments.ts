@@ -14,6 +14,7 @@ import {
   sanitizeAttachmentFileName,
 } from "./attachments_helpers";
 import { throwServiceRecordError } from "./service_record_helpers";
+import { enforceStorageQuota } from "./storage_quota";
 
 const serviceRecordAttachmentKindValidator = v.union(
   ...ATTACHMENT_KINDS.map((kind) => v.literal(kind)),
@@ -135,6 +136,9 @@ export const createAttachment = mutation({
     }
 
     const fileSize = uploadedMetadata.size;
+
+    await enforceStorageQuota(ctx, fileSize);
+
     if (fileSize > MAX_ATTACHMENT_UPLOAD_BYTES) {
       try {
         await ctx.storage.delete(args.storageId);
