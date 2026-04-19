@@ -192,15 +192,48 @@ async function waitForHealth(url: string, timeoutMs = 10_000) {
   );
 }
 
+// Collections are deleted in reverse FK order so required relations resolve
+// during each individual record delete. Unlisted user collections are still
+// truncated, just after the known ones (which cover every FK dependency edge).
+const TRUNCATION_ORDER = [
+  "labelTemplates",
+  "serviceRecordAttachments",
+  "serviceRecords",
+  "serviceSchedules",
+  "attachments",
+  "assetTags",
+  "assets",
+  "serviceProviders",
+  "serviceGroupFields",
+  "serviceGroups",
+  "appSettings",
+  "customFieldDefinitions",
+  "locations",
+  "tags",
+  "categories",
+  "users",
+];
+
 async function truncateUserCollections(pb: PocketBase) {
   const collections = await pb.collections.getFullList();
-  for (const col of collections) {
-    if (col.system) continue;
-    if (col.type === "view") continue;
-    if (col.name.startsWith("_")) continue;
-    const records = await pb.collection(col.name).getFullList({ batch: 200 });
+  const eligible = collections.filter(
+    (col) => !col.system && col.type !== "view" && !col.name.startsWith("_"),
+  );
+  const byName = new Map(eligible.map((c) => [c.name, c]));
+
+  const order: string[] = [];
+  for (const name of TRUNCATION_ORDER) {
+    if (byName.has(name)) {
+      order.push(name);
+      byName.delete(name);
+    }
+  }
+  for (const name of byName.keys()) order.push(name);
+
+  for (const name of order) {
+    const records = await pb.collection(name).getFullList({ batch: 200 });
     for (const rec of records) {
-      await pb.collection(col.name).delete(rec.id);
+      await pb.collection(name).delete(rec.id);
     }
   }
 }
