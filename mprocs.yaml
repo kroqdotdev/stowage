@@ -3,3 +3,5 @@ procs:
     cmd: ["pnpm", "run", "dev:next"]
   convex:
     cmd: ["npx", "convex", "dev"]
+  pocketbase:
+    cmd: ["pnpm", "run", "pb:dev"]

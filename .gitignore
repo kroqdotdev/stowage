@@ -2,6 +2,8 @@
 
 # dependencies
 /node_modules
+/bin
+/pb_data
 /.pnp
 .pnp.*
 .yarn/*
