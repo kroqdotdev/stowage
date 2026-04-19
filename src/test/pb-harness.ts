@@ -25,7 +25,7 @@ import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import PocketBase from "pocketbase";
+import PocketBase, { ClientResponseError } from "pocketbase";
 import { afterAll, beforeAll, beforeEach } from "vitest";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -231,9 +231,34 @@ async function truncateUserCollections(pb: PocketBase) {
   for (const name of byName.keys()) order.push(name);
 
   for (const name of order) {
-    const records = await pb.collection(name).getFullList({ batch: 200 });
-    for (const rec of records) {
-      await pb.collection(name).delete(rec.id);
+    // Loop until all records are gone. Self-referencing collections (e.g.
+    // locations with parentId → locations) need multiple passes: parents stay
+    // blocked while children still reference them, so we delete leaves first
+    // and then re-scan. Abort if a pass makes zero progress to avoid an
+    // infinite loop on genuinely stuck data.
+    let remaining = await pb
+      .collection(name)
+      .getFullList({ batch: 200 });
+    while (remaining.length > 0) {
+      let progress = false;
+      for (const rec of remaining) {
+        try {
+          await pb.collection(name).delete(rec.id);
+          progress = true;
+        } catch (err) {
+          if (err instanceof ClientResponseError && err.status === 400) {
+            continue;
+          }
+          throw err;
+        }
+      }
+      if (!progress) {
+        throw new Error(
+          `pb-harness: truncation made no progress on "${name}" ` +
+            `(${remaining.length} records left — likely a FK/self-ref loop)`,
+        );
+      }
+      remaining = await pb.collection(name).getFullList({ batch: 200 });
     }
   }
 }

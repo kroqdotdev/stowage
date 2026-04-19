@@ -132,8 +132,10 @@ migrate(
         },
         { name: "options", type: "json", required: false },
         { name: "required", type: "bool", required: false },
-        { name: "sortOrder", type: "number", required: true },
-        { name: "usageCount", type: "number", required: true },
+        // sortOrder starts at 0, usageCount starts at 0 — PB treats required
+        // number fields as rejecting zero, so we enforce non-null in Zod.
+        { name: "sortOrder", type: "number", required: false },
+        { name: "usageCount", type: "number", required: false },
         { name: "createdAt", type: "number", required: true },
         { name: "updatedAt", type: "number", required: true },
       ],
@@ -218,7 +220,8 @@ migrate(
         },
         { name: "required", type: "bool", required: false },
         { name: "options", type: "json", required: false },
-        { name: "sortOrder", type: "number", required: true },
+        // sortOrder can be 0; see customFieldDefinitions note above.
+        { name: "sortOrder", type: "number", required: false },
         { name: "createdAt", type: "number", required: true },
         { name: "updatedAt", type: "number", required: true },
         { name: "createdBy", type: "relation", required: true, collectionId: usersId, maxSelect: 1, cascadeDelete: false },
@@ -358,7 +361,8 @@ migrate(
           maxSelect: 1,
           values: ["pending", "processing", "ready", "failed"],
         },
-        { name: "optimizationAttempts", type: "number", required: true },
+        // optimizationAttempts starts at 0; see customFieldDefinitions note above.
+        { name: "optimizationAttempts", type: "number", required: false },
         { name: "optimizationError", type: "text", required: false, max: 2000 },
         { name: "uploadedBy", type: "relation", required: true, collectionId: usersId, maxSelect: 1, cascadeDelete: false },
         { name: "uploadedAt", type: "number", required: true },
@@ -393,7 +397,8 @@ migrate(
           maxSelect: 1,
           values: ["days", "weeks", "months", "years"],
         },
-        { name: "reminderLeadValue", type: "number", required: true },
+        // reminderLeadValue can be 0 (same reminder day as service); see note.
+        { name: "reminderLeadValue", type: "number", required: false },
         {
           name: "reminderLeadUnit",
           type: "select",

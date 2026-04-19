@@ -54,10 +54,17 @@ function toCategoryView(record: CategoryRecord): CategoryView {
 }
 
 export async function listCategories(ctx: Ctx): Promise<CategoryView[]> {
+  // Match Convex's localeCompare(..., { sensitivity: "base" }) — PB's SQL sort
+  // is lexicographic (uppercase before lowercase), which produces the wrong
+  // order for mixed-case names.
   const records = await ctx.pb
     .collection("categories")
-    .getFullList<CategoryRecord>({ sort: "+name" });
-  return records.map(toCategoryView);
+    .getFullList<CategoryRecord>();
+  return records
+    .sort((a, b) =>
+      a.name.localeCompare(b.name, undefined, { sensitivity: "base" }),
+    )
+    .map(toCategoryView);
 }
 
 export async function createCategory(

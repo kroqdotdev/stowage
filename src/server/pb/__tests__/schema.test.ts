@@ -114,19 +114,23 @@ describe("pb schema", () => {
       updatedAt: Date.now(),
     });
 
-    const searchForName = await fetch(
+    type RecordsResponse = {
+      items: Array<{ id: string; assetTag: string }>;
+    };
+
+    const byId = (await fetch(
       `${getHarness().url}/api/collections/assets/records?filter=${encodeURIComponent(`id = "${laptop.id}"`)}`,
       { headers: { Authorization: pb.authStore.token } },
-    ).then((r) => r.json());
-    expect(searchForName.items[0].id).toBe(laptop.id);
+    ).then((r) => r.json())) as RecordsResponse;
+    expect(byId.items[0].id).toBe(laptop.id);
 
-    const ftsCount = await pb.send<{ count: number }>(
+    const byTag = await pb.send<RecordsResponse>(
       `/api/collections/assets/records`,
       {
         method: "GET",
         query: { filter: `assetTag = "LAP-0100"` },
       },
     );
-    expect(ftsCount.items[0]?.assetTag).toBe("LAP-0100");
+    expect(byTag.items[0]?.assetTag).toBe("LAP-0100");
   });
 });
