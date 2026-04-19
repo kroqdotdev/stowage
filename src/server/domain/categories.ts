@@ -1,5 +1,3 @@
-import "server-only";
-
 import { ClientResponseError } from "pocketbase";
 import { z } from "zod";
 
@@ -10,7 +8,7 @@ import {
   normalizePrefix,
   requireCatalogName,
 } from "@/server/pb/catalog";
-import { getPbAdmin } from "@/server/pb/client";
+import type { Ctx } from "@/server/pb/context";
 import { ConflictError } from "@/server/pb/errors";
 
 export const CreateCategoryInput = z.object({
@@ -55,15 +53,15 @@ function toCategoryView(record: CategoryRecord): CategoryView {
   };
 }
 
-export async function listCategories(): Promise<CategoryView[]> {
-  const pb = await getPbAdmin();
-  const records = await pb
+export async function listCategories(ctx: Ctx): Promise<CategoryView[]> {
+  const records = await ctx.pb
     .collection("categories")
     .getFullList<CategoryRecord>({ sort: "+name" });
   return records.map(toCategoryView);
 }
 
 export async function createCategory(
+  ctx: Ctx,
   input: CreateCategoryInput,
 ): Promise<CategoryView> {
   const parsed = CreateCategoryInput.parse(input);
@@ -75,18 +73,18 @@ export async function createCategory(
   const color = normalizeHexColor(parsed.color);
   const now = Date.now();
 
-  const pb = await getPbAdmin();
-
   try {
-    const record = await pb.collection("categories").create<CategoryRecord>({
-      name,
-      normalizedName,
-      prefix: prefix ?? "",
-      description: description ?? "",
-      color,
-      createdAt: now,
-      updatedAt: now,
-    });
+    const record = await ctx.pb
+      .collection("categories")
+      .create<CategoryRecord>({
+        name,
+        normalizedName,
+        prefix: prefix ?? "",
+        description: description ?? "",
+        color,
+        createdAt: now,
+        updatedAt: now,
+      });
     return toCategoryView(record);
   } catch (error) {
     if (

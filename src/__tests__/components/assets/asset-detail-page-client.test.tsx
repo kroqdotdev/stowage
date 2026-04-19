@@ -3,8 +3,8 @@ import { render, screen } from "@testing-library/react";
 import { getFunctionName } from "convex/server";
 import { AssetDetailPageClient } from "@/components/assets/asset-detail-page-client";
 
-const mockUseQuery = vi.fn();
-const mockUseMutation = vi.fn(() => vi.fn());
+const mockUseQuery = vi.fn<(...args: unknown[]) => unknown>();
+const mockUseMutation = vi.fn<(...args: unknown[]) => unknown>(() => vi.fn());
 const mockPush = vi.fn();
 
 vi.mock("convex/react", () => ({

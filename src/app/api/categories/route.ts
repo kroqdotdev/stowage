@@ -6,11 +6,13 @@ import {
   listCategories,
   CreateCategoryInput,
 } from "@/server/domain/categories";
+import { createAdminCtx } from "@/server/pb/context";
 import { DomainError } from "@/server/pb/errors";
 
 export async function GET() {
   try {
-    const categories = await listCategories();
+    const ctx = await createAdminCtx();
+    const categories = await listCategories(ctx);
     return NextResponse.json({ categories });
   } catch (error) {
     return handleError(error);
@@ -27,7 +29,8 @@ export async function POST(request: Request) {
 
   try {
     const input = CreateCategoryInput.parse(body);
-    const category = await createCategory(input);
+    const ctx = await createAdminCtx();
+    const category = await createCategory(ctx, input);
     return NextResponse.json({ category }, { status: 201 });
   } catch (error) {
     return handleError(error);

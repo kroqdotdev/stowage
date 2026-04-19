@@ -9,6 +9,7 @@ export default defineConfig({
       "src/__tests__/**/*.test.{ts,tsx}",
       "convex/__tests__/**/*.test.ts",
     ],
+    exclude: ["src/server/**/__tests__/**"],
   },
   resolve: {
     alias: {

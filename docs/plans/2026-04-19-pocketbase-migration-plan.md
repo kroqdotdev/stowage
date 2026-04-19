@@ -216,6 +216,28 @@ Covers every function in the inventory: ~60 functions → ~300 snapshot cases wh
 
 Files to port (from the inventory): auth, users, locations, categories, tags, custom fields, service schedules, storage quota, label templates, search, assetTags, serviceProviders, serviceRecords, serviceSchedules, serviceGroups, labelTemplates, attachments.
 
+**Running the suite locally**
+
+```sh
+pnpm pb:setup     # one-time: download ./bin/pocketbase
+pnpm test:pb      # runs src/server/**/__tests__/**/*.test.ts against fresh PB per file
+```
+
+**Writing a new PB domain test** — see `src/server/domain/__tests__/categories.test.ts` for the canonical shape. Key pattern:
+
+```ts
+import { usePbHarness } from "@/test/pb-harness";
+
+describe("my domain", () => {
+  const getHarness = usePbHarness();
+  const ctx = () => ({ pb: getHarness().admin });
+
+  it("...", async () => {
+    await myDomainFunction(ctx(), input);
+  });
+});
+```
+
 ### 8.3 Regression parity tests
 
 **Purpose:** prove the PB implementation matches the Convex behavior captured in §8.1.

@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 
 import { usePocketBase } from "@/app/PocketBaseClientProvider";
 
@@ -25,7 +25,10 @@ export function useRealtimeCollection<T>({
 }: UseRealtimeCollectionOptions<T>) {
   const pb = usePocketBase();
   const qc = useQueryClient();
-  const key = queryKey ?? [collection];
+  const key = useMemo(
+    () => queryKey ?? [collection],
+    [queryKey, collection],
+  );
 
   const query = useQuery({ queryKey: key, queryFn: fetcher, enabled });
 
