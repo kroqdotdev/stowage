@@ -10,7 +10,7 @@ Replace the Convex backend with a self-hosted PocketBase. Stowage ships as clean
 
 ## Current status (updated 2026-04-20)
 
-**14 commits on `pocketbase-migration`.** Test surface: **204 PB tests across 21 files**, **440 main tests** (jsdom + convex-test), typecheck clean, lint 0 errors.
+**20 commits on `pocketbase-migration`.** Test surface: **209 PB tests across 21 files**, **440 main tests** (jsdom + convex-test), typecheck clean, lint 0 errors.
 
 ### Done
 
@@ -29,10 +29,28 @@ Replace the Convex backend with a self-hosted PocketBase. Stowage ships as clean
 
 Authz lives at the API route boundary via `withUser` / `withAdmin` rather than inside every domain function. Domain functions keep accepting explicit `actorId` (+ occasionally `actorRole` for owner-or-admin checks); routes strip those fields from client bodies and inject from the resolved session. This keeps domain modules pure and testable while ensuring every write goes through a single authz checkpoint.
 
-### In flight / remaining
+### Frontend refactor (M7) — in flight
 
-- **Frontend refactor (M7)** — The big remaining chunk. Every `useQuery`/`useMutation` call site (~60 components) switches to TanStack Query + `useRealtimeCollection`/`useRealtimeRecord`, talking to the new `/api/**` routes. This also fixes up the `/setup` and `/login` forms to POST to `/api/auth/first-admin` and `/api/auth/login`, and replaces `src/lib/server-auth.ts` Convex calls with a direct PB `resolveSession` check.
+**Shared infrastructure done:**
+- `src/lib/api-client.ts` (`apiFetch`, `ApiRequestError`) + typed clients for every `/api/**` resource under `src/lib/api/{auth,categories,tags,locations,custom-fields,app-settings,service-providers,service-groups,label-templates,users,assets,search,dashboard,service-schedules,service-records,attachments}.ts`.
+- `useCurrentUser` (GET `/api/auth/me`), `useRealtimeRecord` (per-record PB SSE).
+- Root layout wraps `PocketBaseClientProvider` around the still-live `ConvexClientProvider` so components migrate incrementally.
+- `src/lib/use-app-date-format.ts` reads from `/api/app-settings` via TanStack Query.
+- `src/lib/server-auth.ts` resolves the session through `resolveSession(pb_auth)` + `checkFirstRun` — no more Convex fetch.
+
+**Pages swapped onto `/api/**` + TanStack Query:**
+- Auth shell: `LoginForm` → `/api/auth/login`, `SetupForm` → `/api/auth/first-admin` (autosign-in + cache seed).
+- `CategoriesPageClient`, `TagsPageClient`, `LocationsPageClient`, `FieldsPageClient`. All four invalidate on mutate via shared query keys.
+- `TaxonomyManager`, `LocationTree`, `location-form-dialog`, `FieldDefinition` and `customFieldDefinitions` call sites now use `id` (not `_id`).
+- `label-templates` write path (create/update/delete) moved to the new API client; reads still flow through Convex until labels is ported.
+
+**Still Convex-bound (~48 files):** assets list/detail/edit/form/filters/tags, dashboard widgets, search, attachments (panel/list/upload), services (list, records, calendar/month, schedules, history, group detail/fields/assets, record-form, record-attachments, dynamic-form, log-service-dialog, providers), labels list/print/preview/print-page, settings (user-management/features/regional/password/page), layout (topbar, shell), `auth-token-cookie-bridge`, remaining page route files under `src/app/(app)/**/page.tsx`. Each of these still calls `useQuery(api.X.Y)`/`useMutation(api.X.Y)` from `convex/react` and expects Convex Ids and `_id` / `_creationTime` fields.
+
+### Remaining
+
+- **Frontend refactor cleanup** — Convert the ~48 files above; drop `ConvexClientProvider` + `auth-token-cookie-bridge`; delete `src/lib/convex-api.ts` usage; expand `_id`/`_creationTime` → `id` in any types they depend on (`AssetListItem`, `AssetDetail`, `AssetFilterOptions`, service/attachment/label UI types).
 - **E2E** — Playwright flows against the PB stack.
+- **Merge gate** — Remove `convex/` directory, `@convex-dev/auth`, `convex/react`, and the Convex NEXT_PUBLIC env usage.
 
 ### Not yet touched
 
