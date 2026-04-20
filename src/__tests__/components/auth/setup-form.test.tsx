@@ -1,49 +1,48 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const replaceMock = vi.fn();
-const signInMock = vi.fn();
+const checkFirstRunMock = vi.fn();
 const createFirstAdminMock = vi.fn();
-
-const authState = {
-  isAuthenticated: false,
-  isLoading: false,
-};
-
-let firstRunValue: boolean | undefined = true;
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ replace: replaceMock }),
 }));
 
-vi.mock("@convex-dev/auth/react", () => ({
-  useAuthActions: () => ({ signIn: signInMock, signOut: vi.fn() }),
-  useAuthToken: () => null,
-}));
-
-vi.mock("convex/react", () => ({
-  useConvexAuth: () => authState,
-  useQuery: () => firstRunValue,
-  useAction: () => createFirstAdminMock,
+vi.mock("@/lib/api/auth", () => ({
+  checkFirstRun: () => checkFirstRunMock(),
+  createFirstAdmin: (input: unknown) => createFirstAdminMock(input),
 }));
 
 import { SetupForm } from "@/components/auth/setup-form";
 
+function renderWithClient() {
+  const qc = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  return {
+    qc,
+    ...render(
+      <QueryClientProvider client={qc}>
+        <SetupForm />
+      </QueryClientProvider>,
+    ),
+  };
+}
+
 describe("SetupForm", () => {
   beforeEach(() => {
     replaceMock.mockReset();
-    signInMock.mockReset();
+    checkFirstRunMock.mockReset();
     createFirstAdminMock.mockReset();
-    authState.isAuthenticated = false;
-    authState.isLoading = false;
-    firstRunValue = true;
+    checkFirstRunMock.mockResolvedValue(true);
   });
 
-  it("renders all setup fields", () => {
-    render(<SetupForm />);
-
-    expect(screen.getByLabelText("Full name")).toBeInTheDocument();
+  it("renders all setup fields", async () => {
+    renderWithClient();
+    expect(await screen.findByLabelText("Full name")).toBeInTheDocument();
     expect(screen.getByLabelText("Email")).toBeInTheDocument();
     expect(screen.getByLabelText("Password")).toBeInTheDocument();
     expect(screen.getByLabelText("Confirm password")).toBeInTheDocument();
@@ -54,7 +53,8 @@ describe("SetupForm", () => {
 
   it("validates password mismatch before submitting", async () => {
     const user = userEvent.setup();
-    render(<SetupForm />);
+    renderWithClient();
+    await screen.findByLabelText("Full name");
 
     await user.type(screen.getByLabelText("Full name"), "Alex Admin");
     await user.type(screen.getByLabelText("Email"), "alex@example.com");
@@ -70,10 +70,10 @@ describe("SetupForm", () => {
     );
   });
 
-  it("redirects to login if setup is already complete", () => {
-    firstRunValue = false;
-    render(<SetupForm />);
-
+  it("redirects to login if setup is already complete", async () => {
+    checkFirstRunMock.mockResolvedValue(false);
+    renderWithClient();
+    await screen.findByRole("button", { name: "Create admin account" });
     expect(replaceMock).toHaveBeenCalledWith("/login");
   });
 });
