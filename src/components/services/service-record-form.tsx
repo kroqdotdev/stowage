@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { Loader2, Paperclip, Wrench } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { getConvexUiErrorMessage } from "@/components/crud/error-messages";
+import { getApiErrorMessage } from "@/components/crud/error-messages";
 import { ServiceRecordAttachments } from "@/components/services/service-record-attachments";
 import type {
   ServiceProviderOption,
@@ -261,7 +261,7 @@ export function ServiceRecordForm({
       });
     } catch (error) {
       toast.error(
-        getConvexUiErrorMessage(error, "Unable to save service record"),
+        getApiErrorMessage(error, "Unable to save service record"),
       );
     }
   }

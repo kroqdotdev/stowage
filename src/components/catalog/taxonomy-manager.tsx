@@ -6,7 +6,7 @@ import { Loader2, MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { ColorField } from "@/components/crud/color-field";
 import { ConfirmDialog } from "@/components/crud/confirm-dialog";
-import { getConvexUiErrorMessage } from "@/components/crud/error-messages";
+import { getApiErrorMessage } from "@/components/crud/error-messages";
 import { CrudModal } from "@/components/crud/modal";
 import { Button } from "@/components/ui/button";
 import {
@@ -149,7 +149,7 @@ export function TaxonomyManager({
       setForm(createInitialForm(variant));
     } catch (error) {
       const fallback = `Unable to ${editorMode === "create" ? "create" : "update"} ${singular}`;
-      toast.error(getConvexUiErrorMessage(error, fallback));
+      toast.error(getApiErrorMessage(error, fallback));
     } finally {
       setSubmitting(false);
     }
@@ -167,7 +167,7 @@ export function TaxonomyManager({
       setDeleteId(null);
     } catch (error) {
       toast.error(
-        getConvexUiErrorMessage(error, `Unable to delete ${singular}`),
+        getApiErrorMessage(error, `Unable to delete ${singular}`),
       );
     } finally {
       setDeleting(false);

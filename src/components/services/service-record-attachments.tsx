@@ -6,7 +6,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import type { ServiceRecordAttachment } from "@/components/services/types";
-import { getConvexUiErrorMessage } from "@/components/crud/error-messages";
+import { getApiErrorMessage } from "@/components/crud/error-messages";
 import {
   deleteServiceRecordAttachment,
   listServiceRecordAttachments,
@@ -113,7 +113,7 @@ export function ServiceRecordAttachments({
       });
     } catch (error) {
       toast.error(
-        getConvexUiErrorMessage(error, "Unable to upload attachment"),
+        getApiErrorMessage(error, "Unable to upload attachment"),
       );
     } finally {
       setUploading(false);
@@ -207,7 +207,7 @@ export function ServiceRecordAttachments({
                       });
                     } catch (error) {
                       toast.error(
-                        getConvexUiErrorMessage(
+                        getApiErrorMessage(
                           error,
                           "Unable to delete attachment",
                         ),

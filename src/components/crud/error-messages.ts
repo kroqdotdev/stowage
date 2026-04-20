@@ -1,5 +1,11 @@
-import { getConvexUiMessage } from "@/lib/convex-errors";
+import { ApiRequestError } from "@/lib/api-client";
 
-export function getConvexUiErrorMessage(error: unknown, fallback: string) {
-  return getConvexUiMessage(error, fallback);
+export function getApiErrorMessage(error: unknown, fallback: string) {
+  if (error instanceof ApiRequestError) {
+    return error.message || fallback;
+  }
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+  return fallback;
 }

@@ -49,13 +49,18 @@ Authz lives at the API route boundary via `withUser` / `withAdmin` rather than i
 
 ### Remaining
 
-- **Merge gate** — Delete the `convex/` directory, drop `@convex-dev/auth` + `convex` from `package.json`, remove `CONVEX_URL`/`NEXT_PUBLIC_CONVEX_URL` from env, remove `src/lib/convex-api.ts` + `convex-errors.ts` (or replace the handful of helpers that still import the former).
 - **E2E** — Playwright flows against the PB stack.
 - **Deployment** — Dockerfile + prod two-process setup.
 
+### Completed merge-gate cleanup (2026-04-20)
+
+- `convex/` directory deleted; `@convex-dev/auth`, `convex`, and `convex-test` removed from `package.json`.
+- `CONVEX_URL`/`CONVEX_DEPLOYMENT`/`CONVEX_SITE_URL` stripped from `.env.example`; `NEXT_PUBLIC_CONVEX_URL` removed from `Dockerfile`.
+- `src/lib/convex-api.ts` and `src/lib/convex-errors.ts` deleted. `getConvexUiErrorMessage`/`getConvexErrorCode` helpers replaced with a single `getApiErrorMessage(error, fallback)` in `src/components/crud/error-messages.ts` that reads `ApiRequestError.message` (the Convex error-code → UI-string mapping was dead once routes moved to `DomainError`/`ValidationError`/`NotFoundError`).
+- `vitest.config.ts` include pattern narrowed to `src/__tests__/**`; eslint ignore for `convex/_generated/**` removed.
+
 ### Not yet touched
 
-- Convex directory still present and building; removal is the merge gate (M10).
 - Dockerfile + prod deployment story for the two-process setup.
 
 ---

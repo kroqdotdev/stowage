@@ -13,7 +13,7 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { ConfirmDialog } from "@/components/crud/confirm-dialog";
-import { getConvexUiErrorMessage } from "@/components/crud/error-messages";
+import { getApiErrorMessage } from "@/components/crud/error-messages";
 import { LocationFormDialog } from "@/components/locations/location-form-dialog";
 import {
   LocationTree,
@@ -266,7 +266,7 @@ export function LocationsPageClient() {
       setCreateForm({ name: "", parentId: null, description: "" });
       selectLocation(result.id);
     } catch (error) {
-      toast.error(getConvexUiErrorMessage(error, "Unable to create location"));
+      toast.error(getApiErrorMessage(error, "Unable to create location"));
     } finally {
       setCreating(false);
     }
@@ -293,7 +293,7 @@ export function LocationsPageClient() {
       });
       toast.success("Location updated");
     } catch (error) {
-      toast.error(getConvexUiErrorMessage(error, "Unable to update location"));
+      toast.error(getApiErrorMessage(error, "Unable to update location"));
     } finally {
       setSaving(false);
     }
@@ -312,7 +312,7 @@ export function LocationsPageClient() {
       }
       setDeleteId(null);
     } catch (error) {
-      toast.error(getConvexUiErrorMessage(error, "Unable to delete location"));
+      toast.error(getApiErrorMessage(error, "Unable to delete location"));
     } finally {
       setDeleting(false);
     }

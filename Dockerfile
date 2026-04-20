@@ -11,7 +11,6 @@ WORKDIR /app
 RUN corepack enable
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-ENV NEXT_PUBLIC_CONVEX_URL=https://placeholder.convex.cloud
 RUN pnpm build
 
 # Stage 3: Runtime

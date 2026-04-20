@@ -5,7 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/crud/confirm-dialog";
-import { getConvexUiErrorMessage } from "@/components/crud/error-messages";
+import { getApiErrorMessage } from "@/components/crud/error-messages";
 import { CrudModal } from "@/components/crud/modal";
 import { ServicesNavTabs } from "@/components/services/services-nav-tabs";
 import type { ServiceProvider } from "@/components/services/types";
@@ -101,7 +101,7 @@ export function ServiceProvidersPageClient() {
       void queryClient.invalidateQueries({ queryKey: ["service-providers"] });
     } catch (error) {
       toast.error(
-        getConvexUiErrorMessage(error, "Unable to save service provider"),
+        getApiErrorMessage(error, "Unable to save service provider"),
       );
     }
   }
@@ -118,7 +118,7 @@ export function ServiceProvidersPageClient() {
       void queryClient.invalidateQueries({ queryKey: ["service-providers"] });
     } catch (error) {
       toast.error(
-        getConvexUiErrorMessage(error, "Unable to delete service provider"),
+        getApiErrorMessage(error, "Unable to delete service provider"),
       );
     }
   }

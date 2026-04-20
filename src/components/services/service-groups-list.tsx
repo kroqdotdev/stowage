@@ -6,7 +6,7 @@ import { Plus, Trash2 } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/crud/confirm-dialog";
-import { getConvexUiErrorMessage } from "@/components/crud/error-messages";
+import { getApiErrorMessage } from "@/components/crud/error-messages";
 import { ServiceGroupEditor } from "@/components/services/service-group-editor";
 import type { ServiceGroupSummary } from "@/components/services/types";
 import { ServicesNavTabs } from "@/components/services/services-nav-tabs";
@@ -30,7 +30,7 @@ function mapGroupError(error: unknown, fallback: string) {
     }
     return error.message || fallback;
   }
-  return getConvexUiErrorMessage(error, fallback);
+  return getApiErrorMessage(error, fallback);
 }
 
 export function ServiceGroupsList() {

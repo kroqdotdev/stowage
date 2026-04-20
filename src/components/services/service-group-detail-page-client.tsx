@@ -10,7 +10,7 @@ import { ServiceGroupFieldsPanel } from "@/components/services/service-group-fie
 import { ServicesNavTabs } from "@/components/services/services-nav-tabs";
 import { Button } from "@/components/ui/button";
 import { useCurrentUser } from "@/hooks/use-current-user";
-import { getConvexUiErrorMessage } from "@/components/crud/error-messages";
+import { getApiErrorMessage } from "@/components/crud/error-messages";
 import { ApiRequestError } from "@/lib/api-client";
 import {
   getServiceGroup,
@@ -24,7 +24,7 @@ function mapGroupError(error: unknown, fallback: string) {
     }
     return error.message || fallback;
   }
-  return getConvexUiErrorMessage(error, fallback);
+  return getApiErrorMessage(error, fallback);
 }
 
 export function ServiceGroupDetailPageClient({

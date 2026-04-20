@@ -5,7 +5,7 @@ import { GripVertical, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/crud/confirm-dialog";
-import { getConvexUiErrorMessage } from "@/components/crud/error-messages";
+import { getApiErrorMessage } from "@/components/crud/error-messages";
 import { CrudModal } from "@/components/crud/modal";
 import type {
   ServiceGroupField,
@@ -45,7 +45,7 @@ function mapFieldError(error: unknown, fallback: string) {
     }
     return error.message || fallback;
   }
-  return getConvexUiErrorMessage(error, fallback);
+  return getApiErrorMessage(error, fallback);
 }
 
 function ServiceGroupFieldEditor({

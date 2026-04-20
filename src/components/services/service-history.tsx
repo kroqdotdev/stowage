@@ -6,7 +6,7 @@ import { CalendarClock, Pencil, Trash2, Wrench } from "lucide-react";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/crud/confirm-dialog";
 import { CrudModal } from "@/components/crud/modal";
-import { getConvexUiErrorMessage } from "@/components/crud/error-messages";
+import { getApiErrorMessage } from "@/components/crud/error-messages";
 import { ServiceRecordAttachments } from "@/components/services/service-record-attachments";
 import { ServiceRecordForm } from "@/components/services/service-record-form";
 import type { ServiceRecord } from "@/components/services/types";
@@ -76,7 +76,7 @@ export function ServiceHistory({ assetId }: { assetId: string }) {
       });
     } catch (error) {
       toast.error(
-        getConvexUiErrorMessage(error, "Unable to delete service record"),
+        getApiErrorMessage(error, "Unable to delete service record"),
       );
     }
   }

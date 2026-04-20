@@ -14,7 +14,7 @@ import React, { useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { ConfirmDialog } from "@/components/crud/confirm-dialog";
-import { getConvexUiErrorMessage } from "@/components/crud/error-messages";
+import { getApiErrorMessage } from "@/components/crud/error-messages";
 import { FieldDefinitionForm } from "@/components/fields/field-definition-form";
 import type { FieldDefinition } from "@/components/fields/types";
 import { Badge } from "@/components/ui/badge";
@@ -62,7 +62,7 @@ function moveId(ids: string[], fromId: string, toId: string) {
 }
 
 function mapFieldError(error: unknown, fallback: string) {
-  const message = getConvexUiErrorMessage(error, fallback);
+  const message = getApiErrorMessage(error, fallback);
   if (message.includes("at least one option")) {
     return "Dropdown fields need at least one option.";
   }

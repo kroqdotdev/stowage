@@ -5,7 +5,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/crud/confirm-dialog";
-import { getConvexUiErrorMessage } from "@/components/crud/error-messages";
+import { getApiErrorMessage } from "@/components/crud/error-messages";
 import type { FieldDefinition } from "@/components/fields/types";
 import { ElementProperties } from "@/components/labels/element-properties";
 import { ElementToolbar } from "@/components/labels/element-toolbar";
@@ -335,7 +335,7 @@ export function TemplateDesigner({
       void queryClient.invalidateQueries({ queryKey: ["label-templates"] });
     } catch (error) {
       toast.error(
-        getConvexUiErrorMessage(error, "Unable to save label template"),
+        getApiErrorMessage(error, "Unable to save label template"),
       );
     }
   }
@@ -356,7 +356,7 @@ export function TemplateDesigner({
       void queryClient.invalidateQueries({ queryKey: ["label-templates"] });
     } catch (error) {
       toast.error(
-        getConvexUiErrorMessage(error, "Unable to delete label template"),
+        getApiErrorMessage(error, "Unable to delete label template"),
       );
     }
   }
