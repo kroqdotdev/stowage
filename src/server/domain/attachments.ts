@@ -2,7 +2,7 @@ import { ClientResponseError } from "pocketbase";
 import { z } from "zod";
 
 import type { Ctx } from "@/server/pb/context";
-import { getPbUrl } from "@/server/pb/client";
+import { getPbPublicUrl } from "@/server/pb/client";
 import {
   ATTACHMENT_KINDS,
   ATTACHMENT_STATUSES,
@@ -65,7 +65,7 @@ export type CreateAttachmentInput = z.infer<typeof CreateAttachmentInput>;
 
 function attachmentFileUrl(record: AttachmentRecord): string | null {
   if (!record.storageFile) return null;
-  return `${getPbUrl()}/api/files/attachments/${record.id}/${encodeURIComponent(
+  return `${getPbPublicUrl()}/api/files/attachments/${record.id}/${encodeURIComponent(
     record.storageFile,
   )}`;
 }

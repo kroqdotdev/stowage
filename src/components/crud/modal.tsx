@@ -34,8 +34,8 @@ export function CrudModal({
         }
       }}
     >
-      <div className="w-full max-w-lg rounded-xl border border-border bg-background shadow-xl">
-        <div className="flex items-start justify-between gap-3 border-b border-border/60 px-5 py-4">
+      <div className="flex max-h-[calc(100dvh-3rem)] w-full max-w-lg flex-col rounded-xl border border-border bg-background shadow-xl">
+        <div className="flex shrink-0 items-start justify-between gap-3 border-b border-border/60 px-5 py-4">
           <div className="space-y-1">
             <h2
               id="crud-modal-title"
@@ -59,10 +59,10 @@ export function CrudModal({
           </Button>
         </div>
 
-        <div className="px-5 py-4">{children}</div>
+        <div className="flex-1 overflow-y-auto px-5 py-4">{children}</div>
 
         {footer ? (
-          <div className="flex flex-wrap items-center justify-end gap-2 border-t border-border/60 px-5 py-4">
+          <div className="flex shrink-0 flex-wrap items-center justify-end gap-2 border-t border-border/60 px-5 py-4">
             {footer}
           </div>
         ) : null}

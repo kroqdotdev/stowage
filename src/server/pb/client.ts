@@ -8,6 +8,10 @@ let pending: Promise<PocketBase> | null = null;
 function readEnv() {
   return {
     url: process.env.POCKETBASE_URL ?? "http://127.0.0.1:8090",
+    publicUrl:
+      process.env.NEXT_PUBLIC_POCKETBASE_URL ??
+      process.env.POCKETBASE_URL ??
+      "http://127.0.0.1:8090",
     email: process.env.POCKETBASE_SUPERUSER_EMAIL,
     password: process.env.POCKETBASE_SUPERUSER_PASSWORD,
   };
@@ -48,4 +52,13 @@ export async function getPbAdmin(): Promise<PocketBase> {
 
 export function getPbUrl() {
   return readEnv().url;
+}
+
+/**
+ * URL the browser uses to reach PocketBase directly (realtime subscriptions,
+ * file downloads). Falls back to the internal url when unset. Server-to-server
+ * PB API calls should keep using `getPbUrl()`.
+ */
+export function getPbPublicUrl() {
+  return readEnv().publicUrl;
 }

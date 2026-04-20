@@ -29,7 +29,6 @@ export function LogServiceDialog({
           assetId={assetId}
           mode="complete"
           scheduleId={scheduleId}
-          onSubmitted={() => onClose()}
         />
       ) : null}
     </CrudModal>

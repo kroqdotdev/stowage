@@ -287,7 +287,6 @@ export function ServiceHistory({ assetId }: { assetId: string }) {
             key={`create-${assetId}`}
             assetId={assetId}
             mode="create"
-            onSubmitted={() => setCreateOpen(false)}
           />
         ) : null}
       </CrudModal>

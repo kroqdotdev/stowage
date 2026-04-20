@@ -181,6 +181,8 @@ export function AssetEditPageClient({ assetId }: { assetId: string }) {
       void queryClient.invalidateQueries({
         queryKey: ["service-schedules", "by-asset", assetId],
       });
+      void queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      void queryClient.invalidateQueries({ queryKey: ["service-schedules"] });
 
       toast.success("Asset updated");
       router.push(`/assets/${assetId}`);

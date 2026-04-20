@@ -2,7 +2,7 @@ import { ClientResponseError } from "pocketbase";
 import { z } from "zod";
 
 import type { Ctx } from "@/server/pb/context";
-import { getPbUrl } from "@/server/pb/client";
+import { getPbPublicUrl } from "@/server/pb/client";
 import {
   MAX_ATTACHMENT_UPLOAD_BYTES,
   classifyAttachment,
@@ -57,7 +57,7 @@ export type CreateServiceRecordAttachmentInput = z.infer<
 
 function fileUrl(record: ServiceRecordAttachmentRecord): string | null {
   if (!record.storageFile) return null;
-  return `${getPbUrl()}/api/files/serviceRecordAttachments/${record.id}/${encodeURIComponent(
+  return `${getPbPublicUrl()}/api/files/serviceRecordAttachments/${record.id}/${encodeURIComponent(
     record.storageFile,
   )}`;
 }

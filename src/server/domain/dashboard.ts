@@ -222,9 +222,11 @@ async function buildUpcomingServicesPreview(
   }
 
   const todayIso = new Date().toISOString().slice(0, 10);
+  // Sort by next service date ascending; break ties with newest schedule first
+  // so a freshly created item beats older duplicates on the same due date.
   const schedules = await ctx.pb
     .collection("serviceSchedules")
-    .getFullList<ServiceScheduleRow>({ sort: "nextServiceDate" });
+    .getFullList<ServiceScheduleRow>({ sort: "nextServiceDate,-createdAt" });
 
   if (schedules.length === 0) {
     return {

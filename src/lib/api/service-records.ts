@@ -95,11 +95,14 @@ export async function listAssetServiceRecords(
 
 export async function createServiceRecord(
   input: CreateInput,
-): Promise<{ recordId: string }> {
-  return apiFetch<{ recordId: string }>("/api/service-records", {
-    method: "POST",
-    body: input,
-  });
+): Promise<{ recordId: string; nextServiceDate: string | null }> {
+  return apiFetch<{ recordId: string; nextServiceDate: string | null }>(
+    "/api/service-records",
+    {
+      method: "POST",
+      body: input,
+    },
+  );
 }
 
 export async function updateServiceRecord(

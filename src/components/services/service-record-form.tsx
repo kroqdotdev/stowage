@@ -255,9 +255,12 @@ export function ServiceRecordForm({
       });
       setCurrentRecordId(result.recordId);
       toast.success("Service record logged");
-      onSubmitted?.({ recordId: result.recordId, nextServiceDate: null });
+      onSubmitted?.(result);
       void queryClient.invalidateQueries({
         queryKey: ["service-records", "by-asset", assetId],
+      });
+      void queryClient.invalidateQueries({
+        queryKey: ["service-schedules"],
       });
     } catch (error) {
       toast.error(

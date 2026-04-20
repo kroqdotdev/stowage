@@ -43,6 +43,7 @@ export function AssetDetailPageClient({ assetId }: { assetId: string }) {
         queryKey: ["assets", "detail", assetId],
       });
       void queryClient.invalidateQueries({ queryKey: ["assets", "list"] });
+      void queryClient.invalidateQueries({ queryKey: ["dashboard"] });
     },
     onError: (error) => {
       toast.error(getAssetUiErrorMessage(error, "Unable to update status"));
@@ -54,6 +55,8 @@ export function AssetDetailPageClient({ assetId }: { assetId: string }) {
     onSuccess: () => {
       toast.success("Asset deleted");
       void queryClient.invalidateQueries({ queryKey: ["assets", "list"] });
+      void queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      void queryClient.invalidateQueries({ queryKey: ["service-schedules"] });
       router.push("/assets");
     },
     onError: (error) => {

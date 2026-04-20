@@ -1,21 +1,13 @@
 import { expect, test, type Page } from "@playwright/test";
-import { fillRequiredFields, getLanding, signIn } from "./helpers";
+import {
+  ensureSchedulingEnabled,
+  fillRequiredFields,
+  getLanding,
+  signIn,
+} from "./helpers";
 
 function getStatusLabel(status: "active" | "retired") {
   return status === "retired" ? "Retired" : "Active";
-}
-
-async function ensureSchedulingEnabled(page: Page) {
-  await page.goto("/settings");
-  const schedulingSwitch = page.getByRole("switch", {
-    name: "Toggle service scheduling",
-  });
-
-  await expect(schedulingSwitch).toBeVisible();
-  if ((await schedulingSwitch.getAttribute("aria-checked")) === "false") {
-    await schedulingSwitch.click();
-    await expect(page.getByText("Service scheduling enabled")).toBeVisible();
-  }
 }
 
 async function createAsset(

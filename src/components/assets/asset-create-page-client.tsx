@@ -117,6 +117,8 @@ export function AssetCreatePageClient() {
       }
 
       void queryClient.invalidateQueries({ queryKey: ["assets", "list"] });
+      void queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      void queryClient.invalidateQueries({ queryKey: ["service-schedules"] });
 
       setCreatedAssetId(result.assetId);
       setCreatedAssetName(values.name);
