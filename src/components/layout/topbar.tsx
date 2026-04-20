@@ -2,8 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useAuthActions } from "@convex-dev/auth/react";
-import { useConvexAuth, useQuery } from "convex/react";
+import { useQueryClient } from "@tanstack/react-query";
 import { ChevronDown, Loader2, LogOut, User } from "lucide-react";
 import { toast } from "sonner";
 import { SidebarTrigger } from "@/components/ui/sidebar";
@@ -20,8 +19,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { api } from "@/lib/convex-api";
-import { clearAuthTokenCookie } from "@/lib/auth-token-cookie";
+import { useCurrentUser } from "@/hooks/use-current-user";
+import { logout } from "@/lib/api/auth";
 
 function getInitials(name: string) {
   const parts = name.trim().split(/\s+/).filter(Boolean).slice(0, 2);
@@ -35,9 +34,8 @@ function getInitials(name: string) {
 
 export function Topbar() {
   const router = useRouter();
-  const { signOut } = useAuthActions();
-  const { isLoading } = useConvexAuth();
-  const currentUser = useQuery(api.users.getCurrentUser, {});
+  const queryClient = useQueryClient();
+  const { data: currentUser, isPending } = useCurrentUser();
   const [loggingOut, setLoggingOut] = useState(false);
 
   const userLabel = currentUser?.name ?? "User";
@@ -45,16 +43,16 @@ export function Topbar() {
 
   async function handleLogout() {
     setLoggingOut(true);
-    clearAuthTokenCookie();
-    router.replace("/login");
-
-    void signOut()
-      .catch(() => {
-        toast.error("Signed out locally. Refresh if needed.");
-      })
-      .finally(() => {
-        setLoggingOut(false);
-      });
+    try {
+      await logout();
+      queryClient.clear();
+      router.replace("/login");
+    } catch {
+      toast.error("Signed out locally. Refresh if needed.");
+      router.replace("/login");
+    } finally {
+      setLoggingOut(false);
+    }
   }
 
   return (
@@ -73,7 +71,7 @@ export function Topbar() {
             <Button
               variant="ghost"
               className="h-9 cursor-pointer gap-2 px-2"
-              disabled={isLoading || loggingOut}
+              disabled={isPending || loggingOut}
               aria-label="Open user menu"
             >
               <Avatar size="sm">

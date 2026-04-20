@@ -1,33 +1,30 @@
 import { describe, it, expect, vi } from "vitest";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen } from "@testing-library/react";
 
-// Mock next/navigation
 vi.mock("next/navigation", () => ({
   usePathname: () => "/dashboard",
   useRouter: () => ({ replace: vi.fn() }),
 }));
 
-// Mock next-themes
 vi.mock("next-themes", () => ({
   useTheme: () => ({ theme: "light", setTheme: vi.fn() }),
   ThemeProvider: ({ children }: { children: React.ReactNode }) => children,
 }));
 
-// Mock use-mobile hook
 vi.mock("@/hooks/use-mobile", () => ({
   useIsMobile: () => false,
 }));
 
-vi.mock("convex/react", () => ({
-  useConvexAuth: () => ({ isAuthenticated: true, isLoading: false }),
-  useQuery: () => ({
-    name: "Alex Admin",
-    email: "alex@example.com",
-  }),
-}));
-
-vi.mock("@convex-dev/auth/react", () => ({
-  useAuthActions: () => ({ signOut: vi.fn(), signIn: vi.fn() }),
+vi.mock("@/lib/api/auth", () => ({
+  getCurrentUser: () =>
+    Promise.resolve({
+      id: "u1",
+      email: "alex@example.com",
+      name: "Alex Admin",
+      role: "admin",
+    }),
+  logout: vi.fn(),
 }));
 
 vi.mock("@/components/search/global-search", () => ({
@@ -40,9 +37,16 @@ vi.mock("@/components/search/global-search", () => ({
 
 import { AppShell } from "@/components/layout/app-shell";
 
+function renderWithClient(ui: React.ReactElement) {
+  const qc = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  return render(<QueryClientProvider client={qc}>{ui}</QueryClientProvider>);
+}
+
 describe("AppShell", () => {
   it("renders children content", () => {
-    render(
+    renderWithClient(
       <AppShell>
         <div data-testid="child-content">Hello Stowage</div>
       </AppShell>,
@@ -52,20 +56,17 @@ describe("AppShell", () => {
   });
 
   it("renders sidebar and topbar together", () => {
-    render(
+    renderWithClient(
       <AppShell>
         <div>Content</div>
       </AppShell>,
     );
-    // Sidebar brand (may appear multiple times due to desktop + mobile)
     const brands = screen.getAllByText("Stowage");
     expect(brands.length).toBeGreaterThanOrEqual(1);
-    // Topbar search trigger
     const triggers = screen.getAllByRole("button", {
       name: "Open global search",
     });
     expect(triggers.length).toBeGreaterThanOrEqual(1);
-    // Child content
     expect(screen.getByText("Content")).toBeInTheDocument();
   });
 });

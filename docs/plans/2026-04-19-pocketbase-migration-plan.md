@@ -10,7 +10,7 @@ Replace the Convex backend with a self-hosted PocketBase. Stowage ships as clean
 
 ## Current status (updated 2026-04-20)
 
-**21 commits on `pocketbase-migration`.** Test surface: **209 PB tests across 21 files**, **440 main tests** (jsdom + convex-test), typecheck clean, lint 0 errors.
+**27 commits on `pocketbase-migration`.** Test surface: **209 PB tests across 21 files**, **437 main tests** (jsdom + convex-test), typecheck clean, lint 0 errors. All frontend features now run through `/api/**` via TanStack Query. `ConvexClientProvider`, `AuthTokenCookieBridge`, and `auth-token-cookie` lib are removed; `convex/react` and `@convex-dev/auth/react` are no longer imported anywhere in `src/`.
 
 ### Done
 
@@ -45,13 +45,13 @@ Authz lives at the API route boundary via `withUser` / `withAdmin` rather than i
 - `label-templates` write path (create/update/delete) moved to the new API client; reads still flow through Convex until labels is ported.
 - **Assets feature (full surface):** `AssetsPageClient`, `AssetDetailPageClient`, `AssetCreatePageClient`, `AssetEditPageClient`, `AssetForm`, `AssetDetail`, `AssetFilters`, `AssetTable` plus shared `LocationPicker`/`TagPicker`. Added `GET /api/assets/filter-options` (composes categories/locations/tags/serviceGroups). `AttachmentsPanel` + `AssetServiceRecordsPanel` prop types widened to `string`; internals still Convex-bound until those features migrate.
 
-**Still Convex-bound (~40 files):** dashboard widgets, search, attachments (panel/list/upload), services (list, records, calendar/month, schedules, history, group detail/fields/assets, record-form, record-attachments, dynamic-form, log-service-dialog, providers), labels list/print/preview/print-page, settings (user-management/features/regional/password/page), layout (topbar, shell), `auth-token-cookie-bridge`, remaining page route files under `src/app/(app)/**/page.tsx`. Each of these still calls `useQuery(api.X.Y)`/`useMutation(api.X.Y)` from `convex/react` and expects Convex Ids and `_id` / `_creationTime` fields.
+**All frontend features ported (M7 complete):** dashboard, search, attachments, services (list/records/calendar/schedules/history/groups/providers/log dialog/record-attachments/dynamic-form), labels (list + print), settings (all sections), layout (topbar). `ConvexClientProvider` and `AuthTokenCookieBridge` are gone — the root layout now mounts only `PocketBaseClientProvider`.
 
 ### Remaining
 
-- **Frontend refactor cleanup** — Convert the ~48 files above; drop `ConvexClientProvider` + `auth-token-cookie-bridge`; delete `src/lib/convex-api.ts` usage; expand `_id`/`_creationTime` → `id` in any types they depend on (`AssetListItem`, `AssetDetail`, `AssetFilterOptions`, service/attachment/label UI types).
+- **Merge gate** — Delete the `convex/` directory, drop `@convex-dev/auth` + `convex` from `package.json`, remove `CONVEX_URL`/`NEXT_PUBLIC_CONVEX_URL` from env, remove `src/lib/convex-api.ts` + `convex-errors.ts` (or replace the handful of helpers that still import the former).
 - **E2E** — Playwright flows against the PB stack.
-- **Merge gate** — Remove `convex/` directory, `@convex-dev/auth`, `convex/react`, and the Convex NEXT_PUBLIC env usage.
+- **Deployment** — Dockerfile + prod two-process setup.
 
 ### Not yet touched
 
