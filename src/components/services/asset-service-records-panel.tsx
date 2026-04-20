@@ -6,7 +6,7 @@ import type { Id } from "@/lib/convex-api";
 export function AssetServiceRecordsPanel({
   assetId,
 }: {
-  assetId: Id<"assets">;
+  assetId: string;
 }) {
-  return <ServiceHistory assetId={assetId} />;
+  return <ServiceHistory assetId={assetId as Id<"assets">} />;
 }

@@ -925,3 +925,95 @@ export async function getAssetTagIds(
   await loadAsset(ctx, assetId);
   return getTagIdsForAsset(ctx, assetId);
 }
+
+export type AssetFilterOptionsView = {
+  categories: Array<{
+    id: string;
+    name: string;
+    prefix: string | null;
+    color: string;
+  }>;
+  locations: Array<{
+    id: string;
+    name: string;
+    parentId: string | null;
+    path: string;
+  }>;
+  tags: AssetTagView[];
+  serviceGroups: Array<{ id: string; name: string }>;
+};
+
+export async function getAssetFilterOptions(
+  ctx: Ctx,
+): Promise<AssetFilterOptionsView> {
+  const [categories, locations, tags, serviceGroups] = await Promise.all([
+    ctx.pb
+      .collection("categories")
+      .getFullList<{
+        id: string;
+        name: string;
+        prefix: string;
+        color: string;
+      }>(),
+    ctx.pb
+      .collection("locations")
+      .getFullList<{
+        id: string;
+        name: string;
+        parentId: string;
+        path: string;
+      }>(),
+    ctx.pb
+      .collection("tags")
+      .getFullList<{
+        id: string;
+        name: string;
+        color: string;
+        createdAt: number;
+        updatedAt: number;
+      }>(),
+    ctx.pb
+      .collection("serviceGroups")
+      .getFullList<{ id: string; name: string }>(),
+  ]);
+
+  const byName = (a: { name: string }, b: { name: string }) =>
+    a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
+
+  return {
+    categories: categories
+      .slice()
+      .sort(byName)
+      .map((category) => ({
+        id: category.id,
+        name: category.name,
+        prefix: category.prefix || null,
+        color: category.color,
+      })),
+    locations: locations
+      .slice()
+      .sort((a, b) =>
+        a.path.localeCompare(b.path, undefined, { sensitivity: "base" }),
+      )
+      .map((location) => ({
+        id: location.id,
+        name: location.name,
+        parentId: location.parentId || null,
+        path: location.path,
+      })),
+    tags: tags
+      .slice()
+      .sort(byName)
+      .map((tag) => ({
+        id: tag.id,
+        name: tag.name,
+        color: tag.color,
+        createdAt: tag.createdAt,
+        updatedAt: tag.updatedAt,
+      })),
+    serviceGroups: serviceGroups
+      .slice()
+      .sort(byName)
+      .map((group) => ({ id: group.id, name: group.name })),
+  };
+}

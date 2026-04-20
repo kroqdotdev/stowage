@@ -2,7 +2,6 @@
 
 import { useMemo } from "react";
 import { Check, ChevronDown } from "lucide-react";
-import type { Id } from "@/lib/convex-api";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,9 +15,9 @@ import {
 import { cn } from "@/lib/utils";
 
 export type LocationPickerOption = {
-  _id: Id<"locations">;
+  id: string;
   name: string;
-  parentId: Id<"locations"> | null;
+  parentId: string | null;
   path: string;
 };
 
@@ -34,17 +33,14 @@ function sortByName(left: LocationPickerOption, right: LocationPickerOption) {
 
 function buildLocationTree(options: LocationPickerOption[]) {
   const optionsById = new Map(
-    options.map((location) => [location._id, location]),
+    options.map((location) => [location.id, location]),
   );
-  const childrenByParent = new Map<
-    Id<"locations"> | null,
-    LocationPickerOption[]
-  >();
+  const childrenByParent = new Map<string | null, LocationPickerOption[]>();
 
   for (const location of options) {
     const parentId =
       location.parentId &&
-      location.parentId !== location._id &&
+      location.parentId !== location.id &&
       optionsById.has(location.parentId)
         ? location.parentId
         : null;
@@ -60,18 +56,18 @@ function buildLocationTree(options: LocationPickerOption[]) {
     siblings.sort(sortByName);
   }
 
-  const visited = new Set<Id<"locations">>();
+  const visited = new Set<string>();
 
   function buildBranch(
     location: LocationPickerOption,
-    ancestors: Set<Id<"locations">>,
+    ancestors: Set<string>,
   ): LocationTreeNode {
     const lineage = new Set(ancestors);
-    lineage.add(location._id);
-    visited.add(location._id);
+    lineage.add(location.id);
+    visited.add(location.id);
 
-    const children = (childrenByParent.get(location._id) ?? [])
-      .filter((child) => !lineage.has(child._id))
+    const children = (childrenByParent.get(location.id) ?? [])
+      .filter((child) => !lineage.has(child.id))
       .map((child) => buildBranch(child, lineage));
 
     return {
@@ -86,7 +82,7 @@ function buildLocationTree(options: LocationPickerOption[]) {
 
   if (visited.size < options.length) {
     const remaining = options
-      .filter((option) => !visited.has(option._id))
+      .filter((option) => !visited.has(option.id))
       .sort(sortByName);
 
     for (const option of remaining) {
@@ -109,10 +105,10 @@ export function LocationPicker({
   labelledBy,
   nullLabel = "No location",
 }: {
-  value: Id<"locations"> | null;
+  value: string | null;
   options: LocationPickerOption[];
   disabled?: boolean;
-  onChange: (locationId: Id<"locations"> | null) => void;
+  onChange: (locationId: string | null) => void;
   id?: string;
   labelledBy?: string;
   nullLabel?: string;
@@ -133,10 +129,10 @@ export function LocationPicker({
   const selectedPath = value ? (optionsById.get(value)?.path ?? null) : null;
 
   function renderNode(node: LocationTreeNode) {
-    const isSelected = value === node._id;
+    const isSelected = value === node.id;
     if (node.children.length === 0) {
       return (
-        <DropdownMenuItem key={node._id} onSelect={() => onChange(node._id)}>
+        <DropdownMenuItem key={node.id} onSelect={() => onChange(node.id)}>
           <span className="truncate">{node.name}</span>
           {isSelected ? (
             <Check className="ml-auto size-4 text-muted-foreground" />
@@ -146,7 +142,7 @@ export function LocationPicker({
     }
 
     return (
-      <DropdownMenuSub key={node._id}>
+      <DropdownMenuSub key={node.id}>
         <DropdownMenuSubTrigger className="pr-2">
           <span className="truncate">{node.name}</span>
           {isSelected ? (
@@ -154,7 +150,7 @@ export function LocationPicker({
           ) : null}
         </DropdownMenuSubTrigger>
         <DropdownMenuSubContent className="min-w-56">
-          <DropdownMenuItem onSelect={() => onChange(node._id)}>
+          <DropdownMenuItem onSelect={() => onChange(node.id)}>
             <span className="truncate">Select {node.name}</span>
             {isSelected ? (
               <Check className="ml-auto size-4 text-muted-foreground" />

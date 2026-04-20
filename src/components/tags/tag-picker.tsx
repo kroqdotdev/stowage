@@ -1,16 +1,15 @@
 "use client";
 
-import type { Id } from "@/lib/convex-api";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 
 export type TagPickerOption = {
-  _id: Id<"tags">;
+  id: string;
   name: string;
   color: string;
 };
 
-function addTagId(tagIds: Id<"tags">[], tagId: Id<"tags">) {
+function addTagId(tagIds: string[], tagId: string) {
   if (tagIds.includes(tagId)) {
     return tagIds;
   }
@@ -18,7 +17,7 @@ function addTagId(tagIds: Id<"tags">[], tagId: Id<"tags">) {
   return [...tagIds, tagId];
 }
 
-function removeTagId(tagIds: Id<"tags">[], tagId: Id<"tags">) {
+function removeTagId(tagIds: string[], tagId: string) {
   return tagIds.filter((candidate) => candidate !== tagId);
 }
 
@@ -28,10 +27,10 @@ export function TagPicker({
   disabled = false,
   onChange,
 }: {
-  value: Id<"tags">[];
+  value: string[];
   options: TagPickerOption[];
   disabled?: boolean;
-  onChange: (tagIds: Id<"tags">[]) => void;
+  onChange: (tagIds: string[]) => void;
 }) {
   const selectedById = new Set(value);
 
@@ -42,18 +41,18 @@ export function TagPicker({
           <p className="text-sm text-muted-foreground">No tags defined.</p>
         ) : (
           options.map((tag) => {
-            const checked = selectedById.has(tag._id);
+            const checked = selectedById.has(tag.id);
 
             return (
-              <label key={tag._id} className="flex items-center gap-2 text-sm">
+              <label key={tag.id} className="flex items-center gap-2 text-sm">
                 <Checkbox
                   checked={checked}
                   disabled={disabled}
                   onCheckedChange={(nextChecked) =>
                     onChange(
                       nextChecked === true
-                        ? addTagId(value, tag._id)
-                        : removeTagId(value, tag._id),
+                        ? addTagId(value, tag.id)
+                        : removeTagId(value, tag.id),
                     )
                   }
                 />
@@ -67,14 +66,14 @@ export function TagPicker({
       {value.length > 0 ? (
         <div className="flex flex-wrap gap-1">
           {value.map((tagId) => {
-            const tag = options.find((option) => option._id === tagId);
+            const tag = options.find((option) => option.id === tagId);
             if (!tag) {
               return null;
             }
 
             return (
               <Badge
-                key={tag._id}
+                key={tag.id}
                 className="border border-border/60 bg-muted/20 text-xs"
               >
                 {tag.name}

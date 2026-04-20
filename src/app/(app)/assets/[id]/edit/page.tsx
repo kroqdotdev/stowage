@@ -1,6 +1,5 @@
 import { AssetEditPageClient } from "@/components/assets/asset-edit-page-client";
 import { PageHeader } from "@/components/layout/page-header";
-import type { Id } from "@/lib/convex-api";
 
 export default async function EditAssetPage({
   params,
@@ -20,7 +19,7 @@ export default async function EditAssetPage({
           { label: "Edit asset" },
         ]}
       />
-      <AssetEditPageClient assetId={id as Id<"assets">} />
+      <AssetEditPageClient assetId={id} />
     </div>
   );
 }

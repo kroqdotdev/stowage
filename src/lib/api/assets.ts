@@ -156,6 +156,36 @@ export async function deleteAsset(assetId: string): Promise<void> {
   await apiFetch(`/api/assets/${assetId}`, { method: "DELETE" });
 }
 
+export type AssetFilterOptions = {
+  categories: Array<{
+    id: string;
+    name: string;
+    prefix: string | null;
+    color: string;
+  }>;
+  locations: Array<{
+    id: string;
+    name: string;
+    parentId: string | null;
+    path: string;
+  }>;
+  tags: Array<{
+    id: string;
+    name: string;
+    color: string;
+    createdAt: number;
+    updatedAt: number;
+  }>;
+  serviceGroups: Array<{ id: string; name: string }>;
+};
+
+export async function getAssetFilterOptions(): Promise<AssetFilterOptions> {
+  const { options } = await apiFetch<{ options: AssetFilterOptions }>(
+    "/api/assets/filter-options",
+  );
+  return options;
+}
+
 export async function previewAssetTag(
   categoryId: string | null,
 ): Promise<AssetTagPreview> {

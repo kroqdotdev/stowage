@@ -9,8 +9,7 @@ vi.mock("@/lib/use-app-date-format", () => ({
 
 const rows: AssetListItem[] = [
   {
-    _id: "asset1" as never,
-    _creationTime: 1,
+    id: "asset1",
     name: "Router",
     assetTag: "AST-0001",
     status: "active",

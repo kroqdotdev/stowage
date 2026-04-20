@@ -9,27 +9,27 @@ import {
 
 const options: LocationPickerOption[] = [
   {
-    _id: "root" as never,
+    id: "root",
     name: "Warehouse",
     parentId: null,
     path: "Warehouse",
   },
   {
-    _id: "child" as never,
+    id: "child",
     name: "Shelf 1",
-    parentId: "root" as never,
+    parentId: "root",
     path: "Warehouse / Shelf 1",
   },
   {
-    _id: "grandchild" as never,
+    id: "grandchild",
     name: "Bin A",
-    parentId: "child" as never,
+    parentId: "child",
     path: "Warehouse / Shelf 1 / Bin A",
   },
 ];
 
 function LocationPickerHarness() {
-  const [value, setValue] = useState<LocationPickerOption["_id"] | null>(null);
+  const [value, setValue] = useState<string | null>(null);
 
   return (
     <LocationPicker

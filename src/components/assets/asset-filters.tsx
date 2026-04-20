@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from "react";
 import { Check, ChevronDown, Filter, Search, X } from "lucide-react";
-import type { Id } from "@/lib/convex-api";
 import {
   ASSET_STATUS_LABELS,
   ASSET_STATUS_OPTIONS,
@@ -44,17 +43,17 @@ import {
 import { cn } from "@/lib/utils";
 
 export type AssetFiltersState = {
-  categoryId: Id<"categories"> | null;
+  categoryId: string | null;
   status: AssetStatus | null;
-  locationId: Id<"locations"> | null;
-  tagIds: Id<"tags">[];
+  locationId: string | null;
+  tagIds: string[];
 };
 
-function removeTagId(tagIds: Id<"tags">[], tagId: Id<"tags">) {
+function removeTagId(tagIds: string[], tagId: string) {
   return tagIds.filter((candidate) => candidate !== tagId);
 }
 
-function addTagId(tagIds: Id<"tags">[], tagId: Id<"tags">) {
+function addTagId(tagIds: string[], tagId: string) {
   if (tagIds.includes(tagId)) {
     return tagIds;
   }
@@ -72,8 +71,8 @@ function TagsPicker({
   id?: string;
   labelledBy?: string;
   tags: AssetFilterOptions["tags"];
-  selectedIds: Id<"tags">[];
-  onChange: (tagIds: Id<"tags">[]) => void;
+  selectedIds: string[];
+  onChange: (tagIds: string[]) => void;
 }) {
   const [open, setOpen] = useState(false);
   const selectedCount = selectedIds.length;
@@ -96,7 +95,7 @@ function TagsPicker({
             {selectedCount === 0
               ? "All tags"
               : selectedCount === 1
-                ? (tags.find((t) => t._id === selectedIds[0])?.name ?? "1 tag")
+                ? (tags.find((t) => t.id === selectedIds[0])?.name ?? "1 tag")
                 : `${selectedCount} tags`}
           </span>
           <ChevronDown className="size-4 text-muted-foreground" />
@@ -112,16 +111,16 @@ function TagsPicker({
             <CommandEmpty>No tags found.</CommandEmpty>
             <CommandGroup>
               {tags.map((tag) => {
-                const checked = selectedIds.includes(tag._id);
+                const checked = selectedIds.includes(tag.id);
                 return (
                   <CommandItem
-                    key={tag._id}
+                    key={tag.id}
                     value={tag.name}
                     onSelect={() =>
                       onChange(
                         checked
-                          ? removeTagId(selectedIds, tag._id)
-                          : addTagId(selectedIds, tag._id),
+                          ? removeTagId(selectedIds, tag.id)
+                          : addTagId(selectedIds, tag.id),
                       )
                     }
                   >
@@ -263,8 +262,7 @@ export function AssetFilters({
             onValueChange={(value) =>
               onFiltersChange({
                 ...filters,
-                categoryId:
-                  value === "__all__" ? null : (value as Id<"categories">),
+                categoryId: value === "__all__" ? null : value,
               })
             }
           >
@@ -274,7 +272,7 @@ export function AssetFilters({
             <SelectContent>
               <SelectItem value="__all__">All categories</SelectItem>
               {options.categories.map((category) => (
-                <SelectItem key={category._id} value={category._id}>
+                <SelectItem key={category.id} value={category.id}>
                   {category.name}
                 </SelectItem>
               ))}
@@ -316,7 +314,7 @@ export function AssetFilters({
           {filters.categoryId ? (
             <Badge className="gap-1 border-border/60 bg-muted/30 pr-1 text-xs">
               Category:{" "}
-              {options.categories.find((c) => c._id === filters.categoryId)
+              {options.categories.find((c) => c.id === filters.categoryId)
                 ?.name ?? "Unknown"}
               <button
                 type="button"
@@ -346,7 +344,7 @@ export function AssetFilters({
           {filters.locationId ? (
             <Badge className="gap-1 border-border/60 bg-muted/30 pr-1 text-xs">
               Location:{" "}
-              {options.locations.find((l) => l._id === filters.locationId)
+              {options.locations.find((l) => l.id === filters.locationId)
                 ?.path ?? "Unknown"}
               <button
                 type="button"
@@ -361,7 +359,7 @@ export function AssetFilters({
             </Badge>
           ) : null}
           {filters.tagIds.map((tagId) => {
-            const tag = options.tags.find((t) => t._id === tagId);
+            const tag = options.tags.find((t) => t.id === tagId);
             return (
               <Badge
                 key={tagId}

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { startTransition, useDeferredValue, useMemo, useState } from "react";
 import { Package, Plus, Printer, X } from "lucide-react";
-import { useQuery } from "convex/react";
+import { useQuery } from "@tanstack/react-query";
 import {
   AssetFilters,
   type AssetFiltersState,
@@ -20,18 +20,18 @@ import type {
 } from "@/components/assets/types";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
-import type { Id } from "@/lib/convex-api";
-import { api } from "@/lib/convex-api";
+import {
+  getAssetFilterOptions,
+  listAssets,
+  type ListAssetsParams,
+} from "@/lib/api/assets";
 
 function getInitialFilters(searchParams: URLSearchParams): AssetFiltersState {
-  const category = searchParams.get("category");
-  const location = searchParams.get("location");
-  const tag = searchParams.get("tag");
   return {
-    categoryId: category ? (category as Id<"categories">) : null,
+    categoryId: searchParams.get("category"),
     status: null,
-    locationId: location ? (location as Id<"locations">) : null,
-    tagIds: tag ? [tag as Id<"tags">] : [],
+    locationId: searchParams.get("location"),
+    tagIds: searchParams.get("tag") ? [searchParams.get("tag") as string] : [],
   };
 }
 
@@ -59,8 +59,13 @@ function AssetsPageClientContent({
     useState<AssetSortDirection>("desc");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
-  const filterOptions = useQuery(api.assets.getAssetFilterOptions, {});
-  const assets = useQuery(api.assets.listAssets, {
+  const filterOptionsQuery = useQuery({
+    queryKey: ["assets", "filter-options"],
+    queryFn: getAssetFilterOptions,
+    staleTime: 60_000,
+  });
+
+  const listParams: ListAssetsParams = {
     categoryId: filters.categoryId ?? undefined,
     status: filters.status ?? undefined,
     locationId: filters.locationId ?? undefined,
@@ -68,10 +73,17 @@ function AssetsPageClientContent({
     search: deferredSearch.trim() ? deferredSearch.trim() : undefined,
     sortBy,
     sortDirection,
+  };
+  const assetsQuery = useQuery({
+    queryKey: ["assets", "list", listParams],
+    queryFn: () => listAssets(listParams),
   });
 
-  const loading = assets === undefined || filterOptions === undefined;
-  const rows = useMemo(() => (assets ?? []) as AssetListItem[], [assets]);
+  const loading = assetsQuery.isPending || filterOptionsQuery.isPending;
+  const rows = useMemo(
+    () => (assetsQuery.data ?? []) as AssetListItem[],
+    [assetsQuery.data],
+  );
   const hasFilters =
     Boolean(deferredSearch.trim()) ||
     filters.categoryId !== null ||
@@ -79,12 +91,12 @@ function AssetsPageClientContent({
     filters.locationId !== null ||
     filters.tagIds.length > 0;
   const showEmptyState = !loading && rows.length === 0 && !hasFilters;
-  const options = (filterOptions ?? {
+  const options: AssetFilterOptions = filterOptionsQuery.data ?? {
     categories: [],
     locations: [],
     tags: [],
     serviceGroups: [],
-  }) as AssetFilterOptions;
+  };
 
   function handleSort(field: AssetSortBy) {
     if (sortBy === field) {
@@ -103,7 +115,7 @@ function AssetsPageClientContent({
 
     const selectedSet = selectedIds;
     return rows
-      .filter((row) => selectedSet.has(row._id as string))
+      .filter((row) => selectedSet.has(row.id))
       .map((row) => row.name);
   }, [rows, selectedIds]);
 
@@ -210,7 +222,7 @@ function AssetsPageClientContent({
             return;
           }
 
-          setSelectedIds(new Set(rows.map((row) => row._id as string)));
+          setSelectedIds(new Set(rows.map((row) => row.id)));
         }}
         onRowOpen={(assetId) => router.push(`/assets/${assetId}`)}
         onRowEdit={(assetId) => router.push(`/assets/${assetId}/edit`)}

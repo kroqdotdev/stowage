@@ -10,7 +10,7 @@ Replace the Convex backend with a self-hosted PocketBase. Stowage ships as clean
 
 ## Current status (updated 2026-04-20)
 
-**20 commits on `pocketbase-migration`.** Test surface: **209 PB tests across 21 files**, **440 main tests** (jsdom + convex-test), typecheck clean, lint 0 errors.
+**21 commits on `pocketbase-migration`.** Test surface: **209 PB tests across 21 files**, **440 main tests** (jsdom + convex-test), typecheck clean, lint 0 errors.
 
 ### Done
 
@@ -43,8 +43,9 @@ Authz lives at the API route boundary via `withUser` / `withAdmin` rather than i
 - `CategoriesPageClient`, `TagsPageClient`, `LocationsPageClient`, `FieldsPageClient`. All four invalidate on mutate via shared query keys.
 - `TaxonomyManager`, `LocationTree`, `location-form-dialog`, `FieldDefinition` and `customFieldDefinitions` call sites now use `id` (not `_id`).
 - `label-templates` write path (create/update/delete) moved to the new API client; reads still flow through Convex until labels is ported.
+- **Assets feature (full surface):** `AssetsPageClient`, `AssetDetailPageClient`, `AssetCreatePageClient`, `AssetEditPageClient`, `AssetForm`, `AssetDetail`, `AssetFilters`, `AssetTable` plus shared `LocationPicker`/`TagPicker`. Added `GET /api/assets/filter-options` (composes categories/locations/tags/serviceGroups). `AttachmentsPanel` + `AssetServiceRecordsPanel` prop types widened to `string`; internals still Convex-bound until those features migrate.
 
-**Still Convex-bound (~48 files):** assets list/detail/edit/form/filters/tags, dashboard widgets, search, attachments (panel/list/upload), services (list, records, calendar/month, schedules, history, group detail/fields/assets, record-form, record-attachments, dynamic-form, log-service-dialog, providers), labels list/print/preview/print-page, settings (user-management/features/regional/password/page), layout (topbar, shell), `auth-token-cookie-bridge`, remaining page route files under `src/app/(app)/**/page.tsx`. Each of these still calls `useQuery(api.X.Y)`/`useMutation(api.X.Y)` from `convex/react` and expects Convex Ids and `_id` / `_creationTime` fields.
+**Still Convex-bound (~40 files):** dashboard widgets, search, attachments (panel/list/upload), services (list, records, calendar/month, schedules, history, group detail/fields/assets, record-form, record-attachments, dynamic-form, log-service-dialog, providers), labels list/print/preview/print-page, settings (user-management/features/regional/password/page), layout (topbar, shell), `auth-token-cookie-bridge`, remaining page route files under `src/app/(app)/**/page.tsx`. Each of these still calls `useQuery(api.X.Y)`/`useMutation(api.X.Y)` from `convex/react` and expects Convex Ids and `_id` / `_creationTime` fields.
 
 ### Remaining
 

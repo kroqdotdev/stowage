@@ -3,9 +3,9 @@ import { render, screen } from "@testing-library/react";
 import { TagPicker } from "@/components/tags/tag-picker";
 
 const options = [
-  { _id: "tag1" as never, name: "Fragile", color: "#DC2626" },
-  { _id: "tag2" as never, name: "Heavy", color: "#0891B2" },
-  { _id: "tag3" as never, name: "Expensive", color: "#9333EA" },
+  { id: "tag1", name: "Fragile", color: "#DC2626" },
+  { id: "tag2", name: "Heavy", color: "#0891B2" },
+  { id: "tag3", name: "Expensive", color: "#9333EA" },
 ];
 
 describe("TagPicker", () => {
@@ -30,13 +30,12 @@ describe("TagPicker", () => {
   it("renders selected tag badges", () => {
     render(
       <TagPicker
-        value={["tag1" as never, "tag3" as never]}
+        value={["tag1", "tag3"]}
         options={options}
         onChange={vi.fn()}
       />,
     );
 
-    // Badges for selected tags (they appear twice: once in checkbox list, once as badge)
     const fragileElements = screen.getAllByText("Fragile");
     expect(fragileElements.length).toBeGreaterThanOrEqual(2);
     const expensiveElements = screen.getAllByText("Expensive");

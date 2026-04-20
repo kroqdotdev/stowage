@@ -1,7 +1,12 @@
 import { getConvexUiErrorMessage } from "@/components/crud/error-messages";
+import { ApiRequestError } from "@/lib/api-client";
 import { getConvexErrorCode } from "@/lib/convex-errors";
 
 export function getAssetUiErrorMessage(error: unknown, fallback: string) {
+  if (error instanceof ApiRequestError) {
+    return error.message || fallback;
+  }
+
   const code = getConvexErrorCode(error);
 
   if (code === "INVALID_ASSET_NAME") {

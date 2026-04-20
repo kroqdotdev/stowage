@@ -1,11 +1,13 @@
 import { describe, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { render, screen } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AssetForm } from "@/components/assets/asset-form";
 import type { AssetFormValues } from "@/components/assets/types";
 
-vi.mock("convex/react", () => ({
-  useQuery: () => ({ assetTag: "IT-0001", prefix: "IT", nextNumber: 1 }),
+vi.mock("@/lib/api/assets", () => ({
+  previewAssetTag: () =>
+    Promise.resolve({ assetTag: "IT-0001", prefix: "IT", nextNumber: 1 }),
 }));
 
 const initialValues: AssetFormValues = {
@@ -19,12 +21,28 @@ const initialValues: AssetFormValues = {
   tagIds: [],
 };
 
+function renderForm(ui: React.ReactElement) {
+  const qc = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  const result = render(
+    <QueryClientProvider client={qc}>{ui}</QueryClientProvider>,
+  );
+  return {
+    ...result,
+    rerender: (next: React.ReactElement) =>
+      result.rerender(
+        <QueryClientProvider client={qc}>{next}</QueryClientProvider>,
+      ),
+  };
+}
+
 describe("AssetForm", () => {
   it("validates required fields before submit", async () => {
     const user = userEvent.setup();
     const onSubmit = vi.fn().mockResolvedValue(undefined);
 
-    render(
+    renderForm(
       <AssetForm
         mode="create"
         categories={[]}
@@ -33,7 +51,7 @@ describe("AssetForm", () => {
         tags={[]}
         fieldDefinitions={[
           {
-            id: "field1" as never,
+            id: "field1",
             name: "Serial",
             fieldType: "text",
             options: [],
@@ -62,7 +80,7 @@ describe("AssetForm", () => {
     const user = userEvent.setup();
     const onSubmit = vi.fn().mockResolvedValue(undefined);
 
-    render(
+    renderForm(
       <AssetForm
         mode="create"
         categories={[]}
@@ -93,7 +111,7 @@ describe("AssetForm", () => {
     const user = userEvent.setup();
     const onSubmit = vi.fn().mockResolvedValue(undefined);
 
-    const { rerender } = render(
+    const { rerender } = renderForm(
       <AssetForm
         mode="edit"
         categories={[]}
