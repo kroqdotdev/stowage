@@ -30,7 +30,7 @@ function buildPathPreview(locations: LocationTreeItem[], form: FormState) {
   const parentPath =
     form.parentId == null
       ? null
-      : (locations.find((location) => location._id === form.parentId)?.path ??
+      : (locations.find((location) => location.id === form.parentId)?.path ??
         null);
 
   return parentPath ? `${parentPath} / ${name}` : name;
@@ -145,7 +145,7 @@ export function LocationFormDialog({
             <SelectContent>
               <SelectItem value="__none__">No parent (root)</SelectItem>
               {sortedLocations.map((location) => (
-                <SelectItem key={location._id} value={location._id}>
+                <SelectItem key={location.id} value={location.id}>
                   {location.path}
                 </SelectItem>
               ))}

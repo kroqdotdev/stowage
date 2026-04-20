@@ -9,6 +9,10 @@ vi.mock("convex/react", () => ({
   useQuery: (...args: unknown[]) => mockUseQuery(...args),
 }));
 
+vi.mock("@/lib/use-app-date-format", () => ({
+  useAppDateFormat: () => "DD-MM-YYYY",
+}));
+
 describe("ServicesScheduledList", () => {
   beforeEach(() => {
     mockUseQuery.mockReset();

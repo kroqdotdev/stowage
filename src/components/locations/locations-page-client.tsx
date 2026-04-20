@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Loader2,
   MapPinned,
@@ -9,8 +9,9 @@ import {
   Save,
   Trash2,
 } from "lucide-react";
-import { useMutation, useQuery } from "convex/react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+
 import { ConfirmDialog } from "@/components/crud/confirm-dialog";
 import { getConvexUiErrorMessage } from "@/components/crud/error-messages";
 import { LocationFormDialog } from "@/components/locations/location-form-dialog";
@@ -35,9 +36,17 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { api } from "@/lib/convex-api";
+import { useCurrentUser } from "@/hooks/use-current-user";
+import {
+  createLocation,
+  deleteLocation,
+  listLocations,
+  updateLocation,
+} from "@/lib/api/locations";
 import { formatDateFromTimestamp } from "@/lib/date-format";
 import { useAppDateFormat } from "@/lib/use-app-date-format";
+
+const LOCATIONS_QUERY_KEY = ["locations"] as const;
 
 function toDraft(location: LocationTreeItem) {
   return {
@@ -67,9 +76,7 @@ function buildLocationPathPreview(
   draft: { name: string; parentId: string | null },
 ) {
   const name = draft.name.trim();
-  if (!name) {
-    return "";
-  }
+  if (!name) return "";
 
   const parentPath = draft.parentId
     ? (locationsById.get(draft.parentId)?.path ?? null)
@@ -78,22 +85,40 @@ function buildLocationPathPreview(
 }
 
 export function LocationsPageClient() {
+  const qc = useQueryClient();
   const dateFormat = useAppDateFormat();
-  const currentUser = useQuery(api.users.getCurrentUser, {});
-  const locations = useQuery(api.locations.listLocations, {});
-  const createLocation = useMutation(api.locations.createLocation);
-  const updateLocation = useMutation(api.locations.updateLocation);
-  const deleteLocation = useMutation(api.locations.deleteLocation);
+  const { data: currentUser, isLoading: loadingUser } = useCurrentUser();
+  const { data: locations, isLoading: loadingLocations } = useQuery({
+    queryKey: LOCATIONS_QUERY_KEY,
+    queryFn: listLocations,
+  });
+
+  const createM = useMutation({
+    mutationFn: (input: Parameters<typeof createLocation>[0]) =>
+      createLocation(input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: LOCATIONS_QUERY_KEY }),
+  });
+  const updateM = useMutation({
+    mutationFn: (vars: {
+      id: string;
+      input: Parameters<typeof updateLocation>[1];
+    }) => updateLocation(vars.id, vars.input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: LOCATIONS_QUERY_KEY }),
+  });
+  const deleteM = useMutation({
+    mutationFn: deleteLocation,
+    onSuccess: () => qc.invalidateQueries({ queryKey: LOCATIONS_QUERY_KEY }),
+  });
 
   const rows = useMemo(
     () => (locations ?? []) as unknown as LocationTreeItem[],
     [locations],
   );
-  const loading = currentUser === undefined || locations === undefined;
+  const loading = loadingUser || loadingLocations;
   const canManage = currentUser?.role === "admin";
 
   const rowsById = useMemo(
-    () => new Map(rows.map((location) => [location._id, location])),
+    () => new Map(rows.map((location) => [location.id, location])),
     [rows],
   );
   const childrenByParent = useMemo(
@@ -126,37 +151,28 @@ export function LocationsPageClient() {
     : null;
 
   useEffect(() => {
-    if (rows.length === 0) {
-      return;
-    }
-
+    if (rows.length === 0) return;
     setExpandedIds((prev) => {
-      if (prev.size > 0) {
-        return prev;
-      }
+      if (prev.size > 0) return prev;
       const roots = childrenByParent.get(null) ?? [];
-      return new Set(roots.map((root) => root._id));
+      return new Set(roots.map((root) => root.id));
     });
   }, [rows.length, childrenByParent]);
 
   useEffect(() => {
-    if (!selectedId || locations === undefined) {
-      return;
-    }
-
+    if (!selectedId || loadingLocations) return;
     if (!selectedLocation) {
       toast.error("The selected location is no longer available");
       setSelectedId(null);
       setPanelDraft(null);
     }
-  }, [selectedId, selectedLocation, locations]);
+  }, [selectedId, selectedLocation, loadingLocations]);
 
   useEffect(() => {
     if (!selectedLocation) {
       setPanelDraft(null);
       return;
     }
-
     setPanelDraft(toDraft(selectedLocation));
   }, [selectedLocation]);
 
@@ -166,9 +182,7 @@ export function LocationsPageClient() {
     setExpandedIds((prev) => {
       const next = new Set(prev);
       next.add(id);
-      for (const ancestor of ancestors) {
-        next.add(ancestor);
-      }
+      for (const ancestor of ancestors) next.add(ancestor);
       return next;
     });
   }
@@ -176,11 +190,8 @@ export function LocationsPageClient() {
   function toggleExpand(id: string) {
     setExpandedIds((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
       return next;
     });
   }
@@ -206,13 +217,13 @@ export function LocationsPageClient() {
     }
 
     const descendants = collectDescendantIds(
-      selectedLocation._id,
+      selectedLocation.id,
       childrenByParent,
     );
-    descendants.add(selectedLocation._id);
+    descendants.add(selectedLocation.id);
 
     return rows
-      .filter((location) => !descendants.has(location._id))
+      .filter((location) => !descendants.has(location.id))
       .slice()
       .sort((a, b) =>
         a.path.localeCompare(b.path, undefined, { sensitivity: "base" }),
@@ -224,10 +235,7 @@ export function LocationsPageClient() {
     : "";
 
   const hasPanelChanges = (() => {
-    if (!selectedLocation || !panelDraft) {
-      return false;
-    }
-
+    if (!selectedLocation || !panelDraft) return false;
     const selectedDescription = selectedLocation.description ?? "";
     return (
       panelDraft.name.trim() !== selectedLocation.name ||
@@ -248,15 +256,15 @@ export function LocationsPageClient() {
 
     setCreating(true);
     try {
-      const result = await createLocation({
+      const result = await createM.mutateAsync({
         name: values.name,
-        parentId: values.parentId as never,
+        parentId: values.parentId,
         description: values.description,
       });
       toast.success("Location created");
       setCreateDialogOpen(false);
       setCreateForm({ name: "", parentId: null, description: "" });
-      selectLocation(result.locationId as unknown as string);
+      selectLocation(result.id);
     } catch (error) {
       toast.error(getConvexUiErrorMessage(error, "Unable to create location"));
     } finally {
@@ -265,10 +273,7 @@ export function LocationsPageClient() {
   }
 
   async function handleSavePanel() {
-    if (!selectedLocation || !panelDraft) {
-      return;
-    }
-
+    if (!selectedLocation || !panelDraft) return;
     if (!panelDraft.name.trim()) {
       toast.error("Enter a location name");
       return;
@@ -276,13 +281,15 @@ export function LocationsPageClient() {
 
     setSaving(true);
     try {
-      await updateLocation({
-        locationId: selectedLocation._id as never,
-        name: panelDraft.name,
-        parentId: panelDraft.parentId as never,
-        description: panelDraft.description.trim()
-          ? panelDraft.description
-          : null,
+      await updateM.mutateAsync({
+        id: selectedLocation.id,
+        input: {
+          name: panelDraft.name,
+          parentId: panelDraft.parentId,
+          description: panelDraft.description.trim()
+            ? panelDraft.description
+            : null,
+        },
       });
       toast.success("Location updated");
     } catch (error) {
@@ -293,13 +300,11 @@ export function LocationsPageClient() {
   }
 
   async function handleDelete() {
-    if (!deleteId) {
-      return;
-    }
+    if (!deleteId) return;
 
     setDeleting(true);
     try {
-      await deleteLocation({ locationId: deleteId as never });
+      await deleteM.mutateAsync(deleteId);
       toast.success("Location deleted");
       if (selectedId === deleteId) {
         setSelectedId(null);
@@ -446,7 +451,7 @@ export function LocationsPageClient() {
                 <SelectContent>
                   <SelectItem value="__none__">No parent (root)</SelectItem>
                   {parentOptions.map((location) => (
-                    <SelectItem key={location._id} value={location._id}>
+                    <SelectItem key={location.id} value={location.id}>
                       {location.path}
                     </SelectItem>
                   ))}
@@ -512,7 +517,7 @@ export function LocationsPageClient() {
                       type="button"
                       variant="destructive"
                       className="cursor-pointer"
-                      onClick={() => setDeleteId(selectedLocation._id)}
+                      onClick={() => setDeleteId(selectedLocation.id)}
                       disabled={saving || deleting}
                     >
                       <Trash2 className="h-4 w-4" />
@@ -573,9 +578,7 @@ export function LocationsPageClient() {
         values={createForm}
         submitting={creating}
         onClose={() => {
-          if (!creating) {
-            setCreateDialogOpen(false);
-          }
+          if (!creating) setCreateDialogOpen(false);
         }}
         onChange={setCreateForm}
         onSubmit={handleCreate}
@@ -591,9 +594,7 @@ export function LocationsPageClient() {
         }
         busy={deleting}
         onClose={() => {
-          if (!deleting) {
-            setDeleteId(null);
-          }
+          if (!deleting) setDeleteId(null);
         }}
         onConfirm={() => void handleDelete()}
       />

@@ -12,6 +12,10 @@ vi.mock("convex/react", () => ({
   useAction: (...args: unknown[]) => mockUseAction(...args),
 }));
 
+vi.mock("@/lib/use-app-date-format", () => ({
+  useAppDateFormat: () => "DD-MM-YYYY",
+}));
+
 vi.mock("sonner", () => ({
   toast: {
     error: vi.fn(),
