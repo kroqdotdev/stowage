@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { getLeafPathSegment, getLanding, signIn } from "./helpers";
+import { getLanding, signIn } from "./helpers";
 
 test.describe.serial("settings page", () => {
   test("protected settings page redirects when unauthenticated", async ({
@@ -51,7 +51,7 @@ test.describe.serial("settings page", () => {
       page.getByRole("heading", { name: "Change password" }),
     ).toBeVisible();
     await expect(page.getByLabel("Current password")).toBeVisible();
-    await expect(page.getByLabel("New password")).toBeVisible();
+    await expect(page.getByLabel("New password", { exact: true })).toBeVisible();
     await expect(page.getByLabel("Confirm new password")).toBeVisible();
   });
 
@@ -120,7 +120,7 @@ test.describe.serial("settings page", () => {
     await page.goto("/settings");
 
     await page.getByLabel("Current password").fill("anything");
-    await page.getByLabel("New password").fill("short");
+    await page.getByLabel("New password", { exact: true }).fill("short");
     await page.getByLabel("Confirm new password").fill("short");
     await page.getByRole("button", { name: "Update password" }).click();
 
@@ -151,7 +151,7 @@ test.describe.serial("settings page", () => {
     await page.goto("/settings");
 
     await page.getByLabel("Current password").fill("anything");
-    await page.getByLabel("New password").fill("validpassword1");
+    await page.getByLabel("New password", { exact: true }).fill("validpassword1");
     await page.getByLabel("Confirm new password").fill("differentpassword");
     await page.getByRole("button", { name: "Update password" }).click();
 
