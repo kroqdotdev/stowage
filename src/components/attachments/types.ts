@@ -1,9 +1,6 @@
-import type { Id } from "@/lib/convex-api";
-
 export type AttachmentItem = {
-  _id: Id<"attachments">;
-  _creationTime: number;
-  assetId: Id<"assets">;
+  id: string;
+  assetId: string;
   fileName: string;
   fileType: string;
   fileExtension: string;
@@ -13,7 +10,7 @@ export type AttachmentItem = {
   status: "pending" | "processing" | "ready" | "failed";
   optimizationAttempts: number;
   optimizationError: string | null;
-  uploadedBy: Id<"users">;
+  uploadedBy: string;
   uploadedAt: number;
   updatedAt: number;
   url: string | null;

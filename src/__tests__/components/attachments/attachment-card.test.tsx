@@ -9,9 +9,8 @@ vi.mock("@/lib/use-app-date-format", () => ({
 }));
 
 const baseAttachment: AttachmentItem = {
-  _id: "att1" as never,
-  _creationTime: 1,
-  assetId: "asset1" as never,
+  id: "att1",
+  assetId: "asset1",
   fileName: "photo.webp",
   fileType: "image/webp",
   fileExtension: "webp",
@@ -21,7 +20,7 @@ const baseAttachment: AttachmentItem = {
   status: "ready",
   optimizationAttempts: 1,
   optimizationError: null,
-  uploadedBy: "user1" as never,
+  uploadedBy: "user1",
   uploadedAt: 1,
   updatedAt: 1,
   url: "https://example.com/photo.webp",

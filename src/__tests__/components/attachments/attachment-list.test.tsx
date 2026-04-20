@@ -1,19 +1,17 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { render, screen, waitFor } from "@testing-library/react";
 
-const mockUseQuery = vi.fn();
-const mockUseMutation = vi.fn();
+const listAttachmentsMock = vi.fn();
 
-vi.mock("convex/react", () => ({
-  useQuery: (...args: unknown[]) => mockUseQuery(...args),
-  useMutation: (...args: unknown[]) => mockUseMutation(...args),
+vi.mock("@/lib/api/attachments", () => ({
+  listAttachments: (assetId: string) => listAttachmentsMock(assetId),
+  deleteAttachment: vi.fn(),
+  retryAttachment: vi.fn(),
 }));
 
 vi.mock("sonner", () => ({
-  toast: {
-    error: vi.fn(),
-    success: vi.fn(),
-  },
+  toast: { error: vi.fn(), success: vi.fn() },
 }));
 
 vi.mock("@/lib/use-app-date-format", () => ({
@@ -22,35 +20,41 @@ vi.mock("@/lib/use-app-date-format", () => ({
 
 import { AttachmentList } from "@/components/attachments/attachment-list";
 
+function renderWithClient(ui: React.ReactElement) {
+  const qc = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  return render(<QueryClientProvider client={qc}>{ui}</QueryClientProvider>);
+}
+
 describe("AttachmentList", () => {
   beforeEach(() => {
-    mockUseQuery.mockReset();
-    mockUseMutation.mockReset();
-    mockUseMutation.mockReturnValue(vi.fn());
+    listAttachmentsMock.mockReset();
   });
 
-  it("shows loading state when attachments are undefined", () => {
-    mockUseQuery.mockReturnValue(undefined);
+  it("shows loading state when attachments are pending", () => {
+    listAttachmentsMock.mockImplementation(() => new Promise(() => {}));
 
-    render(<AttachmentList assetId={"asset1" as never} />);
+    renderWithClient(<AttachmentList assetId="asset1" />);
 
     expect(screen.getByText("Loading attachments...")).toBeInTheDocument();
   });
 
-  it("shows empty state when no attachments", () => {
-    mockUseQuery.mockReturnValue([]);
+  it("shows empty state when no attachments", async () => {
+    listAttachmentsMock.mockResolvedValue([]);
 
-    render(<AttachmentList assetId={"asset1" as never} />);
+    renderWithClient(<AttachmentList assetId="asset1" />);
 
-    expect(screen.getByText("No attachments yet.")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText("No attachments yet.")).toBeInTheDocument();
+    });
   });
 
-  it("renders attachment cards when items exist", () => {
-    mockUseQuery.mockReturnValue([
+  it("renders attachment cards when items exist", async () => {
+    listAttachmentsMock.mockResolvedValue([
       {
-        _id: "att1" as never,
-        _creationTime: 1,
-        assetId: "asset1" as never,
+        id: "att1",
+        assetId: "asset1",
         fileName: "photo.webp",
         fileType: "image/webp",
         fileExtension: "webp",
@@ -60,16 +64,18 @@ describe("AttachmentList", () => {
         status: "ready",
         optimizationAttempts: 1,
         optimizationError: null,
-        uploadedBy: "user1" as never,
+        uploadedBy: "user1",
         uploadedAt: 1,
         updatedAt: 1,
         url: "https://example.com/photo.webp",
       },
     ]);
 
-    render(<AttachmentList assetId={"asset1" as never} />);
+    renderWithClient(<AttachmentList assetId="asset1" />);
 
-    expect(screen.getByText("photo.webp")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText("photo.webp")).toBeInTheDocument();
+    });
     expect(screen.getByText("Ready")).toBeInTheDocument();
   });
 });

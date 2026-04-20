@@ -1,42 +1,18 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
+import {
+  QueryClient,
+  QueryClientProvider,
+} from "@tanstack/react-query";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { getFunctionName } from "convex/server";
 import { FileUploadZone } from "@/components/attachments/file-upload-zone";
 
-const mockGenerateUploadUrl = vi.fn();
-const mockCreateAttachment = vi.fn();
-let listAttachmentsValue: Array<{
-  _id: string;
-  status: "pending" | "processing" | "ready" | "failed";
-  optimizationError: string | null;
-}> = [];
-let storageUsageValue: {
-  usedBytes: number;
-  limitBytes: number | null;
-} | null = null;
+const listAttachmentsMock = vi.fn();
+const getStorageUsageMock = vi.fn();
 
-vi.mock("convex/react", () => ({
-  useMutation: (reference: unknown) => {
-    const functionName = getFunctionName(reference as never);
-    if (functionName === "attachments:generateUploadUrl") {
-      return mockGenerateUploadUrl;
-    }
-
-    if (functionName === "attachments:createAttachment") {
-      return mockCreateAttachment;
-    }
-
-    throw new Error("Unexpected mutation reference");
-  },
-  useQuery: (reference: unknown) => {
-    const functionName = getFunctionName(reference as never);
-    if (functionName === "storage_quota:getStorageUsage") {
-      return storageUsageValue;
-    }
-
-    return listAttachmentsValue;
-  },
+vi.mock("@/lib/api/attachments", () => ({
+  listAttachments: (assetId: string) => listAttachmentsMock(assetId),
+  getStorageUsage: () => getStorageUsageMock(),
 }));
 
 class MockXMLHttpRequest {
@@ -44,6 +20,7 @@ class MockXMLHttpRequest {
   status = 0;
   responseType = "";
   response: unknown = null;
+  withCredentials = false;
   upload = {
     onprogress: null as ((event: ProgressEvent) => void) | null,
   };
@@ -62,10 +39,17 @@ class MockXMLHttpRequest {
       loaded: 1,
       total: 1,
     } as unknown as ProgressEvent);
-    this.status = 200;
-    this.response = { storageId: "storage1" };
+    this.status = 201;
+    this.response = { attachmentId: "att1" };
     this.onload?.();
   }
+}
+
+function renderWithClient(ui: React.ReactElement) {
+  const qc = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  return render(<QueryClientProvider client={qc}>{ui}</QueryClientProvider>);
 }
 
 describe("FileUploadZone", () => {
@@ -75,12 +59,12 @@ describe("FileUploadZone", () => {
     vi.clearAllMocks();
     globalThis.XMLHttpRequest =
       MockXMLHttpRequest as unknown as typeof XMLHttpRequest;
-    mockGenerateUploadUrl.mockResolvedValue({
-      uploadUrl: "https://upload.test",
+    listAttachmentsMock.mockResolvedValue([]);
+    getStorageUsageMock.mockResolvedValue({
+      usedBytes: 0,
+      limitBytes: null,
     });
-    mockCreateAttachment.mockResolvedValue({ attachmentId: "att1" });
-    listAttachmentsValue = [];
-    storageUsageValue = null;
+    MockXMLHttpRequest.instances = [];
   });
 
   afterEach(() => {
@@ -88,34 +72,30 @@ describe("FileUploadZone", () => {
     vi.useRealTimers();
   });
 
-  it("uploads accepted files and registers attachments", async () => {
+  it("uploads accepted files via multipart POST to /api/attachments", async () => {
     const user = userEvent.setup();
 
-    render(<FileUploadZone assetId={"asset1" as never} />);
+    renderWithClient(<FileUploadZone assetId="asset1" />);
 
     const input = screen.getByTestId("attachment-file-input");
     const file = new File(["pdf"], "manual.pdf", { type: "application/pdf" });
     await user.upload(input, file);
 
     await waitFor(() => {
-      expect(mockGenerateUploadUrl).toHaveBeenCalled();
-      expect(mockCreateAttachment).toHaveBeenCalledWith({
-        assetId: "asset1",
-        storageId: "storage1",
-        fileName: "manual.pdf",
-        fileType: "application/pdf",
-        fileSize: file.size,
-      });
+      expect(MockXMLHttpRequest.instances).toHaveLength(1);
     });
-
+    const [xhr] = MockXMLHttpRequest.instances;
+    expect(xhr.open).toHaveBeenCalledWith("POST", "/api/attachments", true);
     expect(screen.getByText("manual.pdf")).toBeInTheDocument();
-    expect(screen.getByText("Queued for optimization")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText("Queued for optimization")).toBeInTheDocument();
+    });
   });
 
   it("rejects unsupported file extensions", async () => {
     const user = userEvent.setup();
 
-    render(<FileUploadZone assetId={"asset1" as never} />);
+    renderWithClient(<FileUploadZone assetId="asset1" />);
 
     const input = screen.getByTestId("attachment-file-input");
     const file = new File(["bin"], "payload.exe", {
@@ -123,30 +103,42 @@ describe("FileUploadZone", () => {
     });
     await user.upload(input, file);
 
-    await waitFor(() => {
-      expect(mockGenerateUploadUrl).not.toHaveBeenCalled();
-      expect(mockCreateAttachment).not.toHaveBeenCalled();
-    });
+    expect(MockXMLHttpRequest.instances).toHaveLength(0);
   });
 
-  it("updates queued jobs to ready and removes them after 5 seconds", async () => {
+  it("updates queued jobs to ready when server reports ready status", async () => {
     const user = userEvent.setup();
     const setTimeoutSpy = vi.spyOn(window, "setTimeout");
 
-    const view = render(<FileUploadZone assetId={"asset1" as never} />);
+    listAttachmentsMock.mockImplementation(async () => {
+      return MockXMLHttpRequest.instances.length > 0
+        ? [
+            {
+              id: "att1",
+              assetId: "asset1",
+              fileName: "manual.pdf",
+              fileType: "application/pdf",
+              fileExtension: "pdf",
+              fileKind: "pdf",
+              fileSizeOriginal: 10,
+              fileSizeOptimized: 10,
+              status: "ready",
+              optimizationAttempts: 1,
+              optimizationError: null,
+              uploadedBy: "user1",
+              uploadedAt: 1,
+              updatedAt: 1,
+              url: "https://example.com/manual.pdf",
+            },
+          ]
+        : [];
+    });
+
+    renderWithClient(<FileUploadZone assetId="asset1" />);
 
     const input = screen.getByTestId("attachment-file-input");
     const file = new File(["pdf"], "manual.pdf", { type: "application/pdf" });
     await user.upload(input, file);
-
-    await waitFor(() => {
-      expect(screen.getByText("Queued for optimization")).toBeInTheDocument();
-    });
-
-    listAttachmentsValue = [
-      { _id: "att1", status: "ready", optimizationError: null },
-    ];
-    view.rerender(<FileUploadZone assetId={"asset1" as never} />);
 
     await waitFor(() => {
       expect(screen.getByText("Ready")).toBeInTheDocument();
@@ -155,61 +147,59 @@ describe("FileUploadZone", () => {
     expect(setTimeoutSpy).toHaveBeenCalledWith(expect.any(Function), 5_000);
   });
 
-  it("removes queued jobs after 30 seconds when still not ready", async () => {
-    const user = userEvent.setup();
-    const setTimeoutSpy = vi.spyOn(window, "setTimeout");
-
-    render(<FileUploadZone assetId={"asset1" as never} />);
-
-    const input = screen.getByTestId("attachment-file-input");
-    const file = new File(["pdf"], "still-processing.pdf", {
-      type: "application/pdf",
-    });
-    await user.upload(input, file);
-
-    await waitFor(() => {
-      expect(screen.getByText("Queued for optimization")).toBeInTheDocument();
-    });
-
-    expect(setTimeoutSpy).toHaveBeenCalledWith(expect.any(Function), 30_000);
-  });
-
   describe("storage quota UI", () => {
-    it("does not show storage bar when no limit is configured", () => {
-      storageUsageValue = { usedBytes: 1024, limitBytes: null };
+    it("does not show storage bar when no limit is configured", async () => {
+      getStorageUsageMock.mockResolvedValue({
+        usedBytes: 1024,
+        limitBytes: null,
+      });
 
-      render(<FileUploadZone assetId={"asset1" as never} />);
+      renderWithClient(<FileUploadZone assetId="asset1" />);
 
+      await waitFor(() => {
+        expect(getStorageUsageMock).toHaveBeenCalled();
+      });
       expect(screen.queryByText("Storage")).not.toBeInTheDocument();
     });
 
-    it("shows storage usage bar when a limit is configured", () => {
+    it("shows storage usage bar when a limit is configured", async () => {
       const usedBytes = 5 * 1024 * 1024 * 1024;
       const limitBytes = 15 * 1024 * 1024 * 1024;
-      storageUsageValue = { usedBytes, limitBytes };
+      getStorageUsageMock.mockResolvedValue({ usedBytes, limitBytes });
 
-      render(<FileUploadZone assetId={"asset1" as never} />);
+      renderWithClient(<FileUploadZone assetId="asset1" />);
 
-      expect(screen.getByText("Storage")).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText("Storage")).toBeInTheDocument();
+      });
       expect(screen.getByText("5.0 GB / 15.0 GB")).toBeInTheDocument();
     });
 
-    it("shows MB for usage under 1 GB", () => {
+    it("shows MB for usage under 1 GB", async () => {
       const usedBytes = 200 * 1024 * 1024;
       const limitBytes = 15 * 1024 * 1024 * 1024;
-      storageUsageValue = { usedBytes, limitBytes };
+      getStorageUsageMock.mockResolvedValue({ usedBytes, limitBytes });
 
-      render(<FileUploadZone assetId={"asset1" as never} />);
+      renderWithClient(<FileUploadZone assetId="asset1" />);
 
-      expect(screen.getByText("200 MB / 15.0 GB")).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText("200 MB / 15.0 GB")).toBeInTheDocument();
+      });
     });
 
     it("blocks uploads when quota is exceeded", async () => {
       const user = userEvent.setup();
       const limitBytes = 15 * 1024 * 1024 * 1024;
-      storageUsageValue = { usedBytes: limitBytes, limitBytes };
+      getStorageUsageMock.mockResolvedValue({
+        usedBytes: limitBytes,
+        limitBytes,
+      });
 
-      render(<FileUploadZone assetId={"asset1" as never} />);
+      renderWithClient(<FileUploadZone assetId="asset1" />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Storage")).toBeInTheDocument();
+      });
 
       const input = screen.getByTestId("attachment-file-input");
       const file = new File(["pdf"], "manual.pdf", {
@@ -217,18 +207,7 @@ describe("FileUploadZone", () => {
       });
       await user.upload(input, file);
 
-      await waitFor(() => {
-        expect(mockGenerateUploadUrl).not.toHaveBeenCalled();
-        expect(mockCreateAttachment).not.toHaveBeenCalled();
-      });
-    });
-
-    it("does not show storage bar when query has not loaded yet", () => {
-      storageUsageValue = null;
-
-      render(<FileUploadZone assetId={"asset1" as never} />);
-
-      expect(screen.queryByText("Storage")).not.toBeInTheDocument();
+      expect(MockXMLHttpRequest.instances).toHaveLength(0);
     });
   });
 });

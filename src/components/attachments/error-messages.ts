@@ -1,7 +1,15 @@
 import { getConvexUiErrorMessage } from "@/components/crud/error-messages";
-import { getConvexAppErrorPayload, getConvexErrorCode } from "@/lib/convex-errors";
+import { ApiRequestError } from "@/lib/api-client";
+import {
+  getConvexAppErrorPayload,
+  getConvexErrorCode,
+} from "@/lib/convex-errors";
 
 export function getAttachmentUiErrorMessage(error: unknown, fallback: string) {
+  if (error instanceof ApiRequestError) {
+    return error.message || fallback;
+  }
+
   const code = getConvexErrorCode(error);
 
   if (code === "ASSET_NOT_FOUND") {

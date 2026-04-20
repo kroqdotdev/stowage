@@ -1,32 +1,44 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useMutation, useQuery } from "convex/react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { AttachmentCard } from "@/components/attachments/attachment-card";
 import { getAttachmentUiErrorMessage } from "@/components/attachments/error-messages";
 import type { AttachmentItem } from "@/components/attachments/types";
-import type { Id } from "@/lib/convex-api";
-import { api } from "@/lib/convex-api";
+import {
+  deleteAttachment,
+  listAttachments,
+  retryAttachment,
+} from "@/lib/api/attachments";
 
-export function AttachmentList({ assetId }: { assetId: Id<"assets"> }) {
-  const attachments = useQuery(api.attachments.listAttachments, { assetId });
-  const deleteAttachment = useMutation(api.attachments.deleteAttachment);
-  const retryAttachment = useMutation(
-    api.attachments.retryAttachmentOptimization,
-  );
+export function AttachmentList({ assetId }: { assetId: string }) {
+  const queryClient = useQueryClient();
+  const attachmentsQuery = useQuery({
+    queryKey: ["attachments", assetId],
+    queryFn: () => listAttachments(assetId),
+  });
 
-  const [deletingAttachmentId, setDeletingAttachmentId] =
-    useState<Id<"attachments"> | null>(null);
-  const [retryingAttachmentId, setRetryingAttachmentId] =
-    useState<Id<"attachments"> | null>(null);
+  const deleteMutation = useMutation({
+    mutationFn: (attachmentId: string) => deleteAttachment(attachmentId),
+  });
+  const retryMutation = useMutation({
+    mutationFn: (attachmentId: string) => retryAttachment(attachmentId),
+  });
+
+  const [deletingAttachmentId, setDeletingAttachmentId] = useState<
+    string | null
+  >(null);
+  const [retryingAttachmentId, setRetryingAttachmentId] = useState<
+    string | null
+  >(null);
 
   const rows = useMemo(
-    () => (attachments ?? []) as AttachmentItem[],
-    [attachments],
+    () => (attachmentsQuery.data ?? []) as AttachmentItem[],
+    [attachmentsQuery.data],
   );
 
-  if (attachments === undefined) {
+  if (attachmentsQuery.isPending) {
     return (
       <div className="rounded-lg border border-border/60 bg-background p-4 text-sm text-muted-foreground">
         Loading attachments...
@@ -46,14 +58,20 @@ export function AttachmentList({ assetId }: { assetId: Id<"assets"> }) {
     <div className="grid gap-3 md:grid-cols-2">
       {rows.map((attachment) => (
         <AttachmentCard
-          key={attachment._id}
+          key={attachment.id}
           attachment={attachment}
-          deleting={deletingAttachmentId === attachment._id}
-          retrying={retryingAttachmentId === attachment._id}
+          deleting={deletingAttachmentId === attachment.id}
+          retrying={retryingAttachmentId === attachment.id}
           onDelete={async (attachmentId) => {
             setDeletingAttachmentId(attachmentId);
             try {
-              await deleteAttachment({ attachmentId });
+              await deleteMutation.mutateAsync(attachmentId);
+              void queryClient.invalidateQueries({
+                queryKey: ["attachments", assetId],
+              });
+              void queryClient.invalidateQueries({
+                queryKey: ["storage-usage"],
+              });
               toast.success("Attachment deleted");
             } catch (error) {
               toast.error(
@@ -69,7 +87,10 @@ export function AttachmentList({ assetId }: { assetId: Id<"assets"> }) {
           onRetry={async (attachmentId) => {
             setRetryingAttachmentId(attachmentId);
             try {
-              await retryAttachment({ attachmentId });
+              await retryMutation.mutateAsync(attachmentId);
+              void queryClient.invalidateQueries({
+                queryKey: ["attachments", assetId],
+              });
               toast.success("Attachment retry queued");
             } catch (error) {
               toast.error(
