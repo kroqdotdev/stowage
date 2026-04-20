@@ -1,68 +1,67 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
-import { render, screen } from "@testing-library/react";
-import { getFunctionName } from "convex/server";
-import { ServiceProvidersPageClient } from "@/components/services/service-providers-page-client";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { render, screen, waitFor } from "@testing-library/react";
 
-const mockUseQuery = vi.fn();
-const createProviderMock = vi.fn().mockResolvedValue(null);
-const updateProviderMock = vi.fn().mockResolvedValue(null);
-const deleteProviderMock = vi.fn().mockResolvedValue(null);
+const listServiceProvidersMock = vi.fn();
+const getCurrentUserMock = vi.fn();
 
-vi.mock("convex/react", () => ({
-  useQuery: (...args: unknown[]) => mockUseQuery(...args),
-  useMutation: (reference: unknown) => {
-    const functionName = getFunctionName(reference as never);
-    if (functionName === "serviceProviders:createProvider") {
-      return createProviderMock;
-    }
-    if (functionName === "serviceProviders:updateProvider") {
-      return updateProviderMock;
-    }
-    if (functionName === "serviceProviders:deleteProvider") {
-      return deleteProviderMock;
-    }
-    return vi.fn();
-  },
+vi.mock("@/lib/api/service-providers", () => ({
+  listServiceProviders: () => listServiceProvidersMock(),
+  createServiceProvider: vi.fn().mockResolvedValue(null),
+  updateServiceProvider: vi.fn().mockResolvedValue(null),
+  deleteServiceProvider: vi.fn().mockResolvedValue(null),
+}));
+
+vi.mock("@/lib/api/auth", () => ({
+  getCurrentUser: () => getCurrentUserMock(),
 }));
 
 vi.mock("@/components/services/services-nav-tabs", () => ({
   ServicesNavTabs: () => <div>NavTabs</div>,
 }));
 
+import { ServiceProvidersPageClient } from "@/components/services/service-providers-page-client";
+
+function renderWithClient(ui: React.ReactElement) {
+  const qc = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  return render(<QueryClientProvider client={qc}>{ui}</QueryClientProvider>);
+}
+
 describe("ServiceProvidersPageClient", () => {
   beforeEach(() => {
-    mockUseQuery.mockReset();
-    createProviderMock.mockClear();
-    updateProviderMock.mockClear();
-    deleteProviderMock.mockClear();
+    listServiceProvidersMock.mockReset();
+    getCurrentUserMock.mockReset();
+    getCurrentUserMock.mockResolvedValue({
+      id: "user1",
+      email: "a@x.com",
+      name: "Admin",
+      role: "admin",
+    });
   });
 
-  it("shows loading state when data is undefined", () => {
-    mockUseQuery.mockReturnValue(undefined);
+  it("shows loading state when data is pending", () => {
+    listServiceProvidersMock.mockImplementation(() => new Promise(() => {}));
 
-    render(<ServiceProvidersPageClient />);
+    renderWithClient(<ServiceProvidersPageClient />);
 
     expect(
       screen.getByText("Loading service providers..."),
     ).toBeInTheDocument();
   });
 
-  it("renders empty state when no providers exist", () => {
-    mockUseQuery.mockImplementation((reference: unknown) => {
-      const functionName = getFunctionName(reference as never);
-      if (functionName === "users:getCurrentUser") {
-        return { _id: "user1", role: "admin" };
-      }
-      if (functionName === "serviceProviders:listProviders") {
-        return [];
-      }
-      return undefined;
+  it("renders empty state when no providers exist", async () => {
+    listServiceProvidersMock.mockResolvedValue([]);
+
+    renderWithClient(<ServiceProvidersPageClient />);
+
+    await waitFor(() => {
+      expect(
+        screen.getByText("No service providers yet."),
+      ).toBeInTheDocument();
     });
-
-    render(<ServiceProvidersPageClient />);
-
-    expect(screen.getByText("No service providers yet.")).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: /Add provider/ }),
     ).toBeInTheDocument();
@@ -71,33 +70,25 @@ describe("ServiceProvidersPageClient", () => {
   it("renders provider list and opens create dialog for admins", async () => {
     const user = userEvent.setup();
 
-    mockUseQuery.mockImplementation((reference: unknown) => {
-      const functionName = getFunctionName(reference as never);
-      if (functionName === "users:getCurrentUser") {
-        return { _id: "user1", role: "admin" };
-      }
-      if (functionName === "serviceProviders:listProviders") {
-        return [
-          {
-            _id: "provider1" as never,
-            _creationTime: 1,
-            name: "Dockside Repair",
-            contactEmail: "dock@example.com",
-            contactPhone: null,
-            notes: null,
-            createdAt: 1,
-            updatedAt: 1,
-            createdBy: "user1" as never,
-            updatedBy: "user1" as never,
-          },
-        ];
-      }
-      return undefined;
+    listServiceProvidersMock.mockResolvedValue([
+      {
+        id: "provider1",
+        name: "Dockside Repair",
+        contactEmail: "dock@example.com",
+        contactPhone: null,
+        notes: null,
+        createdAt: 1,
+        updatedAt: 1,
+        createdBy: "user1",
+        updatedBy: "user1",
+      },
+    ]);
+
+    renderWithClient(<ServiceProvidersPageClient />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Dockside Repair")).toBeInTheDocument();
     });
-
-    render(<ServiceProvidersPageClient />);
-
-    expect(screen.getByText("Dockside Repair")).toBeInTheDocument();
     expect(screen.getByText("dock@example.com")).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: /Add provider/ }));

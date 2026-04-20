@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 
 type ServiceGroupEditorInitialValue = {
-  _id: string;
+  id: string;
   name: string;
   description: string | null;
 };

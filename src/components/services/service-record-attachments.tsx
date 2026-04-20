@@ -2,13 +2,16 @@
 
 import { useMemo, useRef, useState } from "react";
 import { Loader2, Paperclip, Trash2, Upload } from "lucide-react";
-import { useMutation, useQuery } from "convex/react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { api } from "@/lib/convex-api";
-import type { Id } from "@/lib/convex-api";
 import type { ServiceRecordAttachment } from "@/components/services/types";
 import { getConvexUiErrorMessage } from "@/components/crud/error-messages";
+import {
+  deleteServiceRecordAttachment,
+  listServiceRecordAttachments,
+  uploadServiceRecordAttachment,
+} from "@/lib/api/attachments";
 
 const MAX_FILE_SIZE_BYTES = 25 * 1024 * 1024;
 
@@ -48,54 +51,37 @@ function formatFileSize(size: number) {
   return `${Math.max(1, Math.round(size / 1024))} KB`;
 }
 
-async function uploadFile(uploadUrl: string, file: File) {
-  const response = await fetch(uploadUrl, {
-    method: "POST",
-    headers: {
-      "Content-Type": file.type || "application/octet-stream",
-    },
-    body: file,
-  });
-
-  if (!response.ok) {
-    throw new Error("Upload failed");
-  }
-
-  const payload = (await response.json()) as { storageId?: string };
-  if (!payload.storageId) {
-    throw new Error("Upload did not return a storage id");
-  }
-
-  return payload.storageId as Id<"_storage">;
-}
-
 export function ServiceRecordAttachments({
   serviceRecordId,
 }: {
-  serviceRecordId: Id<"serviceRecords">;
+  serviceRecordId: string;
 }) {
+  const queryClient = useQueryClient();
   const inputRef = useRef<HTMLInputElement | null>(null);
-  const rows = useQuery(api.serviceRecordAttachments.listAttachments, {
-    serviceRecordId,
+
+  const attachmentsQuery = useQuery({
+    queryKey: ["service-record-attachments", serviceRecordId],
+    queryFn: () => listServiceRecordAttachments(serviceRecordId),
   });
-  const generateUploadUrl = useMutation(
-    api.serviceRecordAttachments.generateUploadUrl,
-  );
-  const createAttachment = useMutation(
-    api.serviceRecordAttachments.createAttachment,
-  );
-  const deleteAttachment = useMutation(
-    api.serviceRecordAttachments.deleteAttachment,
-  );
+
+  const uploadMutation = useMutation({
+    mutationFn: (file: File) =>
+      uploadServiceRecordAttachment(serviceRecordId, file),
+  });
+  const deleteMutation = useMutation({
+    mutationFn: (attachmentId: string) =>
+      deleteServiceRecordAttachment(attachmentId),
+  });
 
   const attachments = useMemo(
-    () => (rows ?? []) as ServiceRecordAttachment[],
-    [rows],
+    () => (attachmentsQuery.data ?? []) as ServiceRecordAttachment[],
+    [attachmentsQuery.data],
   );
 
   const [uploading, setUploading] = useState(false);
-  const [deletingAttachmentId, setDeletingAttachmentId] =
-    useState<Id<"serviceRecordAttachments"> | null>(null);
+  const [deletingAttachmentId, setDeletingAttachmentId] = useState<
+    string | null
+  >(null);
 
   async function handleFiles(inputFiles: FileList | null) {
     if (!inputFiles || inputFiles.length === 0) {
@@ -118,21 +104,13 @@ export function ServiceRecordAttachments({
 
     setUploading(true);
     try {
-      await Promise.all(
-        files.map(async (file) => {
-          const { uploadUrl } = await generateUploadUrl({});
-          const storageId = await uploadFile(uploadUrl, file);
-          await createAttachment({
-            serviceRecordId,
-            storageId,
-            fileName: file.name,
-            fileType: file.type || null,
-          });
-        }),
-      );
+      await Promise.all(files.map((file) => uploadMutation.mutateAsync(file)));
       toast.success(
         files.length === 1 ? "Attachment uploaded" : "Attachments uploaded",
       );
+      void queryClient.invalidateQueries({
+        queryKey: ["service-record-attachments", serviceRecordId],
+      });
     } catch (error) {
       toast.error(
         getConvexUiErrorMessage(error, "Unable to upload attachment"),
@@ -172,7 +150,7 @@ export function ServiceRecordAttachments({
         Add attachment
       </Button>
 
-      {rows === undefined ? (
+      {attachmentsQuery.isPending ? (
         <div className="rounded-lg border border-border/60 bg-background p-4 text-sm text-muted-foreground">
           Loading attachments...
         </div>
@@ -184,7 +162,7 @@ export function ServiceRecordAttachments({
         <div className="space-y-2">
           {attachments.map((attachment) => (
             <div
-              key={attachment._id}
+              key={attachment.id}
               className="flex items-center justify-between gap-2 rounded-lg border border-border/70 bg-background px-3 py-2"
             >
               <div className="min-w-0">
@@ -215,12 +193,18 @@ export function ServiceRecordAttachments({
                   variant="ghost"
                   size="icon-sm"
                   className="cursor-pointer text-destructive"
-                  disabled={deletingAttachmentId === attachment._id}
+                  disabled={deletingAttachmentId === attachment.id}
                   onClick={async () => {
-                    setDeletingAttachmentId(attachment._id);
+                    setDeletingAttachmentId(attachment.id);
                     try {
-                      await deleteAttachment({ attachmentId: attachment._id });
+                      await deleteMutation.mutateAsync(attachment.id);
                       toast.success("Attachment deleted");
+                      void queryClient.invalidateQueries({
+                        queryKey: [
+                          "service-record-attachments",
+                          serviceRecordId,
+                        ],
+                      });
                     } catch (error) {
                       toast.error(
                         getConvexUiErrorMessage(
@@ -234,7 +218,7 @@ export function ServiceRecordAttachments({
                   }}
                   aria-label={`Delete ${attachment.fileName}`}
                 >
-                  {deletingAttachmentId === attachment._id ? (
+                  {deletingAttachmentId === attachment.id ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
                     <Trash2 className="h-4 w-4" />

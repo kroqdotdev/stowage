@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { Loader2, Paperclip, Wrench } from "lucide-react";
-import { useMutation, useQuery } from "convex/react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { getConvexUiErrorMessage } from "@/components/crud/error-messages";
 import { ServiceRecordAttachments } from "@/components/services/service-record-attachments";
@@ -22,20 +22,25 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import type { Id } from "@/lib/convex-api";
-import { api } from "@/lib/convex-api";
+import { listServiceProviderOptions } from "@/lib/api/service-providers";
+import {
+  completeScheduledService,
+  createServiceRecord,
+  getServiceRecordForm,
+  updateServiceRecord,
+} from "@/lib/api/service-records";
 import { useTodayIsoDate } from "@/lib/use-today-iso-date";
 
 type RecordValue = string | number | boolean | null;
 
 type ServiceRecordFormProps = {
-  assetId: Id<"assets">;
+  assetId: string;
   mode?: "create" | "edit" | "complete";
   record?: ServiceRecord | null;
-  scheduleId?: Id<"serviceSchedules"> | null;
+  scheduleId?: string | null;
   submitLabel?: string;
   onSubmitted?: (result: {
-    recordId: Id<"serviceRecords">;
+    recordId: string;
     nextServiceDate?: string | null;
   }) => void;
 };
@@ -92,23 +97,30 @@ export function ServiceRecordForm({
   onSubmitted,
 }: ServiceRecordFormProps) {
   const today = useTodayIsoDate();
-  const formDefinitionQuery = useQuery(
-    api.serviceRecords.getRecordFormDefinition,
-    {
-      assetId,
-      recordId: record?._id,
-    },
-  );
-  const providerOptionsQuery = useQuery(
-    api.serviceProviders.listProviderOptions,
-    {},
-  );
+  const queryClient = useQueryClient();
 
-  const createRecord = useMutation(api.serviceRecords.createRecord);
-  const updateRecord = useMutation(api.serviceRecords.updateRecord);
-  const completeScheduledService = useMutation(
-    api.serviceRecords.completeScheduledService,
-  );
+  const formDefinitionQuery = useQuery({
+    queryKey: ["service-records", "form", assetId, record?.id ?? null],
+    queryFn: () => getServiceRecordForm(assetId, record?.id),
+  });
+  const providerOptionsQuery = useQuery({
+    queryKey: ["service-providers", "options"],
+    queryFn: listServiceProviderOptions,
+  });
+
+  const createMutation = useMutation({ mutationFn: createServiceRecord });
+  const updateMutation = useMutation({
+    mutationFn: ({
+      recordId,
+      input,
+    }: {
+      recordId: string;
+      input: Parameters<typeof updateServiceRecord>[1];
+    }) => updateServiceRecord(recordId, input),
+  });
+  const completeMutation = useMutation({
+    mutationFn: completeScheduledService,
+  });
 
   const [serviceDate, setServiceDate] = useState(record?.serviceDate ?? today);
   const [description, setDescription] = useState(record?.description ?? "");
@@ -117,22 +129,22 @@ export function ServiceRecordForm({
       ? ""
       : String(record.cost),
   );
-  const [providerId, setProviderId] = useState<Id<"serviceProviders"> | null>(
+  const [providerId, setProviderId] = useState<string | null>(
     record?.providerId ?? null,
   );
   const [values, setValues] = useState<Record<string, RecordValue>>(
     buildInitialValues(record),
   );
-  const [submitting, setSubmitting] = useState(false);
-  const [currentRecordId, setCurrentRecordId] =
-    useState<Id<"serviceRecords"> | null>(record?._id ?? null);
+  const [currentRecordId, setCurrentRecordId] = useState<string | null>(
+    record?.id ?? null,
+  );
 
-  const formDefinition = formDefinitionQuery as
+  const formDefinition = formDefinitionQuery.data as
     | ServiceRecordFormDefinition
     | undefined;
   const providerOptions = useMemo(
-    () => (providerOptionsQuery ?? []) as ServiceProviderOption[],
-    [providerOptionsQuery],
+    () => (providerOptionsQuery.data ?? []) as ServiceProviderOption[],
+    [providerOptionsQuery.data],
   );
 
   const cost = useMemo(() => {
@@ -142,6 +154,11 @@ export function ServiceRecordForm({
     const parsed = Number(costInput);
     return Number.isFinite(parsed) ? parsed : Number.NaN;
   }, [costInput]);
+
+  const submitting =
+    createMutation.isPending ||
+    updateMutation.isPending ||
+    completeMutation.isPending;
 
   const isSaved = currentRecordId !== null && mode !== "edit";
   const effectiveSubmitLabel =
@@ -169,7 +186,7 @@ export function ServiceRecordForm({
       if (!field.required) {
         return true;
       }
-      return isFieldValid(field, values[field._id]);
+      return isFieldValid(field, values[field.id]);
     });
   }, [
     cost,
@@ -187,24 +204,28 @@ export function ServiceRecordForm({
       return;
     }
 
-    setSubmitting(true);
     try {
       if (mode === "edit" && record) {
-        await updateRecord({
-          recordId: record._id,
-          serviceDate,
-          description,
-          cost,
-          providerId,
-          values,
+        await updateMutation.mutateAsync({
+          recordId: record.id,
+          input: {
+            serviceDate,
+            description,
+            cost,
+            providerId,
+            values,
+          },
         });
         toast.success("Service record updated");
-        onSubmitted?.({ recordId: record._id, nextServiceDate: null });
+        onSubmitted?.({ recordId: record.id, nextServiceDate: null });
+        void queryClient.invalidateQueries({
+          queryKey: ["service-records", "by-asset", assetId],
+        });
         return;
       }
 
       if (mode === "complete" && scheduleId) {
-        const result = await completeScheduledService({
+        const result = await completeMutation.mutateAsync({
           scheduleId,
           serviceDate,
           description,
@@ -215,10 +236,16 @@ export function ServiceRecordForm({
         setCurrentRecordId(result.recordId);
         toast.success("Service completed");
         onSubmitted?.(result);
+        void queryClient.invalidateQueries({
+          queryKey: ["service-records", "by-asset", assetId],
+        });
+        void queryClient.invalidateQueries({
+          queryKey: ["service-schedules"],
+        });
         return;
       }
 
-      const result = await createRecord({
+      const result = await createMutation.mutateAsync({
         assetId,
         serviceDate,
         description,
@@ -229,16 +256,17 @@ export function ServiceRecordForm({
       setCurrentRecordId(result.recordId);
       toast.success("Service record logged");
       onSubmitted?.({ recordId: result.recordId, nextServiceDate: null });
+      void queryClient.invalidateQueries({
+        queryKey: ["service-records", "by-asset", assetId],
+      });
     } catch (error) {
       toast.error(
         getConvexUiErrorMessage(error, "Unable to save service record"),
       );
-    } finally {
-      setSubmitting(false);
     }
   }
 
-  if (formDefinitionQuery === undefined || providerOptionsQuery === undefined) {
+  if (formDefinitionQuery.isPending || providerOptionsQuery.isPending) {
     return (
       <div className="rounded-lg border border-border/60 bg-background p-4 text-sm text-muted-foreground">
         Loading service record form...
@@ -311,11 +339,7 @@ export function ServiceRecordForm({
             <Select
               value={providerId ?? "__none__"}
               onValueChange={(value) =>
-                setProviderId(
-                  value === "__none__"
-                    ? null
-                    : (value as Id<"serviceProviders">),
-                )
+                setProviderId(value === "__none__" ? null : value)
               }
               disabled={isSaved || submitting}
             >
@@ -325,7 +349,7 @@ export function ServiceRecordForm({
               <SelectContent>
                 <SelectItem value="__none__">No provider</SelectItem>
                 {providerOptions.map((provider) => (
-                  <SelectItem key={provider._id} value={provider._id}>
+                  <SelectItem key={provider.id} value={provider.id}>
                     {provider.name}
                   </SelectItem>
                 ))}
@@ -375,15 +399,15 @@ export function ServiceRecordForm({
             </div>
 
             {formDefinition.fields.map((field) => {
-              const value = values[field._id];
-              const fieldInputId = `service-record-field-${field._id}`;
+              const value = values[field.id];
+              const fieldInputId = `service-record-field-${field.id}`;
               const requiredMarker = field.required ? (
                 <span className="ml-1 text-destructive">*</span>
               ) : null;
 
               if (field.fieldType === "textarea") {
                 return (
-                  <div key={field._id} className="space-y-1.5">
+                  <div key={field.id} className="space-y-1.5">
                     <label
                       htmlFor={fieldInputId}
                       className="text-sm font-medium"
@@ -397,7 +421,7 @@ export function ServiceRecordForm({
                       onChange={(event) =>
                         setValues((prev) => ({
                           ...prev,
-                          [field._id]: event.target.value,
+                          [field.id]: event.target.value,
                         }))
                       }
                       className="min-h-24"
@@ -409,7 +433,7 @@ export function ServiceRecordForm({
 
               if (field.fieldType === "number") {
                 return (
-                  <div key={field._id} className="space-y-1.5">
+                  <div key={field.id} className="space-y-1.5">
                     <label
                       htmlFor={fieldInputId}
                       className="text-sm font-medium"
@@ -425,7 +449,7 @@ export function ServiceRecordForm({
                         const parsed = Number(event.target.value);
                         setValues((prev) => ({
                           ...prev,
-                          [field._id]:
+                          [field.id]:
                             event.target.value.trim() === ""
                               ? null
                               : Number.isFinite(parsed)
@@ -441,7 +465,7 @@ export function ServiceRecordForm({
 
               if (field.fieldType === "date") {
                 return (
-                  <div key={field._id} className="space-y-1.5">
+                  <div key={field.id} className="space-y-1.5">
                     <label
                       htmlFor={fieldInputId}
                       className="text-sm font-medium"
@@ -456,7 +480,7 @@ export function ServiceRecordForm({
                       onChange={(event) =>
                         setValues((prev) => ({
                           ...prev,
-                          [field._id]: event.target.value,
+                          [field.id]: event.target.value,
                         }))
                       }
                       disabled={isSaved || submitting}
@@ -467,7 +491,7 @@ export function ServiceRecordForm({
 
               if (field.fieldType === "checkbox") {
                 return (
-                  <div key={field._id} className="flex items-center gap-2">
+                  <div key={field.id} className="flex items-center gap-2">
                     <input
                       id={fieldInputId}
                       type="checkbox"
@@ -476,7 +500,7 @@ export function ServiceRecordForm({
                       onChange={(event) =>
                         setValues((prev) => ({
                           ...prev,
-                          [field._id]: event.target.checked,
+                          [field.id]: event.target.checked,
                         }))
                       }
                       disabled={isSaved || submitting}
@@ -494,7 +518,7 @@ export function ServiceRecordForm({
 
               if (field.fieldType === "select") {
                 return (
-                  <div key={field._id} className="space-y-1.5">
+                  <div key={field.id} className="space-y-1.5">
                     <label
                       htmlFor={fieldInputId}
                       className="text-sm font-medium"
@@ -507,7 +531,7 @@ export function ServiceRecordForm({
                       onValueChange={(nextValue) =>
                         setValues((prev) => ({
                           ...prev,
-                          [field._id]:
+                          [field.id]:
                             nextValue === "__empty__" ? null : nextValue,
                         }))
                       }
@@ -530,7 +554,7 @@ export function ServiceRecordForm({
               }
 
               return (
-                <div key={field._id} className="space-y-1.5">
+                <div key={field.id} className="space-y-1.5">
                   <label htmlFor={fieldInputId} className="text-sm font-medium">
                     {field.label}
                     {requiredMarker}
@@ -541,7 +565,7 @@ export function ServiceRecordForm({
                     onChange={(event) =>
                       setValues((prev) => ({
                         ...prev,
-                        [field._id]: event.target.value,
+                        [field.id]: event.target.value,
                       }))
                     }
                     disabled={isSaved || submitting}

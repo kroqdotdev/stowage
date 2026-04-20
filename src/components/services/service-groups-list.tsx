@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
-import { useMutation, useQuery } from "convex/react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/crud/confirm-dialog";
 import { getConvexUiErrorMessage } from "@/components/crud/error-messages";
@@ -11,65 +11,93 @@ import { ServiceGroupEditor } from "@/components/services/service-group-editor";
 import type { ServiceGroupSummary } from "@/components/services/types";
 import { ServicesNavTabs } from "@/components/services/services-nav-tabs";
 import { Button } from "@/components/ui/button";
-import { api } from "@/lib/convex-api";
-import { getConvexErrorCode } from "@/lib/convex-errors";
+import { useCurrentUser } from "@/hooks/use-current-user";
+import { ApiRequestError } from "@/lib/api-client";
+import {
+  createServiceGroup,
+  deleteServiceGroup,
+  listServiceGroups,
+  updateServiceGroup,
+} from "@/lib/api/service-groups";
 
 function mapGroupError(error: unknown, fallback: string) {
-  const code = getConvexErrorCode(error);
-  if (code === "GROUP_IN_USE") {
-    return "This service group is in use and cannot be deleted.";
-  }
-  if (code === "FORBIDDEN") {
-    return "Only admins can manage service groups.";
+  if (error instanceof ApiRequestError) {
+    if (error.status === 403) {
+      return "Only admins can manage service groups.";
+    }
+    if (error.status === 409) {
+      return "This service group is in use and cannot be deleted.";
+    }
+    return error.message || fallback;
   }
   return getConvexUiErrorMessage(error, fallback);
 }
 
 export function ServiceGroupsList() {
-  const currentUser = useQuery(api.users.getCurrentUser, {});
-  const groups = useQuery(api.serviceGroups.listGroups, {});
-  const createGroup = useMutation(api.serviceGroups.createGroup);
-  const updateGroup = useMutation(api.serviceGroups.updateGroup);
-  const deleteGroup = useMutation(api.serviceGroups.deleteGroup);
+  const queryClient = useQueryClient();
+  const { data: currentUser } = useCurrentUser();
+  const groupsQuery = useQuery({
+    queryKey: ["service-groups"],
+    queryFn: listServiceGroups,
+  });
+
+  const createMutation = useMutation({
+    mutationFn: createServiceGroup,
+  });
+  const updateMutation = useMutation({
+    mutationFn: ({
+      groupId,
+      input,
+    }: {
+      groupId: string;
+      input: { name: string; description?: string | null };
+    }) => updateServiceGroup(groupId, input),
+  });
+  const deleteMutation = useMutation({
+    mutationFn: (groupId: string) => deleteServiceGroup(groupId),
+  });
 
   const canManage = currentUser?.role === "admin";
-  const rows = useMemo(() => (groups ?? []) as ServiceGroupSummary[], [groups]);
+  const rows = useMemo(
+    () => (groupsQuery.data ?? []) as ServiceGroupSummary[],
+    [groupsQuery.data],
+  );
 
   const [editorOpen, setEditorOpen] = useState(false);
   const [editorMode, setEditorMode] = useState<"create" | "edit">("create");
   const [activeGroup, setActiveGroup] = useState<{
-    _id: string;
+    id: string;
     name: string;
     description: string | null;
   } | null>(null);
-  const [submitting, setSubmitting] = useState(false);
   const [deleteGroupId, setDeleteGroupId] = useState<string | null>(null);
-  const [deleting, setDeleting] = useState(false);
 
   const activeDeleteGroup =
     deleteGroupId === null
       ? null
-      : (rows.find((row) => row._id === deleteGroupId) ?? null);
+      : (rows.find((row) => row.id === deleteGroupId) ?? null);
 
   async function handleSave(values: { name: string; description: string }) {
-    setSubmitting(true);
     try {
       if (editorMode === "create") {
-        await createGroup({
+        await createMutation.mutateAsync({
           name: values.name,
           description: values.description.trim() ? values.description : null,
         });
         toast.success("Service group created");
       } else if (activeGroup) {
-        await updateGroup({
-          groupId: activeGroup._id as never,
-          name: values.name,
-          description: values.description.trim() ? values.description : null,
+        await updateMutation.mutateAsync({
+          groupId: activeGroup.id,
+          input: {
+            name: values.name,
+            description: values.description.trim() ? values.description : null,
+          },
         });
         toast.success("Service group updated");
       }
       setEditorOpen(false);
       setActiveGroup(null);
+      void queryClient.invalidateQueries({ queryKey: ["service-groups"] });
     } catch (error) {
       toast.error(
         mapGroupError(
@@ -79,8 +107,6 @@ export function ServiceGroupsList() {
             : "Unable to update service group",
         ),
       );
-    } finally {
-      setSubmitting(false);
     }
   }
 
@@ -89,17 +115,17 @@ export function ServiceGroupsList() {
       return;
     }
 
-    setDeleting(true);
     try {
-      await deleteGroup({ groupId: deleteGroupId as never });
+      await deleteMutation.mutateAsync(deleteGroupId);
       toast.success("Service group deleted");
       setDeleteGroupId(null);
+      void queryClient.invalidateQueries({ queryKey: ["service-groups"] });
     } catch (error) {
       toast.error(mapGroupError(error, "Unable to delete service group"));
-    } finally {
-      setDeleting(false);
     }
   }
+
+  const submitting = createMutation.isPending || updateMutation.isPending;
 
   return (
     <div className="space-y-4">
@@ -144,7 +170,7 @@ export function ServiceGroupsList() {
               </tr>
             </thead>
             <tbody>
-              {groups === undefined ? (
+              {groupsQuery.isPending ? (
                 <tr>
                   <td
                     colSpan={5}
@@ -164,10 +190,10 @@ export function ServiceGroupsList() {
                 </tr>
               ) : (
                 rows.map((group) => (
-                  <tr key={group._id} className="border-t border-border/50">
+                  <tr key={group.id} className="border-t border-border/50">
                     <td className="px-3 py-2 font-medium">
                       <Link
-                        href={`/services/groups/${group._id}`}
+                        href={`/services/groups/${group.id}`}
                         className="underline-offset-2 hover:underline"
                       >
                         {group.name}
@@ -186,7 +212,7 @@ export function ServiceGroupsList() {
                           size="sm"
                           className="cursor-pointer"
                         >
-                          <Link href={`/services/groups/${group._id}`}>
+                          <Link href={`/services/groups/${group.id}`}>
                             Open
                           </Link>
                         </Button>
@@ -210,7 +236,7 @@ export function ServiceGroupsList() {
                               variant="ghost"
                               size="icon-sm"
                               className="cursor-pointer text-destructive"
-                              onClick={() => setDeleteGroupId(group._id)}
+                              onClick={() => setDeleteGroupId(group.id)}
                               aria-label={`Delete ${group.name}`}
                             >
                               <Trash2 className="h-4 w-4" />
@@ -228,7 +254,7 @@ export function ServiceGroupsList() {
       </section>
 
       <ServiceGroupEditor
-        key={`${editorMode}-${activeGroup?._id ?? "new"}-${editorOpen ? "open" : "closed"}`}
+        key={`${editorMode}-${activeGroup?.id ?? "new"}-${editorOpen ? "open" : "closed"}`}
         open={editorOpen}
         mode={editorMode}
         initialGroup={activeGroup}
@@ -245,12 +271,12 @@ export function ServiceGroupsList() {
         title="Delete service group"
         description={`Delete ${activeDeleteGroup?.name ?? "this group"}?`}
         confirmLabel="Delete group"
-        busy={deleting}
+        busy={deleteMutation.isPending}
         onConfirm={() => {
           void handleDelete();
         }}
         onClose={() => {
-          if (!deleting) {
+          if (!deleteMutation.isPending) {
             setDeleteGroupId(null);
           }
         }}

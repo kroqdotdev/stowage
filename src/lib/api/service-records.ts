@@ -17,6 +17,8 @@ export type ServiceRecordForm = {
   assetTag: string;
   serviceGroupId: string | null;
   serviceGroupName: string | null;
+  scheduleId: string | null;
+  nextServiceDate: string | null;
   fields: ServiceRecordFieldDefinition[];
 };
 
@@ -27,19 +29,20 @@ export type ServiceRecord = {
   serviceGroupName: string | null;
   scheduleId: string | null;
   scheduledForDate: string | null;
-  serviceDate: string | null;
-  description: string | null;
+  serviceDate: string;
+  description: string;
   cost: number | null;
   providerId: string | null;
   providerName: string | null;
   completedBy: string;
+  completedByName: string;
   completedAt: number;
   createdAt: number;
   updatedAt: number;
+  values: Record<string, ServiceRecordValue>;
   valueEntries: Array<{
     fieldId: string;
     label: string;
-    fieldType: string;
     value: ServiceRecordValue;
   }>;
 };
@@ -72,9 +75,11 @@ type CompleteInput = {
 
 export async function getServiceRecordForm(
   assetId: string,
+  recordId?: string,
 ): Promise<ServiceRecordForm> {
+  const qs = recordId ? `?recordId=${encodeURIComponent(recordId)}` : "";
   const { form } = await apiFetch<{ form: ServiceRecordForm }>(
-    `/api/service-records/form/${assetId}`,
+    `/api/service-records/form/${assetId}${qs}`,
   );
   return form;
 }

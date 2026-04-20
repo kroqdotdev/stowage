@@ -90,6 +90,22 @@ export async function deleteServiceGroup(groupId: string): Promise<void> {
   await apiFetch(`/api/service-groups/${groupId}`, { method: "DELETE" });
 }
 
+export type GroupAsset = {
+  id: string;
+  name: string;
+  assetTag: string;
+  status: "active" | "in_storage" | "under_repair" | "retired" | "disposed";
+};
+
+export async function listServiceGroupAssets(
+  groupId: string,
+): Promise<GroupAsset[]> {
+  const { assets } = await apiFetch<{ assets: GroupAsset[] }>(
+    `/api/service-groups/${groupId}/assets`,
+  );
+  return assets;
+}
+
 export async function listServiceGroupFields(
   groupId: string,
 ): Promise<ServiceGroupField[]> {

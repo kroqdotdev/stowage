@@ -52,7 +52,7 @@ describe("ServiceGroupEditor", () => {
         open
         mode="edit"
         initialGroup={{
-          _id: "group1",
+          id: "group1",
           name: "Engine checks",
           description: "Quarterly",
         }}

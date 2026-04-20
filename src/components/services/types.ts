@@ -1,5 +1,3 @@
-import type { Id } from "@/lib/convex-api";
-
 export const SERVICE_GROUP_FIELD_TYPE_OPTIONS = [
   "text",
   "textarea",
@@ -13,8 +11,7 @@ export type ServiceGroupFieldType =
   (typeof SERVICE_GROUP_FIELD_TYPE_OPTIONS)[number];
 
 export type ServiceGroupSummary = {
-  _id: Id<"serviceGroups">;
-  _creationTime: number;
+  id: string;
   name: string;
   description: string | null;
   createdAt: number;
@@ -24,20 +21,18 @@ export type ServiceGroupSummary = {
 };
 
 export type ServiceGroup = {
-  _id: Id<"serviceGroups">;
-  _creationTime: number;
+  id: string;
   name: string;
   description: string | null;
   createdAt: number;
   updatedAt: number;
-  createdBy: Id<"users">;
-  updatedBy: Id<"users">;
+  createdBy: string;
+  updatedBy: string;
 };
 
 export type ServiceGroupField = {
-  _id: Id<"serviceGroupFields">;
-  _creationTime: number;
-  groupId: Id<"serviceGroups">;
+  id: string;
+  groupId: string;
   label: string;
   fieldType: ServiceGroupFieldType;
   required: boolean;
@@ -45,45 +40,44 @@ export type ServiceGroupField = {
   sortOrder: number;
   createdAt: number;
   updatedAt: number;
-  createdBy: Id<"users">;
-  updatedBy: Id<"users">;
+  createdBy: string;
+  updatedBy: string;
 };
 
 export type ServiceGroupAsset = {
-  _id: Id<"assets">;
+  id: string;
   name: string;
   assetTag: string;
   status: "active" | "in_storage" | "under_repair" | "retired" | "disposed";
 };
 
 export type ServiceProvider = {
-  _id: Id<"serviceProviders">;
-  _creationTime: number;
+  id: string;
   name: string;
   contactEmail: string | null;
   contactPhone: string | null;
   notes: string | null;
   createdAt: number;
   updatedAt: number;
-  createdBy: Id<"users">;
-  updatedBy: Id<"users">;
+  createdBy: string;
+  updatedBy: string;
 };
 
 export type ServiceProviderOption = {
-  _id: Id<"serviceProviders">;
+  id: string;
   name: string;
 };
 
 export type ServiceRecordFormDefinition = {
-  assetId: Id<"assets">;
+  assetId: string;
   assetName: string;
   assetTag: string;
-  serviceGroupId: Id<"serviceGroups"> | null;
+  serviceGroupId: string | null;
   serviceGroupName: string | null;
-  scheduleId: Id<"serviceSchedules"> | null;
+  scheduleId: string | null;
   nextServiceDate: string | null;
   fields: {
-    _id: string;
+    id: string;
     label: string;
     fieldType: ServiceGroupFieldType;
     required: boolean;
@@ -93,10 +87,9 @@ export type ServiceRecordFormDefinition = {
 };
 
 export type ServiceRecord = {
-  _id: Id<"serviceRecords">;
-  _creationTime: number;
-  assetId: Id<"assets">;
-  serviceGroupId: Id<"serviceGroups"> | null;
+  id: string;
+  assetId: string;
+  serviceGroupId: string | null;
   serviceGroupName: string | null;
   values: Record<string, string | number | boolean | null>;
   valueEntries: {
@@ -104,23 +97,23 @@ export type ServiceRecord = {
     label: string;
     value: string | number | boolean | null;
   }[];
-  scheduleId: Id<"serviceSchedules"> | null;
+  scheduleId: string | null;
   scheduledForDate: string | null;
   serviceDate: string;
   description: string;
   cost: number | null;
-  providerId: Id<"serviceProviders"> | null;
+  providerId: string | null;
   providerName: string | null;
   completedAt: number;
-  completedBy: Id<"users">;
+  completedBy: string;
   completedByName: string;
   createdAt: number;
   updatedAt: number;
 };
 
 export type ScheduledServiceItem = {
-  scheduleId: Id<"serviceSchedules">;
-  assetId: Id<"assets">;
+  scheduleId: string;
+  assetId: string;
   assetName: string;
   assetTag: string;
   assetStatus:
@@ -141,15 +134,14 @@ export type ScheduledServiceItem = {
 };
 
 export type ServiceRecordAttachment = {
-  _id: Id<"serviceRecordAttachments">;
-  _creationTime: number;
-  serviceRecordId: Id<"serviceRecords">;
+  id: string;
+  serviceRecordId: string;
   fileName: string;
   fileType: string;
   fileExtension: string;
   fileKind: "image" | "pdf" | "office";
   fileSize: number;
-  uploadedBy: Id<"users">;
+  uploadedBy: string;
   uploadedAt: number;
   updatedAt: number;
   url: string | null;

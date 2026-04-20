@@ -1,11 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useQuery } from "convex/react";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { LogServiceDialog } from "@/components/services/log-service-dialog";
 import type { ScheduledServiceItem } from "@/components/services/types";
-import { api } from "@/lib/convex-api";
+import { listCalendarMonth } from "@/lib/api/service-schedules";
 import { useTodayIsoDate } from "@/lib/use-today-iso-date";
 
 type MonthState = {
@@ -72,12 +72,15 @@ function monthLabel({ year, month }: MonthState) {
 export function ServicesCalendarMonth() {
   const [state, setState] = useState<MonthState>(getInitialMonthState);
   const [activeTarget, setActiveTarget] = useState<ActiveTarget | null>(null);
-  const rows = useQuery(api.serviceSchedules.listCalendarMonth, {
-    year: state.year,
-    month: state.month,
+  const rowsQuery = useQuery({
+    queryKey: ["service-schedules", "calendar", state.year, state.month],
+    queryFn: () => listCalendarMonth(state.year, state.month),
   });
 
-  const items = useMemo(() => (rows ?? []) as ScheduledServiceItem[], [rows]);
+  const items = useMemo(
+    () => (rowsQuery.data ?? []) as ScheduledServiceItem[],
+    [rowsQuery.data],
+  );
   const rowsByDate = useMemo(() => {
     const map = new Map<string, ScheduledServiceItem[]>();
     for (const row of items) {
@@ -125,7 +128,7 @@ export function ServicesCalendarMonth() {
         ))}
       </div>
 
-      {rows === undefined ? (
+      {rowsQuery.isPending ? (
         <div className="rounded-xl border border-border/70 bg-background p-5 text-sm text-muted-foreground">
           Loading calendar...
         </div>
