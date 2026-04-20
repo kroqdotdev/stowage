@@ -33,8 +33,7 @@ describe("AssetForm", () => {
         tags={[]}
         fieldDefinitions={[
           {
-            _id: "field1" as never,
-            _creationTime: 1,
+            id: "field1" as never,
             name: "Serial",
             fieldType: "text",
             options: [],

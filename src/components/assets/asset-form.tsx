@@ -106,7 +106,7 @@ export function AssetForm({
     () =>
       new Map(
         fieldDefinitions.map((definition) => [
-          definition._id as string,
+          definition.id as string,
           definition,
         ]),
       ),
@@ -164,7 +164,7 @@ export function AssetForm({
         continue;
       }
 
-      const fieldId = definition._id as string;
+      const fieldId = definition.id as string;
       const value = values.customFieldValues[fieldId];
 
       if (definition.fieldType === "checkbox") {
@@ -379,10 +379,10 @@ export function AssetForm({
         ) : (
           <div className="grid gap-4 lg:grid-cols-2">
             {fieldDefinitions.map((definition) => {
-              const fieldId = definition._id as string;
+              const fieldId = definition.id as string;
 
               return (
-                <div key={definition._id} className="space-y-1">
+                <div key={definition.id} className="space-y-1">
                   <DynamicField
                     definition={definition}
                     value={values.customFieldValues[fieldId] ?? null}

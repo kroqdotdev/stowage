@@ -73,8 +73,7 @@ const baseAsset: AssetDetailType = {
 
 const fieldDefinitions: FieldDefinition[] = [
   {
-    _id: "field1" as never,
-    _creationTime: 1,
+    id: "field1",
     name: "Serial Number",
     fieldType: "text",
     options: [],

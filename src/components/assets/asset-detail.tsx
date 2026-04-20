@@ -210,7 +210,7 @@ export function AssetDetail({
                   <div className="grid gap-3 md:grid-cols-2">
                     {orderedFieldDefinitions.map((definition) => (
                       <div
-                        key={definition._id}
+                        key={definition.id}
                         className="rounded-lg border border-border/60 p-3"
                       >
                         <p className="text-xs uppercase tracking-wide text-muted-foreground">
@@ -221,7 +221,7 @@ export function AssetDetail({
                             definition={definition}
                             value={
                               asset.customFieldValues[
-                                definition._id as string
+                                definition.id as string
                               ] ?? null
                             }
                             dateFormat={dateFormat}

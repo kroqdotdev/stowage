@@ -402,7 +402,7 @@ export function ElementProperties({
                   </SelectTrigger>
                   <SelectContent>
                     {fieldDefinitions.map((field) => (
-                      <SelectItem key={field._id} value={field._id}>
+                      <SelectItem key={field.id} value={field.id}>
                         {field.name}
                       </SelectItem>
                     ))}

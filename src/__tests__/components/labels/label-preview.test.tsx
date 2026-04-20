@@ -84,8 +84,7 @@ describe("LabelPreview", () => {
         origin="https://stowage.test"
         fieldDefinitions={[
           {
-            _id: "field-1" as never,
-            _creationTime: 1,
+            id: "field-1" as never,
             name: "Bin",
             fieldType: "text",
             options: [],

@@ -67,7 +67,7 @@ export function LabelsPageClient() {
   const templates = templatesQuery as LabelTemplate[];
   const labelUrlBase = (labelUrlBaseQuery ?? null) as string | null;
   const sampleAsset = (sampleAssetQuery ?? null) as LabelPreviewAsset | null;
-  const fieldDefinitions = fieldDefinitionsQuery as FieldDefinition[];
+  const fieldDefinitions = fieldDefinitionsQuery as unknown as FieldDefinition[];
 
   return (
     <TemplateDesigner

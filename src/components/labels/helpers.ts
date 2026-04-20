@@ -237,7 +237,7 @@ export function resolveLabelElementText({
         return `${value}`;
       }
       const definition = fieldDefinitions?.find(
-        (field) => String(field._id) === fieldKey,
+        (field) => String(field.id) === fieldKey,
       );
       return definition?.name ?? "Custom field";
     }
@@ -255,7 +255,7 @@ export function getLabelElementAriaLabel(
   }
 
   const definition = fieldDefinitions?.find(
-    (field) => String(field._id) === String(element.fieldId ?? ""),
+    (field) => String(field.id) === String(element.fieldId ?? ""),
   );
   return definition ? `Custom field: ${definition.name}` : "Custom field";
 }

@@ -135,7 +135,7 @@ export function LabelPrintPageClient() {
     [defaultTemplateQuery],
   );
   const fieldDefinitions = useMemo(
-    () => (fieldDefinitionsQuery ?? []) as FieldDefinition[],
+    () => (fieldDefinitionsQuery ?? []) as unknown as FieldDefinition[],
     [fieldDefinitionsQuery],
   );
   const labelUrlBase = useMemo(

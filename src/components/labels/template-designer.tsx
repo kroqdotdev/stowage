@@ -222,7 +222,7 @@ export function TemplateDesigner({
       type,
       index: draft.elements.length,
       template: draft,
-      fieldId: fieldDefinitions[0]?._id ?? null,
+      fieldId: (fieldDefinitions[0]?.id ?? null) as never,
     });
 
     applyDraft({
