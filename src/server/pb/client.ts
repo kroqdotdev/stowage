@@ -2,15 +2,27 @@ import "server-only";
 
 import PocketBase from "pocketbase";
 
-const url = process.env.POCKETBASE_URL ?? "http://127.0.0.1:8090";
-const email = process.env.POCKETBASE_SUPERUSER_EMAIL;
-const password = process.env.POCKETBASE_SUPERUSER_PASSWORD;
-
-let cached: PocketBase | null = null;
+let cached: { pb: PocketBase; email: string; url: string } | null = null;
 let pending: Promise<PocketBase> | null = null;
 
+function readEnv() {
+  return {
+    url: process.env.POCKETBASE_URL ?? "http://127.0.0.1:8090",
+    email: process.env.POCKETBASE_SUPERUSER_EMAIL,
+    password: process.env.POCKETBASE_SUPERUSER_PASSWORD,
+  };
+}
+
 export async function getPbAdmin(): Promise<PocketBase> {
-  if (cached && cached.authStore.isValid) return cached;
+  const { url, email, password } = readEnv();
+  if (
+    cached &&
+    cached.pb.authStore.isValid &&
+    cached.url === url &&
+    cached.email === email
+  ) {
+    return cached.pb;
+  }
   if (pending) return pending;
 
   if (!email || !password) {
@@ -23,7 +35,7 @@ export async function getPbAdmin(): Promise<PocketBase> {
     const pb = new PocketBase(url);
     pb.autoCancellation(false);
     await pb.collection("_superusers").authWithPassword(email, password);
-    cached = pb;
+    cached = { pb, email, url };
     return pb;
   })();
 
@@ -35,5 +47,5 @@ export async function getPbAdmin(): Promise<PocketBase> {
 }
 
 export function getPbUrl() {
-  return url;
+  return readEnv().url;
 }
