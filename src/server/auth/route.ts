@@ -13,6 +13,10 @@ import {
   type SessionUser,
 } from "./session";
 
+export type RouteContext<P extends Record<string, string> = Record<string, string>> = {
+  params: Promise<P>;
+};
+
 export function getRequestToken(req: NextRequest): string | null {
   return req.cookies.get(PB_AUTH_COOKIE)?.value ?? null;
 }
@@ -46,16 +50,34 @@ export function handleRouteError(
   );
 }
 
-type Handler<R> = (
+type SessionHandler<R, P extends Record<string, string>> = (
   req: NextRequest,
   session: RequestSession,
+  routeCtx: RouteContext<P>,
 ) => Promise<R | NextResponse>;
 
-export function withSession<R>(context: string, handler: Handler<R>) {
-  return async (req: NextRequest): Promise<NextResponse> => {
+type UserHandler<R, P extends Record<string, string>> = (
+  req: NextRequest,
+  session: RequestSession,
+  user: SessionUser,
+  routeCtx: RouteContext<P>,
+) => Promise<R | NextResponse>;
+
+export function withSession<R, P extends Record<string, string> = Record<string, never>>(
+  context: string,
+  handler: SessionHandler<R, P>,
+) {
+  return async (
+    req: NextRequest,
+    routeCtx?: RouteContext<P>,
+  ): Promise<NextResponse> => {
     try {
       const session = await getRequestSession(req);
-      const result = await handler(req, session);
+      const result = await handler(
+        req,
+        session,
+        routeCtx ?? { params: Promise.resolve({} as P) },
+      );
       if (result instanceof NextResponse) return result;
       return NextResponse.json(result);
     } catch (error) {
@@ -64,31 +86,23 @@ export function withSession<R>(context: string, handler: Handler<R>) {
   };
 }
 
-export function withUser<R>(
+export function withUser<R, P extends Record<string, string> = Record<string, never>>(
   context: string,
-  handler: (
-    req: NextRequest,
-    session: RequestSession,
-    user: SessionUser,
-  ) => Promise<R | NextResponse>,
+  handler: UserHandler<R, P>,
 ) {
-  return withSession(context, async (req, session) => {
+  return withSession<R, P>(context, async (req, session, routeCtx) => {
     const user = requireUser(session);
-    return handler(req, session, user);
+    return handler(req, session, user, routeCtx);
   });
 }
 
-export function withAdmin<R>(
+export function withAdmin<R, P extends Record<string, string> = Record<string, never>>(
   context: string,
-  handler: (
-    req: NextRequest,
-    session: RequestSession,
-    user: SessionUser,
-  ) => Promise<R | NextResponse>,
+  handler: UserHandler<R, P>,
 ) {
-  return withSession(context, async (req, session) => {
+  return withSession<R, P>(context, async (req, session, routeCtx) => {
     const user = requireAdmin(session);
-    return handler(req, session, user);
+    return handler(req, session, user, routeCtx);
   });
 }
 
