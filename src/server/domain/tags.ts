@@ -59,9 +59,9 @@ function isDuplicateNameError(error: unknown) {
 }
 
 export async function listTags(ctx: Ctx): Promise<TagView[]> {
-  // Match Convex's localeCompare(..., { sensitivity: "base" }) — PB's SQL sort
-  // is lexicographic (uppercase before lowercase), which produces the wrong
-  // order for mixed-case names.
+  // PB's SQL sort is lexicographic (uppercase before lowercase), so mixed-case
+  // names would come back in the wrong order. Sort in JS with
+  // localeCompare(..., { sensitivity: "base" }) instead.
   const records = await ctx.pb
     .collection("tags")
     .getFullList<TagRecord>();

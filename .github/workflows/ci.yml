@@ -37,7 +37,7 @@ jobs:
       - name: Typecheck
         run: pnpm typecheck
 
-      - name: Vitest (jsdom + convex-test)
+      - name: Vitest (jsdom components)
         run: pnpm test
 
       - name: Download PocketBase binary

@@ -48,10 +48,10 @@ function getMatchScore(asset: AssetRow, needle: string) {
 }
 
 /**
- * Lightweight weighted search matching the Convex implementation. The FTS5
- * virtual table on the assets collection is available for a future upgrade to
- * bm25-style ranking once we need it; at current data volumes the scan is
- * cheap enough and the scoring rules are easier to tweak in TypeScript.
+ * Lightweight weighted search. The FTS5 virtual table on the assets collection
+ * is available for a future upgrade to bm25-style ranking once we need it; at
+ * current data volumes the scan is cheap enough and the scoring rules are
+ * easier to tweak in TypeScript.
  */
 export async function searchAssets(
   ctx: Ctx,

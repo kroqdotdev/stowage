@@ -126,8 +126,8 @@ async function assertUniqueSiblingName(
   normalizedName: string,
   excludeId?: string,
 ) {
-  // PB stores empty relations as ""; match the Convex semantics by filtering
-  // on both nullability and the normalizedName.
+  // PB stores empty relations as "" (not NULL), so the root-parent case needs
+  // an explicit equality filter.
   const parentFilter = parentId ? `parentId = "${parentId}"` : `parentId = ""`;
   const nameEscaped = normalizedName.replace(/"/g, '\\"');
   const filter = `${parentFilter} && normalizedName = "${nameEscaped}"`;

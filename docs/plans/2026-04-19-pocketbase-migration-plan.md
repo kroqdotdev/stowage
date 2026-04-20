@@ -49,8 +49,7 @@ Authz lives at the API route boundary via `withUser` / `withAdmin` rather than i
 
 ### Remaining
 
-- **E2E** — Playwright flows against the PB stack.
-- **Deployment** — Dockerfile + prod two-process setup.
+- **E2E** — Playwright tests currently drive the app against a running stack; still need to validate them against a clean PB instance in CI.
 
 ### Completed merge-gate cleanup (2026-04-20)
 
@@ -59,9 +58,14 @@ Authz lives at the API route boundary via `withUser` / `withAdmin` rather than i
 - `src/lib/convex-api.ts` and `src/lib/convex-errors.ts` deleted. `getConvexUiErrorMessage`/`getConvexErrorCode` helpers replaced with a single `getApiErrorMessage(error, fallback)` in `src/components/crud/error-messages.ts` that reads `ApiRequestError.message` (the Convex error-code → UI-string mapping was dead once routes moved to `DomainError`/`ValidationError`/`NotFoundError`).
 - `vitest.config.ts` include pattern narrowed to `src/__tests__/**`; eslint ignore for `convex/_generated/**` removed.
 
-### Not yet touched
+### Self-hosted deployment (2026-04-20)
 
-- Dockerfile + prod deployment story for the two-process setup.
+Project is self-host only now — the hosted SaaS path is gone.
+
+- `README.md` + `CONTRIBUTING.md` rewritten around the Next + PocketBase stack; SaaS-specific docs (`docs/saas-provisioning-guide.md`, `docs/saas-storage-api.md`) deleted; `docs/storage-quota.md` reframed as a self-host knob.
+- New `Dockerfile.pocketbase` (Alpine + pinned PB 0.37.1 binary + baked `pb_migrations`) and `docker-compose.yml` wire a two-service stack: PB on `:8090` with `./pb_data` persisted, Next on `:3000` pointing at the PB service over the compose network. Next Dockerfile updated to set `PORT=3000` and drop the Convex placeholder env.
+- `mprocs.yaml` drops the `convex` proc; `playwright.config.ts` now boots PB + Next together via `webServer: []`.
+- Residual "matches the Convex implementation" comments in `src/server/domain/{tags,categories,search,locations}.ts` and the attachment optimize route rewritten to explain the actual reason standalone.
 
 ---
 

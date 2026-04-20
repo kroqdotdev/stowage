@@ -46,9 +46,6 @@ yarn-error.log*
 next-env.d.ts
 import-meta.d.ts
 
-# convex generated
-convex/_generated/
-
 # dev artifacts
 mprocs.log
 .playwright-mcp/
