@@ -2,16 +2,18 @@
 
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
-import { useAction } from "convex/react";
+import { useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { api } from "@/lib/convex-api";
+import { ApiRequestError } from "@/lib/api-client";
+import { changePassword } from "@/lib/api/users";
 
 function getPasswordChangeErrorMessage(error: unknown) {
+  if (error instanceof ApiRequestError) {
+    return error.message || "Unable to change password. Try again.";
+  }
+
   if (error instanceof Error && error.message) {
-    if (error.message.includes("Server Error")) {
-      return "Unable to change password. Try again.";
-    }
     return error.message;
   }
 
@@ -19,14 +21,25 @@ function getPasswordChangeErrorMessage(error: unknown) {
 }
 
 export function PasswordChangeSection() {
-  const changePassword = useAction(api.users.changePassword);
-
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
-  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+
+  const mutation = useMutation({
+    mutationFn: (input: { currentPassword: string; newPassword: string }) =>
+      changePassword(input),
+    onSuccess: () => {
+      setSuccess("Password updated");
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmNewPassword("");
+    },
+    onError: (caught) => {
+      setError(getPasswordChangeErrorMessage(caught));
+    },
+  });
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -43,18 +56,7 @@ export function PasswordChangeSection() {
       return;
     }
 
-    setSubmitting(true);
-    try {
-      await changePassword({ currentPassword, newPassword });
-      setSuccess("Password updated");
-      setCurrentPassword("");
-      setNewPassword("");
-      setConfirmNewPassword("");
-    } catch (caught) {
-      setError(getPasswordChangeErrorMessage(caught));
-    } finally {
-      setSubmitting(false);
-    }
+    mutation.mutate({ currentPassword, newPassword });
   }
 
   return (
@@ -137,10 +139,12 @@ export function PasswordChangeSection() {
           <Button
             type="submit"
             className="cursor-pointer"
-            disabled={submitting}
+            disabled={mutation.isPending}
           >
-            {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-            {submitting ? "Updating..." : "Update password"}
+            {mutation.isPending ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : null}
+            {mutation.isPending ? "Updating..." : "Update password"}
           </Button>
         </div>
       </form>

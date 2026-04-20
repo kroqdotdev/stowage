@@ -1,16 +1,15 @@
 "use client";
 
-import { useQuery } from "convex/react";
 import { FeaturesSection } from "@/components/settings/features-section";
 import { PasswordChangeSection } from "@/components/settings/password-change-section";
 import { RegionalSettingsSection } from "@/components/settings/regional-settings-section";
 import { UserManagementSection } from "@/components/settings/user-management-section";
-import { api } from "@/lib/convex-api";
+import { useCurrentUser } from "@/hooks/use-current-user";
 
 export function SettingsPageClient() {
-  const currentUser = useQuery(api.users.getCurrentUser, {});
+  const { data: currentUser, isPending } = useCurrentUser();
 
-  if (currentUser === undefined) {
+  if (isPending) {
     return (
       <div className="space-y-6">
         <div className="h-36 animate-pulse rounded-xl border border-border/70 bg-muted/40" />
@@ -36,7 +35,7 @@ export function SettingsPageClient() {
         <>
           <RegionalSettingsSection />
           <FeaturesSection />
-          <UserManagementSection currentUserId={currentUser._id} />
+          <UserManagementSection currentUserId={currentUser.id} />
         </>
       ) : (
         <section className="rounded-xl border border-border/70 bg-background p-5 shadow-sm">
