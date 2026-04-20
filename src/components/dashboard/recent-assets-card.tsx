@@ -1,14 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import type { Id } from "@/lib/convex-api";
 import type { AppDateFormat } from "@/lib/date-format";
 import { formatDateFromTimestamp } from "@/lib/date-format";
 import { StatusBadge } from "@/components/assets/status-badge";
 import type { AssetStatus } from "@/components/assets/types";
 
 type RecentAssetItem = {
-  _id: Id<"assets">;
+  id: string;
   name: string;
   assetTag: string;
   status: AssetStatus;
@@ -44,7 +43,7 @@ export function RecentAssetsCard({
         <div className="mt-3 min-h-0 flex-1 space-y-2 overflow-y-auto">
           {items.map((asset) => (
             <article
-              key={asset._id}
+              key={asset.id}
               className="rounded-xl border border-border/70 bg-card/60 px-3 py-3"
             >
               <div className="flex items-start justify-between gap-3">
@@ -60,7 +59,7 @@ export function RecentAssetsCard({
                 <div className="flex items-center gap-2">
                   <StatusBadge status={asset.status} />
                   <Link
-                    href={`/assets/${asset._id}`}
+                    href={`/assets/${asset.id}`}
                     className="text-xs text-primary underline-offset-2 hover:underline"
                   >
                     View

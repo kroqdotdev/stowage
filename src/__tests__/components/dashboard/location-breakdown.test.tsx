@@ -15,8 +15,8 @@ vi.mock("next/link", () => ({
 }));
 
 const items = [
-  { _id: "loc1", name: "Warehouse A", count: 20 },
-  { _id: "loc2", name: "Office B", count: 5 },
+  { id: "loc1", name: "Warehouse A", count: 20 },
+  { id: "loc2", name: "Office B", count: 5 },
 ];
 
 describe("LocationBreakdown", () => {

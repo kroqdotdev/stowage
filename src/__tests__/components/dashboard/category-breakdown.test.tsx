@@ -15,8 +15,8 @@ vi.mock("next/link", () => ({
 }));
 
 const items = [
-  { _id: "cat1", name: "Electronics", color: "#3b82f6", count: 15 },
-  { _id: "cat2", name: "Furniture", color: "#f59e0b", count: 8 },
+  { id: "cat1", name: "Electronics", color: "#3b82f6", count: 15 },
+  { id: "cat2", name: "Furniture", color: "#f59e0b", count: 8 },
 ];
 
 describe("CategoryBreakdown", () => {

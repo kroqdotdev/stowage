@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { useMemo } from "react";
-import { useQuery } from "convex/react";
-import { api } from "@/lib/convex-api";
+import { useQuery } from "@tanstack/react-query";
+import { getAppSettings } from "@/lib/api/app-settings";
+import { listUpcomingServices } from "@/lib/api/service-schedules";
 import { getDaysUntil } from "@/lib/date-format";
 import { useTodayIsoDate } from "@/lib/use-today-iso-date";
 
@@ -23,15 +24,22 @@ function getUrgencyStripe(dateStr: string, todayIsoDate: string): string {
 }
 
 export function UpcomingServiceDue7DayCard() {
-  const appSettings = useQuery(api.appSettings.getAppSettings, {});
-  const rows = useQuery(api.serviceSchedules.listUpcomingServiceDueInDays, {
-    days: 7,
+  const appSettingsQuery = useQuery({
+    queryKey: ["app-settings"],
+    queryFn: getAppSettings,
+  });
+  const rowsQuery = useQuery({
+    queryKey: ["service-schedules", "upcoming", 7],
+    queryFn: () => listUpcomingServices(7),
   });
   const today = useTodayIsoDate();
 
-  const items = useMemo(() => (rows ?? []) as UpcomingRow[], [rows]);
+  const items = useMemo(
+    () => (rowsQuery.data ?? []) as UpcomingRow[],
+    [rowsQuery.data],
+  );
 
-  if (appSettings === undefined || rows === undefined) {
+  if (appSettingsQuery.isPending || rowsQuery.isPending) {
     return (
       <section className="rounded-xl border border-border/70 bg-background p-5 shadow-sm">
         <h2 className="text-base font-semibold tracking-tight">
@@ -42,7 +50,7 @@ export function UpcomingServiceDue7DayCard() {
     );
   }
 
-  if (!appSettings.serviceSchedulingEnabled) {
+  if (!appSettingsQuery.data?.serviceSchedulingEnabled) {
     return (
       <section className="rounded-xl border border-border/70 bg-background p-5 shadow-sm">
         <h2 className="text-base font-semibold tracking-tight">

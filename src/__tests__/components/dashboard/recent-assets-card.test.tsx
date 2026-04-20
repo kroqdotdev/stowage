@@ -22,14 +22,14 @@ vi.mock("@/components/assets/status-badge", () => ({
 
 const items = [
   {
-    _id: "asset1" as never,
+    id: "asset1",
     name: "Forklift A",
     assetTag: "FK-001",
     status: "active" as const,
     updatedAt: 1709251200000,
   },
   {
-    _id: "asset2" as never,
+    id: "asset2",
     name: "Generator B",
     assetTag: "GN-002",
     status: "in_storage" as const,
