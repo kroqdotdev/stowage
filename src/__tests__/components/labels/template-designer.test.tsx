@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 import { TemplateDesigner } from "@/components/labels/template-designer";
 import type {
   LabelPreviewAsset,
@@ -8,10 +8,10 @@ import type {
 } from "@/components/labels/types";
 import type { FieldDefinition } from "@/components/fields/types";
 
-const mockUseMutation = vi.fn();
-
-vi.mock("convex/react", () => ({
-  useMutation: (...args: unknown[]) => mockUseMutation(...args),
+vi.mock("@/lib/api/label-templates", () => ({
+  createLabelTemplate: vi.fn(),
+  updateLabelTemplate: vi.fn(),
+  deleteLabelTemplate: vi.fn(),
 }));
 
 vi.mock("@/components/labels/template-canvas", () => ({
@@ -62,8 +62,7 @@ vi.mock("@/components/crud/confirm-dialog", () => ({
 }));
 
 const sampleTemplate: LabelTemplate = {
-  _id: "template-1" as never,
-  _creationTime: 1,
+  id: "template-1",
   name: "Thermal 57x32 mm",
   widthMm: 57,
   heightMm: 32,
@@ -83,12 +82,12 @@ const sampleTemplate: LabelTemplate = {
   isDefault: true,
   createdAt: 1,
   updatedAt: 1,
-  createdBy: "user-1" as never,
-  updatedBy: "user-1" as never,
+  createdBy: "user-1",
+  updatedBy: "user-1",
 };
 
 const sampleAsset: LabelPreviewAsset = {
-  _id: "asset-1" as never,
+  id: "asset-1",
   name: "Main winch",
   assetTag: "WIN-001",
   categoryName: "Deck gear",
@@ -99,14 +98,29 @@ const sampleAsset: LabelPreviewAsset = {
 
 const sampleFieldDefs: FieldDefinition[] = [];
 
+function renderWithClient(ui: React.ReactElement) {
+  const qc = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  const result = render(
+    <QueryClientProvider client={qc}>{ui}</QueryClientProvider>,
+  );
+  return {
+    ...result,
+    rerender: (next: React.ReactElement) =>
+      result.rerender(
+        <QueryClientProvider client={qc}>{next}</QueryClientProvider>,
+      ),
+  };
+}
+
 describe("TemplateDesigner", () => {
   beforeEach(() => {
-    mockUseMutation.mockReset();
-    mockUseMutation.mockReturnValue(vi.fn());
+    vi.clearAllMocks();
   });
 
   it("renders the template list, canvas, toolbar, and properties panel", () => {
-    render(
+    renderWithClient(
       <TemplateDesigner
         currentUserRole="admin"
         templates={[sampleTemplate]}
@@ -121,13 +135,12 @@ describe("TemplateDesigner", () => {
     expect(screen.getByTestId("mock-element-toolbar")).toBeInTheDocument();
     expect(screen.getByTestId("mock-label-preview")).toBeInTheDocument();
 
-    // Template name appears in both the list and the canvas mock
     expect(screen.getAllByText("Thermal 57x32 mm").length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText("57 x 32 mm")).toBeInTheDocument();
   });
 
   it("shows empty state when no templates exist", () => {
-    render(
+    renderWithClient(
       <TemplateDesigner
         currentUserRole="admin"
         templates={[]}
@@ -141,7 +154,7 @@ describe("TemplateDesigner", () => {
   });
 
   it("shows the New button for admin users and hides it for regular users", () => {
-    const { rerender } = render(
+    const { rerender } = renderWithClient(
       <TemplateDesigner
         currentUserRole="admin"
         templates={[sampleTemplate]}

@@ -63,7 +63,7 @@ function renderElementContent({
         type={element.type === "barcode" ? "code128" : "datamatrix"}
         data={
           sampleAsset
-            ? buildLabelAssetUrl(sampleAsset._id, origin)
+            ? buildLabelAssetUrl(sampleAsset.id, origin)
             : buildLabelAssetUrl("preview", origin)
         }
         widthMm={element.widthMm}

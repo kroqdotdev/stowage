@@ -926,6 +926,85 @@ export async function getAssetTagIds(
   return getTagIdsForAsset(ctx, assetId);
 }
 
+export type LabelPreviewAssetView = {
+  id: string;
+  name: string;
+  assetTag: string;
+  categoryName: string | null;
+  locationPath: string | null;
+  notes: string | null;
+  customFieldValues: Record<string, AssetCustomFieldValue>;
+};
+
+export async function getLabelPreviewAsset(
+  ctx: Ctx,
+): Promise<LabelPreviewAssetView | null> {
+  const assets = await ctx.pb
+    .collection("assets")
+    .getList<AssetRecord>(1, 1, {
+      sort: "-createdAt",
+    });
+  const asset = assets.items[0] ?? null;
+  if (!asset) return null;
+  return toLabelPreviewAssetView(ctx, asset);
+}
+
+export async function getAssetsForLabels(
+  ctx: Ctx,
+  assetIds: string[],
+): Promise<LabelPreviewAssetView[]> {
+  const dedupedIds = Array.from(new Set(assetIds));
+  const records = await Promise.all(
+    dedupedIds.map(async (assetId) => {
+      try {
+        return await ctx.pb
+          .collection("assets")
+          .getOne<AssetRecord>(assetId);
+      } catch (error) {
+        if (error instanceof ClientResponseError && error.status === 404) {
+          return null;
+        }
+        throw error;
+      }
+    }),
+  );
+  const views = await Promise.all(
+    records
+      .filter((r): r is AssetRecord => r !== null)
+      .map((asset) => toLabelPreviewAssetView(ctx, asset)),
+  );
+  return views;
+}
+
+async function toLabelPreviewAssetView(
+  ctx: Ctx,
+  asset: AssetRecord,
+): Promise<LabelPreviewAssetView> {
+  const [category, location] = await Promise.all([
+    asset.categoryId
+      ? ctx.pb
+          .collection("categories")
+          .getOne<CategoryRecord>(asset.categoryId)
+          .catch(() => null)
+      : Promise.resolve(null),
+    asset.locationId
+      ? ctx.pb
+          .collection("locations")
+          .getOne<LocationRecord>(asset.locationId)
+          .catch(() => null)
+      : Promise.resolve(null),
+  ]);
+  return {
+    id: asset.id,
+    name: asset.name,
+    assetTag: asset.assetTag,
+    categoryName: category?.name ?? null,
+    locationPath: location?.path ?? null,
+    notes: asset.notes || null,
+    customFieldValues: asset.customFieldValues ?? {},
+  };
+}
+
 export type AssetFilterOptionsView = {
   categories: Array<{
     id: string;

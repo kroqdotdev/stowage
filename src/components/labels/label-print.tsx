@@ -81,7 +81,7 @@ export function LabelPrint({
       <div className="space-y-4" data-print-label-sheet>
         {assets.map((asset) => (
           <section
-            key={asset._id}
+            key={asset.id}
             className="rounded-2xl border border-border/70 bg-card/70 p-4 shadow-sm print:border-0 print:bg-transparent print:p-0 print:shadow-none"
             data-print-label
           >

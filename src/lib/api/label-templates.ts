@@ -80,3 +80,19 @@ export async function setDefaultLabelTemplate(
     method: "POST",
   });
 }
+
+export async function ensureDefaultLabelTemplates(): Promise<{
+  seeded: boolean;
+}> {
+  return apiFetch<{ seeded: boolean }>(
+    "/api/label-templates/ensure-defaults",
+    { method: "POST" },
+  );
+}
+
+export async function getLabelUrlBase(): Promise<string | null> {
+  const { base } = await apiFetch<{ base: string | null }>(
+    "/api/label-templates/url-base",
+  );
+  return base;
+}

@@ -179,6 +179,35 @@ export type AssetFilterOptions = {
   serviceGroups: Array<{ id: string; name: string }>;
 };
 
+export type LabelPreviewAsset = {
+  id: string;
+  name: string;
+  assetTag: string;
+  categoryName: string | null;
+  locationPath: string | null;
+  notes: string | null;
+  customFieldValues: Record<string, AssetCustomFieldValue>;
+};
+
+export async function getLabelPreviewAsset(): Promise<LabelPreviewAsset | null> {
+  const { asset } = await apiFetch<{ asset: LabelPreviewAsset | null }>(
+    "/api/assets/label-preview",
+  );
+  return asset;
+}
+
+export async function getAssetsForLabels(
+  assetIds: string[],
+): Promise<LabelPreviewAsset[]> {
+  if (assetIds.length === 0) return [];
+  const qs = new URLSearchParams();
+  for (const id of assetIds) qs.append("assetId", id);
+  const { assets } = await apiFetch<{ assets: LabelPreviewAsset[] }>(
+    `/api/assets/for-labels?${qs.toString()}`,
+  );
+  return assets;
+}
+
 export async function getAssetFilterOptions(): Promise<AssetFilterOptions> {
   const { options } = await apiFetch<{ options: AssetFilterOptions }>(
     "/api/assets/filter-options",
