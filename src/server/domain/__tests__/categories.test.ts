@@ -2,9 +2,12 @@ import { describe, expect, it } from "vitest";
 
 import {
   createCategory,
+  deleteCategory,
   listCategories,
+  updateCategory,
   type CategoryView,
 } from "@/server/domain/categories";
+import { createAsset } from "@/server/domain/assets";
 import {
   normalizeCatalogNameKey,
   normalizeHexColor,
@@ -13,7 +16,7 @@ import {
   requireCatalogName,
 } from "@/server/pb/catalog";
 import type { Ctx } from "@/server/pb/context";
-import { ConflictError, ValidationError } from "@/server/pb/errors";
+import { ConflictError, NotFoundError, ValidationError } from "@/server/pb/errors";
 import { usePbHarness } from "@/test/pb-harness";
 
 describe("catalog helpers", () => {
@@ -126,5 +129,83 @@ describe("categories domain", () => {
   it("resets records between tests (isolation check)", async () => {
     const list = await listCategories(ctx());
     expect(list).toEqual([]);
+  });
+
+  it("updateCategory normalizes and persists changes", async () => {
+    const created = await createCategory(ctx(), {
+      name: "Laptops",
+      color: "#000000",
+    });
+    const updated = await updateCategory(ctx(), {
+      categoryId: created.id,
+      name: "  Work Laptops  ",
+      prefix: " WL ",
+      description: " End-user devices ",
+      color: "2563eb",
+    });
+    expect(updated).toMatchObject({
+      id: created.id,
+      name: "Work Laptops",
+      prefix: "WL",
+      description: "End-user devices",
+      color: "#2563EB",
+    });
+  });
+
+  it("updateCategory throws NotFoundError when the id is missing", async () => {
+    await expect(
+      updateCategory(ctx(), {
+        categoryId: "nonexistent0000",
+        name: "x",
+        color: "#000000",
+      }),
+    ).rejects.toBeInstanceOf(NotFoundError);
+  });
+
+  it("updateCategory detects duplicate names", async () => {
+    const a = await createCategory(ctx(), {
+      name: "Apples",
+      color: "#000000",
+    });
+    await createCategory(ctx(), { name: "Bananas", color: "#111111" });
+    await expect(
+      updateCategory(ctx(), {
+        categoryId: a.id,
+        name: "bananas",
+        color: "#000000",
+      }),
+    ).rejects.toBeInstanceOf(ConflictError);
+  });
+
+  it("deleteCategory removes the row", async () => {
+    const created = await createCategory(ctx(), {
+      name: "Retired",
+      color: "#999999",
+    });
+    await deleteCategory(ctx(), created.id);
+    await expect(listCategories(ctx())).resolves.toEqual([]);
+  });
+
+  it("deleteCategory refuses when assets reference it", async () => {
+    const pb = getHarness().admin;
+    const admin = await pb.collection("users").create({
+      email: `admin-${Math.random().toString(36).slice(2)}@stowage.local`,
+      password: "password123",
+      passwordConfirm: "password123",
+      role: "admin",
+      createdAt: Date.now(),
+    });
+    const category = await createCategory(ctx(), {
+      name: "In-use",
+      color: "#000000",
+    });
+    await createAsset(ctx(), {
+      name: "Laptop",
+      categoryId: category.id,
+      actorId: admin.id,
+    });
+    await expect(deleteCategory(ctx(), category.id)).rejects.toBeInstanceOf(
+      ConflictError,
+    );
   });
 });

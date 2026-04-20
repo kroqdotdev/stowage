@@ -29,3 +29,23 @@ export async function createCategory(input: {
   );
   return category;
 }
+
+export async function updateCategory(
+  categoryId: string,
+  input: {
+    name: string;
+    color: string;
+    prefix?: string | null;
+    description?: string | null;
+  },
+): Promise<Category> {
+  const { category } = await apiFetch<{ category: Category }>(
+    `/api/categories/${categoryId}`,
+    { method: "PATCH", body: input },
+  );
+  return category;
+}
+
+export async function deleteCategory(categoryId: string): Promise<void> {
+  await apiFetch(`/api/categories/${categoryId}`, { method: "DELETE" });
+}

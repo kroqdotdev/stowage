@@ -1,12 +1,19 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const mockUseQuery = vi.fn();
-const mockUseMutation = vi.fn();
+const listCategoriesMock = vi.fn();
+const getCurrentUserMock = vi.fn();
 
-vi.mock("convex/react", () => ({
-  useQuery: (...args: unknown[]) => mockUseQuery(...args),
-  useMutation: (...args: unknown[]) => mockUseMutation(...args),
+vi.mock("@/lib/api/categories", () => ({
+  listCategories: () => listCategoriesMock(),
+  createCategory: vi.fn(),
+  updateCategory: vi.fn(),
+  deleteCategory: vi.fn(),
+}));
+
+vi.mock("@/lib/api/auth", () => ({
+  getCurrentUser: () => getCurrentUserMock(),
 }));
 
 vi.mock("next/link", () => ({
@@ -22,68 +29,60 @@ vi.mock("next/link", () => ({
 }));
 
 vi.mock("sonner", () => ({
-  toast: {
-    error: vi.fn(),
-    success: vi.fn(),
-  },
+  toast: { error: vi.fn(), success: vi.fn() },
 }));
 
 import { CategoriesPageClient } from "@/components/categories/categories-page-client";
 
+function renderWithClient() {
+  const qc = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  return render(
+    <QueryClientProvider client={qc}>
+      <CategoriesPageClient />
+    </QueryClientProvider>,
+  );
+}
+
 describe("CategoriesPageClient", () => {
   beforeEach(() => {
-    mockUseQuery.mockReset();
-    mockUseMutation.mockReset();
-    mockUseMutation.mockReturnValue(vi.fn());
+    listCategoriesMock.mockReset();
+    getCurrentUserMock.mockReset();
+    getCurrentUserMock.mockResolvedValue({
+      id: "u1",
+      email: "a@x.com",
+      name: "Admin",
+      role: "admin",
+    });
   });
 
-  it("shows loading state when data is undefined", () => {
-    mockUseQuery.mockReturnValue(undefined);
-
-    render(<CategoriesPageClient />);
-
+  it("shows loading state while queries are in flight", () => {
+    listCategoriesMock.mockImplementation(() => new Promise(() => {}));
+    renderWithClient();
     expect(screen.getByText("Loading...")).toBeInTheDocument();
   });
 
-  it("renders category list when data is loaded", () => {
-    let callIndex = 0;
-    mockUseQuery.mockImplementation(() => {
-      callIndex++;
-      // First call: getCurrentUser, second call: listCategories
-      if (callIndex % 2 === 1) {
-        return { _id: "user1" as never, role: "admin" };
-      }
-      return [
-        {
-          _id: "cat1" as never,
-          name: "Laptops",
-          color: "#EA580C",
-          prefix: "LAP",
-          description: "Portable computers",
-          createdAt: Date.now(),
-          updatedAt: Date.now(),
-        },
-      ];
-    });
-
-    render(<CategoriesPageClient />);
-
+  it("renders category list when data is loaded", async () => {
+    listCategoriesMock.mockResolvedValue([
+      {
+        id: "cat1",
+        name: "Laptops",
+        color: "#EA580C",
+        prefix: "LAP",
+        description: "Portable computers",
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      },
+    ]);
+    renderWithClient();
+    expect(await screen.findByText("Laptops")).toBeInTheDocument();
     expect(screen.getByText("Categories")).toBeInTheDocument();
-    expect(screen.getByText("Laptops")).toBeInTheDocument();
   });
 
-  it("shows empty state when no categories exist", () => {
-    let callIndex = 0;
-    mockUseQuery.mockImplementation(() => {
-      callIndex++;
-      if (callIndex % 2 === 1) {
-        return { _id: "user1" as never, role: "admin" };
-      }
-      return [];
-    });
-
-    render(<CategoriesPageClient />);
-
-    expect(screen.getByText("No categories yet.")).toBeInTheDocument();
+  it("shows empty state when no categories exist", async () => {
+    listCategoriesMock.mockResolvedValue([]);
+    renderWithClient();
+    expect(await screen.findByText("No categories yet.")).toBeInTheDocument();
   });
 });

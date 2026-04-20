@@ -1,12 +1,19 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const mockUseQuery = vi.fn();
-const mockUseMutation = vi.fn();
+const listTagsMock = vi.fn();
+const getCurrentUserMock = vi.fn();
 
-vi.mock("convex/react", () => ({
-  useQuery: (...args: unknown[]) => mockUseQuery(...args),
-  useMutation: (...args: unknown[]) => mockUseMutation(...args),
+vi.mock("@/lib/api/tags", () => ({
+  listTags: () => listTagsMock(),
+  createTag: vi.fn(),
+  updateTag: vi.fn(),
+  deleteTag: vi.fn(),
+}));
+
+vi.mock("@/lib/api/auth", () => ({
+  getCurrentUser: () => getCurrentUserMock(),
 }));
 
 vi.mock("next/link", () => ({
@@ -22,65 +29,58 @@ vi.mock("next/link", () => ({
 }));
 
 vi.mock("sonner", () => ({
-  toast: {
-    error: vi.fn(),
-    success: vi.fn(),
-  },
+  toast: { error: vi.fn(), success: vi.fn() },
 }));
 
 import { TagsPageClient } from "@/components/tags/tags-page-client";
 
+function renderWithClient() {
+  const qc = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  return render(
+    <QueryClientProvider client={qc}>
+      <TagsPageClient />
+    </QueryClientProvider>,
+  );
+}
+
 describe("TagsPageClient", () => {
   beforeEach(() => {
-    mockUseQuery.mockReset();
-    mockUseMutation.mockReset();
-    mockUseMutation.mockReturnValue(vi.fn());
+    listTagsMock.mockReset();
+    getCurrentUserMock.mockReset();
+    getCurrentUserMock.mockResolvedValue({
+      id: "u1",
+      email: "a@x.com",
+      name: "Admin",
+      role: "admin",
+    });
   });
 
-  it("shows loading state when data is undefined", () => {
-    mockUseQuery.mockReturnValue(undefined);
-
-    render(<TagsPageClient />);
-
+  it("shows loading state while queries are in flight", () => {
+    listTagsMock.mockImplementation(() => new Promise(() => {}));
+    renderWithClient();
     expect(screen.getByText("Loading...")).toBeInTheDocument();
   });
 
-  it("renders tag list when data is loaded", () => {
-    let callIndex = 0;
-    mockUseQuery.mockImplementation(() => {
-      callIndex++;
-      if (callIndex % 2 === 1) {
-        return { _id: "user1" as never, role: "admin" };
-      }
-      return [
-        {
-          _id: "tag1" as never,
-          name: "Fragile",
-          color: "#DC2626",
-          createdAt: Date.now(),
-          updatedAt: Date.now(),
-        },
-      ];
-    });
-
-    render(<TagsPageClient />);
-
+  it("renders tag list when data is loaded", async () => {
+    listTagsMock.mockResolvedValue([
+      {
+        id: "tag1",
+        name: "Fragile",
+        color: "#DC2626",
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      },
+    ]);
+    renderWithClient();
+    expect(await screen.findByText("Fragile")).toBeInTheDocument();
     expect(screen.getByText("Tags")).toBeInTheDocument();
-    expect(screen.getByText("Fragile")).toBeInTheDocument();
   });
 
-  it("shows empty state when no tags exist", () => {
-    let callIndex = 0;
-    mockUseQuery.mockImplementation(() => {
-      callIndex++;
-      if (callIndex % 2 === 1) {
-        return { _id: "user1" as never, role: "admin" };
-      }
-      return [];
-    });
-
-    render(<TagsPageClient />);
-
-    expect(screen.getByText("No tags yet.")).toBeInTheDocument();
+  it("shows empty state when no tags exist", async () => {
+    listTagsMock.mockResolvedValue([]);
+    renderWithClient();
+    expect(await screen.findByText("No tags yet.")).toBeInTheDocument();
   });
 });
