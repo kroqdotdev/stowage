@@ -2,7 +2,7 @@
 
 **Date:** 2026-04-19
 **Branch:** `pocketbase-migration`
-**Status:** Server-side domain work substantially complete — auth, attachments, API routes, and frontend refactor remaining
+**Status:** Server side complete (domains + auth session layer + API routes). Attachments pipeline, frontend refactor, and /setup form swap remain.
 
 Replace the Convex backend with a self-hosted PocketBase. Stowage ships as clean installs only; **no existing deployment will carry data across**, so there is no data migration, no ETL, no cutover password flow, no ID redirect table. The bar is functional parity: every feature that works on Convex today must work identically on PocketBase, proven by tests before we land the branch on `main`.
 
@@ -10,25 +10,30 @@ Replace the Convex backend with a self-hosted PocketBase. Stowage ships as clean
 
 ## Current status (updated 2026-04-20)
 
-**9 commits on `pocketbase-migration`.** Test surface: **168 PB domain tests across 16 files**, **440 main tests** (jsdom + convex-test), typecheck clean, lint 0 errors.
+**13 commits on `pocketbase-migration`.** Test surface: **186 PB tests across 18 files**, **440 main tests** (jsdom + convex-test), typecheck clean, lint 0 errors.
 
 ### Done
 
 - **M1 Spike** — PocketBase v0.37.1 wired into `mprocs` + `pnpm pb:setup`; categories domain proven end-to-end with an API route, provider, realtime hook.
 - **M2 Test infrastructure** — `src/test/pb-harness.ts` (per-file PB serve on random port + tmp data dir, truncation in reverse FK order with self-ref retry), separate `vitest.pb.config.ts`, `test:pb` script, `.github/workflows/ci.yml` running lint + typecheck + both suites.
 - **M3a Schema** — All 16 collections in `pb_migrations/1713484900_remaining_collections.js` (users auth extension, catalog, assets, join tables, service schedules/records/attachments, labelTemplates); FTS5 virtual table + triggers in `1713485000_assets_fts.js`.
+- **M3b Auth session layer** — `src/server/auth/{cookies,session,route}.ts`: HttpOnly `pb_auth` cookie, `resolveSession` via PB `authRefresh`, `withSession/withUser/withAdmin` wrappers that forward Next dynamic params. `/api/auth/{login,logout,me,first-run,first-admin}` endpoints. 5 session tests.
 - **M4 Catalog domain ports (complete)** — categories, tags, locations (hierarchy + path recompute), customFields, appSettings, serviceProviders, serviceGroups, serviceGroupFields, labelTemplates. Each with 1:1 tests against the harness.
 - **M5 Assets + search + dashboard + asset tags** — CRUD with generateAssetTag, custom-field validation across all types, usage-count bookkeeping, tag-intersection filter, weighted search, dashboard aggregates, cascade delete.
 - **M5 Service schedules + records** — Interval math, same-day snap-forward, calendar month / upcoming windows, record field snapshots, complete-scheduled-service auto-advance.
+- **M5 Users domain** — `listUsers`, `getUserById/Email`, `createUser`, `createFirstAdmin` (gated by `checkFirstRun`), `updateUserRole` (last-admin guard), `changePassword` (verified via scratch PB client). 13 tests.
+- **M6 API route handlers** — Every ported domain has thin handlers under `src/app/api/**/route.ts` (~40 routes). Mutations inject `actorId` from the session user; `withAdmin` gates writes on most domains (service-records and /api/users/me/password are user-scope).
+
+### Authz shape (decision note)
+
+Authz lives at the API route boundary via `withUser` / `withAdmin` rather than inside every domain function. Domain functions keep accepting explicit `actorId` (+ occasionally `actorRole` for owner-or-admin checks); routes strip those fields from client bodies and inject from the resolved session. This keeps domain modules pure and testable while ensuring every write goes through a single authz checkpoint.
 
 ### In flight / remaining
 
-- **Users domain** — `listUsers`, `getCurrentUser`, `createUser`, `createFirstAdmin`, `updateUserRole`, `changePassword`. PB's default `users` auth collection is already extended with `role` + audit fields.
 - **Attachments + optimization pipeline** — Upload, Jimp image / pdf-lib PDF optimization, status state machine, storage quota. Moves from Convex internalAction to a Next.js `POST /api/attachments/[id]/optimize` route.
-- **Auth integration (M3b)** — `PocketBaseClientProvider` already exists for the spike; needs `pb.authStore` cookie bridge, Next middleware for SSR auth, authz wired into every domain function (`requireAuthenticatedUser(ctx)` / `requireAdminUser(ctx)`).
-- **First-run setup page (M3c)** — `/setup` gated by `.install-token` written to `/pb_data` on first boot.
-- **API route handlers** — Only `/api/categories` exists. Every ported domain module needs a thin `src/app/api/**/route.ts`.
-- **Frontend refactor (M7)** — Every `useQuery` / `useMutation` call site (~60 components) switches to TanStack Query + `useRealtimeCollection` / `useRealtimeRecord`.
+- **First-run setup page (M3c)** — `/setup` still wired to Convex; swap its form to POST `/api/auth/first-admin`. Install-token gating deferred to deployment hardening.
+- **Frontend refactor (M7)** — Every `useQuery` / `useMutation` call site (~60 components) switches to TanStack Query + `useRealtimeCollection` / `useRealtimeRecord`, talking to the new `/api/**` routes.
+- **`src/lib/server-auth.ts`** — Still calls Convex; replace with direct PB session checks once the auth UI switches over.
 - **E2E** — Playwright flows against the PB stack.
 
 ### Not yet touched
