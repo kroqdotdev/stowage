@@ -20,6 +20,7 @@
     "pb:setup": "bash scripts/setup-pocketbase.sh",
     "pb:dev": "./bin/pocketbase serve --http=127.0.0.1:8090 --dir=./pb_data --migrationsDir=./pb_migrations",
     "pb:bootstrap": "bash scripts/bootstrap-pocketbase.sh",
+    "pb:seed": "node --env-file=.env.local scripts/seed-demo-data.mjs",
     "pb:typegen": "pocketbase-typegen --db ./pb_data/data.db --out src/server/pb/types.generated.ts"
   },
   "dependencies": {
