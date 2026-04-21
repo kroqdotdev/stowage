@@ -55,7 +55,9 @@ describe("ServiceGroupsList", () => {
     renderWithClient(<ServiceGroupsList />);
 
     await waitFor(() => {
-      expect(screen.getByText("Engine checks")).toBeInTheDocument();
+      // Both the desktop table and the mobile card list render in JSDOM
+      // (hidden via CSS), so there may be two instances of the name.
+      expect(screen.getAllByText("Engine checks").length).toBeGreaterThan(0);
     });
     await user.click(screen.getByRole("button", { name: "Create group" }));
     expect(

@@ -203,7 +203,93 @@ export function UserManagementSection({
         </Button>
       </div>
 
-      <div className="mt-4 overflow-x-auto rounded-lg border border-border/60">
+      {usersQuery.isPending ? (
+        <p className="mt-4 text-sm text-muted-foreground md:hidden">
+          Loading users...
+        </p>
+      ) : rows.length === 0 ? (
+        <p className="mt-4 text-sm text-muted-foreground md:hidden">
+          No users found.
+        </p>
+      ) : (
+        <ul
+          className="mt-4 flex flex-col gap-2 md:hidden"
+          data-testid="users-card-list"
+        >
+          {rows.map((user) => {
+            const pendingRole = roleEdits[user.id] ?? user.role;
+            const roleChanged = pendingRole !== user.role;
+            const isSaving = savingRoleUserId === user.id;
+            return (
+              <li
+                key={user.id}
+                data-testid={`user-card-${user.id}`}
+                className="space-y-2 rounded-lg border border-border/70 bg-card p-3 shadow-sm"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="truncate text-sm font-semibold">
+                        {user.name}
+                      </span>
+                      {user.id === currentUserId ? (
+                        <span className="rounded-full border border-border/70 bg-muted/40 px-2 py-0.5 text-[11px] text-muted-foreground">
+                          You
+                        </span>
+                      ) : null}
+                    </div>
+                    <p className="truncate text-xs text-muted-foreground">
+                      {user.email}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground">
+                      Created{" "}
+                      {formatCreatedDate(user.createdAt, dateFormat)}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Select
+                    value={pendingRole}
+                    onValueChange={(value) =>
+                      setRoleEdits((prev) => ({
+                        ...prev,
+                        [user.id]: value as "admin" | "user",
+                      }))
+                    }
+                    disabled={isSaving}
+                  >
+                    <SelectTrigger
+                      className="h-9 flex-1"
+                      aria-label={`Role for ${user.name}`}
+                    >
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="user">User</SelectItem>
+                      <SelectItem value="admin">Admin</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="cursor-pointer"
+                    disabled={!roleChanged || isSaving}
+                    onClick={() => void handleSaveRole(user.id, user.role)}
+                  >
+                    {isSaving ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : null}
+                    Save
+                  </Button>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+
+      <div className="mt-4 hidden overflow-x-auto rounded-lg border border-border/60 md:block">
         <table className="min-w-full text-sm">
           <thead className="bg-muted/40 text-left">
             <tr>
