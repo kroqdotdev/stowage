@@ -66,11 +66,15 @@ async function main() {
   const providerIds = await seedProviders(pb, ownerId);
   console.log(`seeded ${Object.keys(providerIds).length} service providers`);
 
+  const fieldIds = await seedCustomFields(pb);
+  console.log(`seeded ${Object.keys(fieldIds).length} custom fields`);
+
   const assetRefs = await seedAssets(pb, {
     ownerId,
     categoryIds,
     locationIds,
     groupIds,
+    fieldIds,
   });
   console.log(`seeded ${assetRefs.length} assets`);
 
@@ -146,6 +150,10 @@ async function clearPreviousDemoData(pb) {
     },
     {
       name: "serviceProviders",
+      filter: 'name ~ "(DEMO)"',
+    },
+    {
+      name: "customFieldDefinitions",
       filter: 'name ~ "(DEMO)"',
     },
   ];
@@ -324,6 +332,69 @@ async function seedServiceGroups(pb, ownerId) {
   return out;
 }
 
+async function seedCustomFields(pb) {
+  const entries = [
+    {
+      key: "serial",
+      name: "Serial number (DEMO)",
+      fieldType: "text",
+      options: [],
+      required: false,
+      sortOrder: 0,
+    },
+    {
+      key: "purchasePrice",
+      name: "Purchase price (DEMO)",
+      fieldType: "currency",
+      options: [],
+      required: false,
+      sortOrder: 1,
+    },
+    {
+      key: "warrantyExpiry",
+      name: "Warranty expiry (DEMO)",
+      fieldType: "date",
+      options: [],
+      required: false,
+      sortOrder: 2,
+    },
+    {
+      key: "condition",
+      name: "Condition (DEMO)",
+      fieldType: "dropdown",
+      options: ["Excellent", "Good", "Fair", "Poor"],
+      required: false,
+      sortOrder: 3,
+    },
+    {
+      key: "manualUrl",
+      name: "Manual URL (DEMO)",
+      fieldType: "url",
+      options: [],
+      required: false,
+      sortOrder: 4,
+    },
+  ];
+  const out = {};
+  for (const entry of entries) {
+    const record = await pb.collection("customFieldDefinitions").create(
+      {
+        name: entry.name,
+        fieldType: entry.fieldType,
+        options: entry.options,
+        required: entry.required,
+        sortOrder: entry.sortOrder,
+        usageCount: 0,
+        createdAt: now(),
+        updatedAt: now(),
+      },
+      { $autoCancel: false },
+    );
+    out[entry.key] = record.id;
+  }
+  return out;
+}
+
 async function seedProviders(pb, ownerId) {
   const entries = [
     { key: "acme", name: "Acme Service Co. (DEMO)" },
@@ -354,7 +425,10 @@ function pad(value, width) {
   return String(value).padStart(width, "0");
 }
 
-async function seedAssets(pb, { ownerId, categoryIds, locationIds, groupIds }) {
+async function seedAssets(
+  pb,
+  { ownerId, categoryIds, locationIds, groupIds, fieldIds },
+) {
   const base = [
     {
       name: "Cordless drill",
@@ -363,6 +437,13 @@ async function seedAssets(pb, { ownerId, categoryIds, locationIds, groupIds }) {
       status: "active",
       group: "quarterly",
       notes: "Bought 2024. DeWalt brand.",
+      values: {
+        serial: "DW-884213",
+        purchasePrice: 189.99,
+        warrantyExpiry: "2027-01-15",
+        condition: "Good",
+        manualUrl: "https://example.com/manuals/dw-drill.pdf",
+      },
     },
     {
       name: "Impact driver",
@@ -370,6 +451,11 @@ async function seedAssets(pb, { ownerId, categoryIds, locationIds, groupIds }) {
       location: "bench1",
       status: "active",
       group: "quarterly",
+      values: {
+        serial: "MK-200331",
+        purchasePrice: 145,
+        condition: "Excellent",
+      },
     },
     {
       name: "Circular saw",
@@ -378,6 +464,11 @@ async function seedAssets(pb, { ownerId, categoryIds, locationIds, groupIds }) {
       status: "under_repair",
       group: "quarterly",
       notes: "Blade guard stuck.",
+      values: {
+        serial: "BH-7110",
+        purchasePrice: 219,
+        condition: "Fair",
+      },
     },
     {
       name: "Table saw",
@@ -385,6 +476,12 @@ async function seedAssets(pb, { ownerId, categoryIds, locationIds, groupIds }) {
       location: "bench3",
       status: "active",
       group: "annual",
+      values: {
+        serial: "TS-99A",
+        purchasePrice: 899,
+        warrantyExpiry: "2026-09-30",
+        condition: "Good",
+      },
     },
     {
       name: "Claw hammer",
@@ -392,6 +489,9 @@ async function seedAssets(pb, { ownerId, categoryIds, locationIds, groupIds }) {
       location: "shelfA",
       status: "active",
       group: null,
+      values: {
+        condition: "Good",
+      },
     },
     {
       name: "Adjustable wrench",
@@ -399,6 +499,9 @@ async function seedAssets(pb, { ownerId, categoryIds, locationIds, groupIds }) {
       location: "shelfA",
       status: "in_storage",
       group: null,
+      values: {
+        condition: "Fair",
+      },
     },
     {
       name: "Tape measure",
@@ -413,6 +516,9 @@ async function seedAssets(pb, { ownerId, categoryIds, locationIds, groupIds }) {
       location: "shelfB",
       status: "active",
       group: null,
+      values: {
+        condition: "Excellent",
+      },
     },
     {
       name: "Rack router",
@@ -421,6 +527,12 @@ async function seedAssets(pb, { ownerId, categoryIds, locationIds, groupIds }) {
       status: "active",
       group: "annual",
       notes: "Primary uplink.",
+      values: {
+        serial: "CISCO-RTR-8861",
+        purchasePrice: 1450,
+        warrantyExpiry: "2026-12-31",
+        condition: "Excellent",
+      },
     },
     {
       name: "UPS (2kVA)",
@@ -428,6 +540,12 @@ async function seedAssets(pb, { ownerId, categoryIds, locationIds, groupIds }) {
       location: "serverroom",
       status: "active",
       group: "annual",
+      values: {
+        serial: "APC-UPS-44102",
+        purchasePrice: 820,
+        warrantyExpiry: "2027-06-01",
+        condition: "Good",
+      },
     },
     {
       name: "Laptop dock",
@@ -435,6 +553,11 @@ async function seedAssets(pb, { ownerId, categoryIds, locationIds, groupIds }) {
       location: "deskA",
       status: "active",
       group: null,
+      values: {
+        serial: "DELL-WD19-90011",
+        purchasePrice: 230,
+        condition: "Good",
+      },
     },
     {
       name: "External monitor",
@@ -442,6 +565,10 @@ async function seedAssets(pb, { ownerId, categoryIds, locationIds, groupIds }) {
       location: "deskB",
       status: "retired",
       group: null,
+      values: {
+        serial: "LG-27UL850-2019",
+        condition: "Poor",
+      },
     },
     {
       name: "Forklift",
@@ -450,6 +577,13 @@ async function seedAssets(pb, { ownerId, categoryIds, locationIds, groupIds }) {
       status: "active",
       group: "annual",
       notes: "Service overdue — see logs.",
+      values: {
+        serial: "TOYOTA-8FGU25",
+        purchasePrice: 32500,
+        warrantyExpiry: "2026-05-20",
+        condition: "Fair",
+        manualUrl: "https://example.com/manuals/toyota-8fgu25.pdf",
+      },
     },
     {
       name: "Walk-behind pallet jack",
@@ -457,6 +591,10 @@ async function seedAssets(pb, { ownerId, categoryIds, locationIds, groupIds }) {
       location: "loadingbay",
       status: "in_storage",
       group: null,
+      values: {
+        purchasePrice: 480,
+        condition: "Good",
+      },
     },
     {
       name: "Refrigerated unit",
@@ -464,6 +602,12 @@ async function seedAssets(pb, { ownerId, categoryIds, locationIds, groupIds }) {
       location: "coldstorage",
       status: "active",
       group: "quarterly",
+      values: {
+        serial: "CARRIER-XTRA-300",
+        purchasePrice: 14200,
+        warrantyExpiry: "2028-02-14",
+        condition: "Excellent",
+      },
     },
   ];
 
@@ -475,6 +619,12 @@ async function seedAssets(pb, { ownerId, categoryIds, locationIds, groupIds }) {
     const serviceGroupId = entry.group ? groupIds[entry.group] : null;
     const assetTag = `${DEMO_PREFIX}-${pad(sequence, 3)}`;
     sequence += 1;
+    const customFieldValues = {};
+    for (const [key, value] of Object.entries(entry.values ?? {})) {
+      const fieldId = fieldIds[key];
+      if (!fieldId) continue;
+      customFieldValues[fieldId] = value;
+    }
     const record = await pb.collection("assets").create(
       {
         name: `${entry.name} (DEMO)`,
@@ -485,7 +635,7 @@ async function seedAssets(pb, { ownerId, categoryIds, locationIds, groupIds }) {
         locationId,
         serviceGroupId,
         notes: entry.notes ?? null,
-        customFieldValues: {},
+        customFieldValues,
         createdBy: ownerId,
         updatedBy: ownerId,
         createdAt: now(),
@@ -502,6 +652,25 @@ async function seedAssets(pb, { ownerId, categoryIds, locationIds, groupIds }) {
       group: entry.group,
     });
   }
+
+  // Update usageCount on each field — totals assets that set any value for it
+  for (const fieldKey of Object.keys(fieldIds)) {
+    const fieldId = fieldIds[fieldKey];
+    const usageCount = base.reduce(
+      (sum, entry) =>
+        entry.values && entry.values[fieldKey] !== undefined ? sum + 1 : sum,
+      0,
+    );
+    await pb.collection("customFieldDefinitions").update(
+      fieldId,
+      {
+        usageCount,
+        updatedAt: now(),
+      },
+      { $autoCancel: false },
+    );
+  }
+
   return refs;
 }
 

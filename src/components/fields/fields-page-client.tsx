@@ -237,11 +237,17 @@ export function FieldsPageClient() {
           <table className="min-w-full text-sm">
             <thead className="bg-muted/40 text-left">
               <tr>
-                <th className="w-10 px-3 py-2 font-medium">Order</th>
+                <th className="hidden w-10 px-3 py-2 font-medium md:table-cell">
+                  Order
+                </th>
                 <th className="px-3 py-2 font-medium">Name</th>
                 <th className="px-3 py-2 font-medium">Type</th>
-                <th className="px-3 py-2 font-medium">Required</th>
-                <th className="px-3 py-2 font-medium">In use</th>
+                <th className="hidden px-3 py-2 font-medium md:table-cell">
+                  Required
+                </th>
+                <th className="hidden px-3 py-2 font-medium md:table-cell">
+                  In use
+                </th>
                 <th className="px-3 py-2 font-medium text-right">Actions</th>
               </tr>
             </thead>
@@ -304,7 +310,7 @@ export function FieldsPageClient() {
                         void saveOrder(orderedIds);
                       }}
                     >
-                      <td className="px-3 py-2">
+                      <td className="hidden px-3 py-2 md:table-cell">
                         <div className="inline-flex items-center gap-1 rounded-md border border-border/70 bg-muted/20 px-1.5 py-1 text-xs text-muted-foreground">
                           <GripVertical className="h-3.5 w-3.5" />
                           <span className="font-mono">
@@ -313,14 +319,21 @@ export function FieldsPageClient() {
                         </div>
                       </td>
                       <td className="px-3 py-2 font-medium">
-                        {definition.name}
+                        <div className="flex flex-col gap-1">
+                          <span className="truncate">{definition.name}</span>
+                          {definition.required ? (
+                            <span className="inline-flex w-fit items-center gap-1 text-[10px] font-normal uppercase tracking-wide text-muted-foreground md:hidden">
+                              Required
+                            </span>
+                          ) : null}
+                        </div>
                       </td>
                       <td className="px-3 py-2">
                         <Badge className="bg-muted/20 capitalize">
                           {definition.fieldType}
                         </Badge>
                       </td>
-                      <td className="px-3 py-2">
+                      <td className="hidden px-3 py-2 md:table-cell">
                         {definition.required ? (
                           <Badge className="bg-muted/20">Required</Badge>
                         ) : (
@@ -329,7 +342,7 @@ export function FieldsPageClient() {
                           </span>
                         )}
                       </td>
-                      <td className="px-3 py-2 text-muted-foreground">
+                      <td className="hidden px-3 py-2 text-muted-foreground md:table-cell">
                         {definition.usageCount}
                       </td>
                       <td className="px-3 py-2 text-right">
