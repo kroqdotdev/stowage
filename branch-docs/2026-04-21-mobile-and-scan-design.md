@@ -193,7 +193,7 @@ When `target.status === "unresolved"` the sheet shows the decoded text and two b
 
 ### Shared primitives
 
-- `useMediaQuery(query)` — `matchMedia` wrapper, SSR-safe (returns `false` on server to avoid hydration flicker). Used sparingly; layouts should prefer Tailwind breakpoints.
+- `useMediaQuery(query)` — generic `matchMedia` wrapper, SSR-safe (returns `false` on server to avoid hydration flicker). Used sparingly; layouts should prefer Tailwind breakpoints. Added alongside the existing `useIsMobile` (which stays at 768px for the shadcn Sidebar). The mobile shell uses `useMediaQuery("(min-width: 1024px)")`.
 - `MobileActionSheet` — wrapper around shadcn `Sheet side="bottom"` with drag handle, `env(safe-area-inset-bottom)` padding, shared visual vocabulary.
 - `EmptyState` — consolidated component so mobile empty states stay consistent.
 
@@ -221,18 +221,151 @@ Linked from `src/app/layout.tsx` via `metadata.manifest` and `metadata.themeColo
 
 No service worker. Offline support is deliberately out of scope — a realtime-backed PocketBase app needs conflict resolution and queue semantics we are not taking on in this pass.
 
+## Testing plan
+
+Tests are written **alongside** each step, not bolted on at the end. Every step ships with matching Vitest or Playwright coverage before it's considered done. No step lands in a PR without its tests green.
+
+### Vitest (jsdom) — `pnpm test`
+
+Mirror the source structure under `src/__tests__/`. Each new source file gets a corresponding test file.
+
+**New files covered:**
+
+- `src/__tests__/lib/scan.test.ts` — `resolveScanTarget`:
+  - URL matching current origin + `/assets/<id>` → resolves to `asset` when fetch succeeds
+  - URL on a different origin → `unresolved`
+  - URL with matching origin but non-`/assets/` path → `unresolved`
+  - Non-URL raw text → `unresolved`
+  - Asset fetch returns 404 → `unresolved` (never `error`)
+  - Asset fetch returns 403 → `unresolved`
+  - Trimming and trailing-slash tolerance on `appOrigin`
+- `src/__tests__/hooks/use-barcode-scanner.test.tsx` — the scanner hook's state machine, with `@zxing/browser` and `navigator.mediaDevices` mocked:
+  - State transitions `idle` → `requesting` → `scanning` on enable
+  - Returns to `idle` on `enabled: false`; all tracks stopped
+  - `denied` state when `getUserMedia` rejects with `NotAllowedError`
+  - `insecure` state in non-secure context (stubbed `window.isSecureContext = false`)
+  - Duplicate-suppression window: same text twice within 2s fires once
+  - Distinct text values within the window both fire
+  - `torch.supported` reflects `getCapabilities().torch`; toggle calls `applyConstraints`
+  - Cleanup on unmount stops every track exactly once
+- `src/__tests__/hooks/use-media-query.test.tsx` — `useMediaQuery`:
+  - Returns `false` in SSR-ish environment (no `window.matchMedia`)
+  - Reflects initial `matches` value
+  - Updates when media-query changes fire
+  - Removes its listener on unmount
+- `src/__tests__/components/layout/bottom-nav.test.tsx`:
+  - Renders all five slots with correct icons (`ScanLine` in the center)
+  - Scan center button is present with the `--scan` teal styling class
+  - Active-route highlighting: Home active on `/dashboard`, Assets active on `/assets` and `/assets/abc`, Services active on `/services`, More active when the sheet is open
+  - Tapping More opens the sheet with Locations / Taxonomy / Labels / Settings / theme / sign-out entries
+- `src/__tests__/components/scan/scan-page-client.test.tsx`:
+  - Renders camera viewport and reticle in idle state
+  - Shows "Enter asset tag" button in every state
+  - Permission-denied state shows `CameraOff` icon + explainer (no red banner)
+  - Insecure-context state shows specific HTTPS explainer
+  - Manual entry sheet: submitting tag calls the same resolver, opens result sheet
+- `src/__tests__/components/scan/scan-result-sheet.test.tsx`:
+  - Renders asset hero + 2×3 action grid
+  - All six actions open their nested sheets
+  - Status action: submitting a new status calls `updateAsset`; failure rolls back the optimistic update
+  - Move action: location picker submit calls `updateAsset({ locationId })`
+  - Photo action: file input has `accept="image/*"` and `capture="environment"`; chosen file calls `uploadAttachment`
+  - Note action: appends rather than replaces, timestamp + user prefix present
+  - Log service action: form submit calls `createServiceRecord` with the expected payload
+  - Unresolved sheet renders raw text + Try-again + Enter-manually buttons
+- `src/__tests__/components/assets/asset-card-list.test.tsx`:
+  - Renders one card per asset with correct name, tag, status, location, up-to-three tag chips + overflow count
+  - Tapping card navigates; kebab opens the action sheet
+- `src/__tests__/components/layout/mobile-action-sheet.test.tsx`:
+  - Drag handle present, backdrop dismisses, safe-area padding class applied
+
+**Existing tests that must stay green:**
+
+- `app-shell`, `app-sidebar`, `topbar`, `use-mobile`, `use-realtime-*` — these exist and must not regress when we add the mobile swap. Any required edits to the shell components are reflected by updating their tests deliberately (not by loosening assertions).
+
+### Vitest (Node / PocketBase) — `pnpm test:pb`
+
+No new backend endpoints are introduced. All scan mutations go through existing `updateAsset`, `uploadAttachment`, `createServiceRecord` whose PB-layer tests already exist in `src/server/**/__tests__`. I'll verify each of those tests still passes after the scan flow wires call them.
+
+### Playwright (e2e) — `pnpm test:e2e`
+
+**Config changes** (`playwright.config.ts`):
+
+- Add a second project `{ name: "mobile-chromium", use: { ...devices["Pixel 7"] } }` alongside the existing `chromium`.
+- Specs that assert desktop layout run on `chromium` only (via `test.describe.configure({ mode: "serial" })` + project filter).
+- Specs that assert mobile layout run on `mobile-chromium` only.
+- Specs that test route-level behavior (auth redirects, CRUD round-trips) run on **both** projects so we catch mobile-specific regressions cheaply.
+- All existing projects keep `fullyParallel: false, workers: 1` (the suite already shares a PB instance).
+
+**Auth credentials.** Every new authed spec uses the same pattern existing specs use (`e2e/assets.spec.ts`):
+
+```ts
+const email = process.env.E2E_AUTH_EMAIL;
+const password = process.env.E2E_AUTH_PASSWORD;
+test.skip(!email || !password, "Set E2E_AUTH_EMAIL and E2E_AUTH_PASSWORD to run …");
+```
+
+Credentials live in `.env.local` as they already do. Playwright loads them because `pnpm dev:next` reads `.env.local` at boot, which the webServer command triggers. I will not touch `.env.local` or commit credentials.
+
+**New spec files:**
+
+- `e2e/mobile-shell.spec.ts` (runs on `mobile-chromium`):
+  - Unauthenticated user visiting a protected route redirects to login (sanity)
+  - Bottom nav is visible and sidebar is not, at the mobile viewport
+  - Each nav slot routes to its page; SCAN routes to `/scan`
+  - "More" opens a sheet containing Locations / Taxonomy / Labels / Settings / Sign out / Theme
+  - PWA manifest: `<link rel="manifest">` present, `theme-color` meta present, manifest JSON parses
+- `e2e/scan.spec.ts` (runs on both projects):
+  - Unauthenticated: `/scan` redirects to login
+  - Authenticated on desktop: scan page shows with reticle visible, camera permission prompt simulated (use `context.grantPermissions(['camera'])`)
+  - Authenticated on mobile: same, plus bottom nav present
+  - Manual entry path: create an asset first, navigate to `/scan`, open manual entry, type the asset's tag, verify result sheet opens with the right name + status
+  - Unresolved: type a bogus tag, verify "couldn't find asset" sheet with raw text
+  - Status quick action: change status through the sheet, reload asset page, confirm new status
+  - Move quick action: change location, reload, confirm new location
+  - Note quick action: add a note, reload, confirm note appended (content + timestamp prefix)
+  - Log service quick action: create service record, verify it appears in the asset's service list
+  - Photo action — skipped unless a fixture image is available; if so, upload and confirm attachment appears
+- `e2e/mobile-field-flows.spec.ts` (runs on `mobile-chromium` only):
+  - Assets list: cards render instead of table; tap opens detail
+  - Assets list: filters sheet opens, filter applies, active count badge updates
+  - Asset detail: hero stacks, tabs remain sticky on scroll, kebab menu shows Edit / Print / Delete
+  - Services list: Overdue / Due this week / Upcoming groupings render; "Log service" opens sheet
+  - Dashboard: single vertical feed, stats row horizontally scrollable
+  - Locations: accordion renders, expand/collapse works
+  - Labels: shows "Open Stowage on desktop to edit" banner, template list still visible, print still works
+
+**Camera handling in Playwright.** The scanner's decode loop can't be driven deterministically in CI without a synthetic video stream. Two pragmatic choices:
+
+- Every e2e assertion about "what happens after a scan" goes through the **manual-entry input**, which hits the exact same resolver and result-sheet code path as a real decode. Covers 100% of the post-decode UI.
+- The scanner hook itself (request camera, start/stop stream, decode loop, duplicate suppression) is tested with **Vitest + mocked MediaStream and mocked zxing** — not Playwright. This is more reliable than driving a fake camera in Chromium.
+
+### "Live" / real-device smoke checklist
+
+Before merging, manually verify on real hardware (checked off in the PR description):
+
+- iOS Safari 17+: camera opens, decodes a printed Code128 label, opens correct asset. Torch-capability probe returns `false` (known limitation); manual entry still works.
+- Chrome on Android: camera opens, decodes, torch toggle works, PWA install prompt available.
+- Desktop Chrome/Firefox on a 1280px window: sidebar visible. Dev-tools mobile emulator at 375px: bottom nav + scan button visible.
+- Install-to-home-screen on iOS: launches full-screen with Stowage icon and theme color.
+- `navigator.vibrate` triggers on Android success; no-op on iOS (expected).
+
+These are manual steps noted on the PR, not automated — they're the things that genuinely don't survive in a CI headless browser.
+
 ## Implementation order
 
-1. `useMediaQuery` hook, `MobileActionSheet`, manifest file — plumbing first.
-2. Shell: `BottomNav`, "More" sheet, responsive swap inside `AppShell`.
-3. `useBarcodeScanner` hook + `resolveScanTarget` util — no UI, testable in isolation.
-4. `/scan` page with camera + reticle + manual entry — still no action sheet.
-5. Result sheet + six quick actions — wires real mutation APIs that already exist.
-6. Assets list card view + filters sheet.
-7. Remaining field-flow polish (asset detail, services, dashboard, locations).
-8. Admin page polish (column drops, dialog → sheet, "edit on desktop" for labels).
-9. PWA icons + metadata wiring.
-10. Tests: Vitest for the scanner hook and resolver; Playwright for bottom nav routing and the scan resolver happy path.
+Each step includes its own tests before it's "done". No blanket "tests at the end" phase.
+
+1. `useMediaQuery` hook **+ its Vitest test**. Manifest file wiring in `src/app/layout.tsx` **+ e2e assertion that the `<link rel="manifest">` is present**.
+2. `MobileActionSheet` component **+ Vitest**. `BottomNav` component **+ Vitest for slots, active routes, More sheet**. Responsive swap inside `AppShell`. **New `e2e/mobile-shell.spec.ts`** runs green.
+3. `resolveScanTarget` util **+ exhaustive Vitest**. `useBarcodeScanner` hook **+ Vitest with mocked MediaStream and zxing**.
+4. `/scan` page UI with camera viewport, reticle, scan-line animation, torch, manual entry, permission-denied state, insecure-context state. Vitest for `ScanPageClient` rendering branches. **`e2e/scan.spec.ts` manual-entry path** goes green.
+5. Result sheet + six quick actions. Each action has a Vitest test for the mutation call and optimistic-rollback behavior. Extend `e2e/scan.spec.ts` with the full set of quick-action round-trips.
+6. Assets list card view + filters sheet. Vitest for `AssetCardList`. Extend or add `e2e/mobile-field-flows.spec.ts` with the list + filter assertions.
+7. Remaining field-flow polish (asset detail, services, dashboard, locations). Each gets added to `e2e/mobile-field-flows.spec.ts`.
+8. Admin page polish (column drops, dialog → sheet, "edit on desktop" banner on labels). Minimal e2e: "labels page shows desktop banner on mobile viewport; template list still rendered".
+9. PWA icons + Apple meta tags. E2E asserts theme-color + manifest link + start URL.
+10. Live device smoke pass (iOS Safari, Android Chrome). Checked off in PR description, not in CI.
 
 ## Open questions
 
