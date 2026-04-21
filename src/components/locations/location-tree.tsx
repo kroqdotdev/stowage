@@ -168,18 +168,18 @@ export function LocationTree({
               className="min-w-0 flex-1 cursor-pointer text-left"
               onClick={() => onSelect(node.id)}
             >
-              <div className="flex items-center gap-2">
-                <FolderTree className="h-4 w-4 text-muted-foreground" />
-                <span className="truncate text-sm font-medium">
+              <div className="flex min-w-0 items-center gap-2">
+                <FolderTree className="h-4 w-4 shrink-0 text-muted-foreground" />
+                <span className="min-w-0 flex-1 truncate text-sm font-medium">
                   {node.name}
                 </span>
                 {hasChildren ? (
-                  <span className="rounded-full border border-border/70 px-1.5 py-0 text-[11px] text-muted-foreground">
+                  <span className="shrink-0 rounded-full border border-border/70 px-1.5 py-0 text-[11px] text-muted-foreground">
                     {children.length}
                   </span>
                 ) : null}
               </div>
-              <div className="mt-0.5 truncate text-xs text-muted-foreground">
+              <div className="mt-0.5 min-w-0 truncate text-xs text-muted-foreground">
                 {node.path}
               </div>
             </button>

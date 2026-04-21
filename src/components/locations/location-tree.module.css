@@ -10,6 +10,8 @@
     var(--color-muted-foreground) 40%,
     transparent
   );
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 .tree,
@@ -34,7 +36,13 @@
 }
 
 .tree ul > .node {
-  padding-left: calc(var(--tree-spacing) * 1.25);
+  padding-left: calc(var(--tree-spacing) * 0.8);
+}
+
+@media (min-width: 640px) {
+  .tree ul > .node {
+    padding-left: calc(var(--tree-spacing) * 1.25);
+  }
 }
 
 .tree > .node:last-child,
