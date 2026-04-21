@@ -151,6 +151,7 @@ export function ServicesScheduledList() {
     () => (rowsQuery.data ?? []) as ScheduledServiceItem[],
     [rowsQuery.data],
   );
+  const grouped = useMemo(() => groupByBucket(items, today), [items, today]);
 
   if (rowsQuery.isPending) {
     return (
@@ -167,8 +168,6 @@ export function ServicesScheduledList() {
       </div>
     );
   }
-
-  const grouped = groupByBucket(items, today);
 
   return (
     <>

@@ -37,8 +37,13 @@ const SLOTS: Slot[] = [
   { key: "more", label: "More", icon: MoreHorizontal },
 ];
 
+const MORE_PATH_PREFIXES = ["/locations", "/taxonomy", "/labels", "/settings"];
+
 function isSlotActive(pathname: string, slot: Slot, moreOpen: boolean) {
-  if (slot.key === "more") return moreOpen;
+  if (slot.key === "more") {
+    if (moreOpen) return true;
+    return MORE_PATH_PREFIXES.some((prefix) => pathname.startsWith(prefix));
+  }
   if (slot.key === "home") return pathname === "/dashboard";
   if (!slot.href) return false;
   return pathname.startsWith(slot.href);
@@ -171,16 +176,15 @@ function MoreSheet({
     setLoggingOut(true);
     try {
       await logout();
-      queryClient.clear();
-      onOpenChange(false);
-      router.replace("/login");
     } catch {
       toast.error("Signed out locally. Refresh if needed.");
-      onOpenChange(false);
-      router.replace("/login");
-    } finally {
-      setLoggingOut(false);
     }
+    queryClient.clear();
+    onOpenChange(false);
+    // Note: no `finally { setLoggingOut(false) }` — the router.replace below
+    // unmounts this component, and setting state on an unmounted component
+    // warns in React 19.
+    router.replace("/login");
   }
 
   const items: { label: string; href: string; icon: typeof MapPin }[] = [

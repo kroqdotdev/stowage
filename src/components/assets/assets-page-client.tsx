@@ -2,7 +2,14 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { startTransition, useDeferredValue, useMemo, useState } from "react";
+import {
+  startTransition,
+  useDeferredValue,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { Package, Plus, Printer, X } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -46,22 +53,37 @@ function buildFiltersKey(searchParams: URLSearchParams) {
   ].join("|");
 }
 
-function AssetsPageClientContent({
-  initialFilters,
-}: {
-  initialFilters: AssetFiltersState;
-}) {
+export function AssetsPageClient() {
+  const searchParams = useSearchParams();
   const router = useRouter();
   const isDesktop = useMediaQuery("(min-width: 1024px)");
 
   const [searchInput, setSearchInput] = useState("");
   const deferredSearch = useDeferredValue(searchInput);
 
-  const [filters, setFilters] = useState<AssetFiltersState>(initialFilters);
+  const [filters, setFilters] = useState<AssetFiltersState>(() =>
+    getInitialFilters(searchParams),
+  );
   const [sortBy, setSortBy] = useState<AssetSortBy>("createdAt");
   const [sortDirection, setSortDirection] =
     useState<AssetSortDirection>("desc");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  // Sync URL → state when the filter-defining params actually change (e.g.,
+  // clicking a category pill on the dashboard). Previously the wrapper used
+  // `key={filtersKey}` to remount the entire subtree, which blew away the
+  // table, in-flight queries, selection, and sort — a visible jank when the
+  // user navigated between pre-filtered links.
+  const lastFiltersKeyRef = useRef(buildFiltersKey(searchParams));
+  useEffect(() => {
+    const nextKey = buildFiltersKey(searchParams);
+    if (nextKey === lastFiltersKeyRef.current) return;
+    lastFiltersKeyRef.current = nextKey;
+    startTransition(() => {
+      setFilters(getInitialFilters(searchParams));
+      setSelectedIds(new Set());
+    });
+  }, [searchParams]);
 
   const filterOptionsQuery = useQuery({
     queryKey: ["assets", "filter-options"],
@@ -69,15 +91,26 @@ function AssetsPageClientContent({
     staleTime: 60_000,
   });
 
-  const listParams: ListAssetsParams = {
-    categoryId: filters.categoryId ?? undefined,
-    status: filters.status ?? undefined,
-    locationId: filters.locationId ?? undefined,
-    tagIds: filters.tagIds,
-    search: deferredSearch.trim() ? deferredSearch.trim() : undefined,
-    sortBy,
-    sortDirection,
-  };
+  const listParams: ListAssetsParams = useMemo(
+    () => ({
+      categoryId: filters.categoryId ?? undefined,
+      status: filters.status ?? undefined,
+      locationId: filters.locationId ?? undefined,
+      tagIds: filters.tagIds,
+      search: deferredSearch.trim() ? deferredSearch.trim() : undefined,
+      sortBy,
+      sortDirection,
+    }),
+    [
+      filters.categoryId,
+      filters.status,
+      filters.locationId,
+      filters.tagIds,
+      deferredSearch,
+      sortBy,
+      sortDirection,
+    ],
+  );
   const assetsQuery = useQuery({
     queryKey: ["assets", "list", listParams],
     queryFn: () => listAssets(listParams),
@@ -307,18 +340,5 @@ function AssetsPageClientContent({
         </div>
       ) : null}
     </div>
-  );
-}
-
-export function AssetsPageClient() {
-  const searchParams = useSearchParams();
-  const filtersKey = buildFiltersKey(searchParams);
-  const initialFilters = useMemo(
-    () => getInitialFilters(searchParams),
-    [searchParams],
-  );
-
-  return (
-    <AssetsPageClientContent key={filtersKey} initialFilters={initialFilters} />
   );
 }

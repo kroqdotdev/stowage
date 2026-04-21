@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { MapPin, MoreHorizontal, Package } from "lucide-react";
@@ -13,6 +13,39 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { getAsset, type AssetDetail } from "@/lib/api/assets";
 import { cn } from "@/lib/utils";
 
+function rowToDetailPlaceholder(row: AssetListItem): AssetDetail {
+  return {
+    id: row.id,
+    name: row.name,
+    assetTag: row.assetTag,
+    status: row.status,
+    categoryId: row.categoryId,
+    locationId: row.locationId,
+    serviceGroupId: row.serviceGroupId,
+    notes: row.notes,
+    customFieldValues: {},
+    createdBy: "",
+    updatedBy: "",
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+    category: null,
+    location: row.locationPath
+      ? {
+          id: row.locationId ?? "",
+          name: row.locationPath,
+          parentId: null,
+          path: row.locationPath,
+        }
+      : null,
+    serviceGroup: null,
+    tags: row.tagIds.map((id, index) => ({
+      id,
+      name: row.tagNames[index] ?? "",
+      color: "",
+    })),
+  };
+}
+
 export function AssetCardList({
   rows,
   loading,
@@ -22,17 +55,29 @@ export function AssetCardList({
 }) {
   const [activeId, setActiveId] = useState<string | null>(null);
 
+  const activeRow = useMemo(
+    () => (activeId ? (rows.find((row) => row.id === activeId) ?? null) : null),
+    [rows, activeId],
+  );
+
   const detailQuery = useQuery<AssetDetail | null>({
     queryKey: ["assets", "detail", activeId],
     queryFn: () => (activeId ? getAsset(activeId) : Promise.resolve(null)),
     enabled: !!activeId,
+    // Seed the sheet from the list row so it opens instantly instead of
+    // showing a blank closed state until the detail fetch completes. The
+    // background refetch fills in fields the list row doesn't carry.
+    placeholderData: activeRow ? rowToDetailPlaceholder(activeRow) : undefined,
   });
 
   if (loading && rows.length === 0) {
     return (
       <ul className="flex flex-col gap-2" data-testid="asset-card-list-loading">
         {Array.from({ length: 4 }).map((_, i) => (
-          <li key={i} className="rounded-xl border border-border bg-card p-4">
+          <li
+            key={`skeleton-${i}`}
+            className="rounded-xl border border-border bg-card p-4"
+          >
             <Skeleton className="h-5 w-2/3" />
             <Skeleton className="mt-2 h-4 w-1/3" />
             <Skeleton className="mt-3 h-4 w-1/2" />
