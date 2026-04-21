@@ -8,6 +8,15 @@ const getLabelPreviewAssetMock = vi.fn();
 const listCustomFieldsMock = vi.fn();
 const getCurrentUserMock = vi.fn();
 const ensureMock = vi.fn();
+const useMediaQueryMock = vi.fn();
+
+vi.mock("@/hooks/use-media-query", () => ({
+  useMediaQuery: (query: string) => useMediaQueryMock(query),
+}));
+
+vi.mock("@/components/labels/label-preview", () => ({
+  LabelPreview: () => <div data-testid="mock-label-preview" />,
+}));
 
 vi.mock("@/lib/api/label-templates", () => ({
   listLabelTemplates: () => listLabelTemplatesMock(),
@@ -66,6 +75,8 @@ describe("LabelsPageClient", () => {
     getCurrentUserMock.mockReset();
     ensureMock.mockReset();
     ensureMock.mockResolvedValue({ seeded: false });
+    useMediaQueryMock.mockReset();
+    useMediaQueryMock.mockReturnValue(true); // default to desktop
   });
 
   it("shows loading state while queries are pending", () => {
@@ -136,5 +147,49 @@ describe("LabelsPageClient", () => {
     await waitFor(() => {
       expect(screen.getByTestId("user-role")).toHaveTextContent("user");
     });
+  });
+
+  it("shows a desktop-only banner + read-only previews on mobile viewports", async () => {
+    useMediaQueryMock.mockReturnValue(false);
+    getCurrentUserMock.mockResolvedValue({
+      id: "user-1",
+      email: "a@x.com",
+      name: "Admin",
+      role: "admin",
+    });
+    listLabelTemplatesMock.mockResolvedValue([
+      {
+        id: "template-1",
+        name: "Thermal 57x32 mm",
+        widthMm: 57,
+        heightMm: 32,
+        elements: [],
+        isDefault: true,
+        createdAt: 1,
+        updatedAt: 1,
+        createdBy: "user-1",
+        updatedBy: "user-1",
+      },
+    ]);
+    getLabelUrlBaseMock.mockResolvedValue("http://localhost:3000");
+    getLabelPreviewAssetMock.mockResolvedValue(null);
+    listCustomFieldsMock.mockResolvedValue([]);
+
+    renderWithClient(<LabelsPageClient />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("labels-mobile-view")).toBeInTheDocument();
+    });
+    expect(screen.getByTestId("labels-desktop-banner")).toHaveTextContent(
+      /Open Stowage on desktop to edit/,
+    );
+    expect(
+      screen.getByTestId("labels-mobile-template-template-1"),
+    ).toBeInTheDocument();
+    expect(screen.getByTestId("mock-label-preview")).toBeInTheDocument();
+    expect(screen.queryByTestId("mock-template-designer")).toBeNull();
+
+    const printLink = screen.getByRole("link", { name: /Print labels/ });
+    expect(printLink).toHaveAttribute("href", "/labels/print");
   });
 });
