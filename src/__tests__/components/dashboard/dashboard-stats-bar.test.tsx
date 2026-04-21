@@ -65,4 +65,11 @@ describe("DashboardStatsBar", () => {
       ).toBeTruthy();
     }
   });
+
+  it("is horizontally scrollable on mobile and a grid from sm up", () => {
+    render(<DashboardStatsBar totalAssets={21} statusCounts={statusCounts} />);
+    const bar = screen.getByTestId("dashboard-stats-bar");
+    expect(bar.className).toMatch(/overflow-x-auto/);
+    expect(bar.className).toMatch(/sm:grid/);
+  });
 });
