@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { PocketBaseClientProvider } from "@/app/PocketBaseClientProvider";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -19,6 +19,12 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Stowage",
   description: "Asset management for small teams",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    title: "Stowage",
+    statusBarStyle: "default",
+  },
   icons: {
     icon: [
       { url: "/images/web/favicon.ico", sizes: "any" },
@@ -36,6 +42,16 @@ export const metadata: Metadata = {
     shortcut: "/images/web/favicon.ico",
     apple: "/images/web/apple-touch-icon.png",
   },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#c2410c" },
+    { media: "(prefers-color-scheme: dark)", color: "#ea580c" },
+  ],
 };
 
 export default async function RootLayout({

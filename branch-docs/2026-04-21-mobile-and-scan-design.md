@@ -173,7 +173,7 @@ When `target.status === "unresolved"` the sheet shows the decoded text and two b
 
 ### Field flows (mobile-first redesign)
 
-**Assets list (`/assets`).** Keep `AssetTable` on desktop. Below `lg`, swap in `AssetCardList` — each card shows category dot, name, status badge, asset tag, location path, up to three tag chips. Tap → detail. Long-press or kebab → the same six-action sheet as scan results. Filters move into a bottom sheet triggered by a sticky chip with an active-count badge. Sort becomes a segmented control inside the filter sheet.
+**Assets list (`/assets`).** Keep `AssetTable` on desktop. Below `lg`, swap in `AssetCardList` — each card shows category dot, name, status badge, asset tag, location path, up to three tag chips. Tap → detail. Always-visible kebab (top-right of each card) → the same six-action sheet as scan results. Filters move into a bottom sheet triggered by a sticky chip with an active-count badge. Sort becomes a segmented control inside the filter sheet.
 
 **Asset detail (`/assets/:id`).** Hero already stacks on narrow screens; needs less padding and thumb-friendly actions. Edit / Print / Delete collapse into a "⋯" menu. The existing tabs become sticky below the hero so they stay visible while scrolling the field list. Attachments gallery becomes a 2-column grid below `sm`.
 
