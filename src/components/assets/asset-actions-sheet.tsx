@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -59,11 +59,16 @@ export function AssetActionsSheet({
   testIdPrefix = "scan",
 }: AssetActionsSheetProps) {
   const [view, setView] = useState<View>("grid");
-
-  useEffect(() => {
-    if (!open) return;
-    setView("grid");
-  }, [open, asset?.id]);
+  // Reset back to the grid view whenever the sheet opens or the asset id
+  // changes. Using the "previous value" render-time reset pattern (React docs:
+  // "Adjusting state based on props") instead of a useEffect, which triggers
+  // the react-hooks/set-state-in-effect rule and causes an extra render.
+  const resetKey = open && asset ? asset.id : null;
+  const [lastResetKey, setLastResetKey] = useState<string | null>(null);
+  if (resetKey !== lastResetKey) {
+    setLastResetKey(resetKey);
+    if (view !== "grid") setView("grid");
+  }
 
   if (!asset) return null;
 

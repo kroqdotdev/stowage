@@ -54,9 +54,7 @@ async function main() {
   console.log("cleared previous DEMO- records");
 
   const categoryIds = await seedCategories(pb, ownerId);
-  console.log(
-    `seeded ${Object.keys(categoryIds).length} categories`,
-  );
+  console.log(`seeded ${Object.keys(categoryIds).length} categories`);
   const tagIds = await seedTags(pb);
   console.log(`seeded ${Object.keys(tagIds).length} tags`);
   const locationIds = await seedLocations(pb);

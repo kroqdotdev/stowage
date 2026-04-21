@@ -242,8 +242,7 @@ export function UserManagementSection({
                       {user.email}
                     </p>
                     <p className="text-[11px] text-muted-foreground">
-                      Created{" "}
-                      {formatCreatedDate(user.createdAt, dateFormat)}
+                      Created {formatCreatedDate(user.createdAt, dateFormat)}
                     </p>
                   </div>
                 </div>

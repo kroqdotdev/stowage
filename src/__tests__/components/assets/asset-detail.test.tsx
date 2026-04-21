@@ -163,9 +163,7 @@ describe("AssetDetail", () => {
   });
 
   it("hides the kebab delete entry when canDelete is false", async () => {
-    renderWithProviders(
-      <AssetDetail {...defaultProps} canDelete={false} />,
-    );
+    renderWithProviders(<AssetDetail {...defaultProps} canDelete={false} />);
     const kebab = screen.getByTestId("asset-detail-kebab");
     fireEvent.pointerDown(kebab, { pointerType: "mouse", button: 0 });
     fireEvent.pointerUp(kebab, { pointerType: "mouse", button: 0 });

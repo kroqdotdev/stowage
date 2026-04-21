@@ -191,8 +191,9 @@ export function ServiceGroupsList() {
                       </p>
                     ) : null}
                     <p className="text-[11px] text-muted-foreground">
-                      {group.fieldCount} field{group.fieldCount === 1 ? "" : "s"}{" "}
-                      · {group.assetCount} asset
+                      {group.fieldCount} field
+                      {group.fieldCount === 1 ? "" : "s"} · {group.assetCount}{" "}
+                      asset
                       {group.assetCount === 1 ? "" : "s"}
                     </p>
                   </div>

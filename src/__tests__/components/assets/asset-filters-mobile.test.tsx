@@ -15,8 +15,18 @@ const options: AssetFilterOptions = {
     { id: "cat-2", name: "Hand tools", prefix: null, color: "#6b8e6b" },
   ],
   locations: [
-    { id: "loc-1", name: "Bench 1", parentId: null, path: "Workshop / Bench 1" },
-    { id: "loc-2", name: "Bench 2", parentId: null, path: "Workshop / Bench 2" },
+    {
+      id: "loc-1",
+      name: "Bench 1",
+      parentId: null,
+      path: "Workshop / Bench 1",
+    },
+    {
+      id: "loc-2",
+      name: "Bench 2",
+      parentId: null,
+      path: "Workshop / Bench 2",
+    },
   ],
   tags: [
     {
@@ -86,8 +96,12 @@ function renderFilters(overrides: Partial<FilterState> = {}) {
 describe("AssetFiltersMobile", () => {
   it("renders a search input and a filters trigger chip", () => {
     renderFilters();
-    expect(screen.getByTestId("asset-filters-mobile-search")).toBeInTheDocument();
-    expect(screen.getByTestId("asset-filters-mobile-trigger")).toBeInTheDocument();
+    expect(
+      screen.getByTestId("asset-filters-mobile-search"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByTestId("asset-filters-mobile-trigger"),
+    ).toBeInTheDocument();
     expect(screen.queryByTestId("asset-filters-mobile-count")).toBeNull();
   });
 
@@ -113,9 +127,15 @@ describe("AssetFiltersMobile", () => {
     expect(sheet).toBeInTheDocument();
     expect(screen.getByTestId("asset-sort-recent")).toBeInTheDocument();
     expect(screen.getByTestId("asset-filter-status-all")).toBeInTheDocument();
-    expect(screen.getByTestId("asset-filter-status-active")).toBeInTheDocument();
-    expect(screen.getByTestId("asset-filter-category-cat-1")).toBeInTheDocument();
-    expect(screen.getByTestId("asset-filter-location-loc-2")).toBeInTheDocument();
+    expect(
+      screen.getByTestId("asset-filter-status-active"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByTestId("asset-filter-category-cat-1"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByTestId("asset-filter-location-loc-2"),
+    ).toBeInTheDocument();
     expect(screen.getByTestId("asset-filter-tag-t1")).toBeInTheDocument();
   });
 

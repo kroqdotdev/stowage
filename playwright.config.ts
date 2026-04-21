@@ -8,9 +8,9 @@ import { defineConfig, devices } from "@playwright/test";
 for (const file of [".env.local", ".env"]) {
   if (existsSync(file)) {
     try {
-      (process as unknown as { loadEnvFile?: (p: string) => void }).loadEnvFile?.(
-        file,
-      );
+      (
+        process as unknown as { loadEnvFile?: (p: string) => void }
+      ).loadEnvFile?.(file);
     } catch {
       // best effort — skip malformed files
     }

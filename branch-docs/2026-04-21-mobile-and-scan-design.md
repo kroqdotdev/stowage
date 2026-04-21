@@ -96,7 +96,10 @@ One dependency, one code path, works everywhere including Firefox. Imported dyna
 `useBarcodeScanner` in `src/hooks/use-barcode-scanner.ts`:
 
 ```ts
-type ScanResult = { text: string; format: "CODE_128" | "DATA_MATRIX" | "QR_CODE" };
+type ScanResult = {
+  text: string;
+  format: "CODE_128" | "DATA_MATRIX" | "QR_CODE";
+};
 
 function useBarcodeScanner(options: {
   videoRef: RefObject<HTMLVideoElement>;
@@ -167,7 +170,7 @@ The six actions:
 
 Status and Move are optimistic. Photo and Log service are pessimistic. Any action except View details returns to the result sheet with the updated asset still shown; the scanner only resumes when the sheet is dismissed.
 
-When `target.status === "unresolved"` the sheet shows the decoded text and two buttons: *Try again*, *Enter manually*.
+When `target.status === "unresolved"` the sheet shows the decoded text and two buttons: _Try again_, _Enter manually_.
 
 ## Mobile layouts per page
 
@@ -210,9 +213,23 @@ When `target.status === "unresolved"` the sheet shows the decoded text and two b
   "background_color": "#fafaf9",
   "theme_color": "#c2410c",
   "icons": [
-    { "src": "/images/web/icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "/images/web/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "/images/web/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    {
+      "src": "/images/web/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/images/web/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/images/web/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
   ]
 }
 ```
@@ -302,7 +319,10 @@ No new backend endpoints are introduced. All scan mutations go through existing 
 ```ts
 const email = process.env.E2E_AUTH_EMAIL;
 const password = process.env.E2E_AUTH_PASSWORD;
-test.skip(!email || !password, "Set E2E_AUTH_EMAIL and E2E_AUTH_PASSWORD to run …");
+test.skip(
+  !email || !password,
+  "Set E2E_AUTH_EMAIL and E2E_AUTH_PASSWORD to run …",
+);
 ```
 
 Credentials live in `.env.local` as they already do. Playwright loads them because `pnpm dev:next` reads `.env.local` at boot, which the webServer command triggers. I will not touch `.env.local` or commit credentials.

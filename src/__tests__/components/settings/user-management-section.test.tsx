@@ -92,8 +92,7 @@ describe("UserManagementSection", () => {
 
     await waitFor(() => {
       expect(
-        screen.getAllByRole("combobox", { name: "Role for Alex Admin" })
-          .length,
+        screen.getAllByRole("combobox", { name: "Role for Alex Admin" }).length,
       ).toBeGreaterThan(0);
     });
     expect(

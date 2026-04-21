@@ -12,10 +12,7 @@ type Props = {
   viewportHeight: number;
 };
 
-const PHASE_STYLE: Record<
-  DetectedPhase,
-  { border: string; glow: string }
-> = {
+const PHASE_STYLE: Record<DetectedPhase, { border: string; glow: string }> = {
   detecting: {
     border: "var(--scan)",
     glow: "rgba(194, 65, 12, 0.55)",
@@ -48,7 +45,10 @@ export function ScanDetectedOverlay({
   const padding = 8;
   const x = Math.max(0, rect.minX - padding);
   const y = Math.max(0, rect.minY - padding);
-  const width = Math.min(viewportWidth - x, rect.maxX - rect.minX + padding * 2);
+  const width = Math.min(
+    viewportWidth - x,
+    rect.maxX - rect.minX + padding * 2,
+  );
   const height = Math.min(
     viewportHeight - y,
     rect.maxY - rect.minY + padding * 2,

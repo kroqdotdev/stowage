@@ -33,9 +33,7 @@ export async function logout(): Promise<void> {
 }
 
 export async function checkFirstRun(): Promise<AuthBootstrapState> {
-  return await apiFetch<AuthBootstrapState>(
-    "/api/auth/first-run",
-  );
+  return await apiFetch<AuthBootstrapState>("/api/auth/first-run");
 }
 
 export async function createFirstAdmin(input: {

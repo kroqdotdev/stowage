@@ -96,7 +96,9 @@ export function SetupForm() {
             className="rounded-md border border-destructive/20 bg-destructive/5 px-3 py-2 text-sm text-destructive"
           >
             Server setup is incomplete. Set
-            {" `POCKETBASE_SUPERUSER_EMAIL` and `POCKETBASE_SUPERUSER_PASSWORD` "}
+            {
+              " `POCKETBASE_SUPERUSER_EMAIL` and `POCKETBASE_SUPERUSER_PASSWORD` "
+            }
             in your Docker or Next environment, then restart the app.
           </p>
         ) : null}

@@ -124,11 +124,7 @@ export function useBarcodeScanner(
             if (!text) return;
             const now = Date.now();
             const last = lastResultRef.current;
-            if (
-              last &&
-              last.text === text &&
-              now - last.at < dedupeWindowMs
-            ) {
+            if (last && last.text === text && now - last.at < dedupeWindowMs) {
               return;
             }
             lastResultRef.current = { text, at: now };
@@ -153,9 +149,7 @@ export function useBarcodeScanner(
         controlsRef.current = controls;
         setState("scanning");
 
-        const capabilities = controls.streamVideoCapabilitiesGet?.(
-          firstTrack,
-        );
+        const capabilities = controls.streamVideoCapabilitiesGet?.(firstTrack);
         const supportsTorch = Boolean(
           capabilities && "torch" in capabilities && capabilities.torch,
         );
@@ -205,9 +199,7 @@ export function useBarcodeScanner(
   };
 }
 
-function teardown(
-  controlsRef: RefObject<IScannerControls | null>,
-) {
+function teardown(controlsRef: RefObject<IScannerControls | null>) {
   const controls = controlsRef.current;
   controlsRef.current = null;
   if (controls) {

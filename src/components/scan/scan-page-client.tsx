@@ -13,7 +13,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MobileActionSheet } from "@/components/layout/mobile-action-sheet";
-import { ScanViewport, type DetectedFrame } from "@/components/scan/scan-viewport";
+import {
+  ScanViewport,
+  type DetectedFrame,
+} from "@/components/scan/scan-viewport";
 import { ScanResultSheet } from "@/components/scan/scan-result-sheet";
 import { useBarcodeScanner } from "@/hooks/use-barcode-scanner";
 import { resolveScanTarget, type ResolverResult } from "@/lib/scan";
@@ -39,9 +42,10 @@ export function ScanPageClient() {
 
   const handleResolved = useCallback((result: ResolverResult) => {
     setTarget(result);
-    const vibrate = (typeof navigator !== "undefined" &&
-      "vibrate" in navigator) ?
-      navigator.vibrate?.bind(navigator) : undefined;
+    const vibrate =
+      typeof navigator !== "undefined" && "vibrate" in navigator
+        ? navigator.vibrate?.bind(navigator)
+        : undefined;
     if (vibrate) {
       if (result.status === "asset") vibrate(15);
       else vibrate([10, 60, 10]);
@@ -113,8 +117,7 @@ export function ScanPageClient() {
       }
     }
     document.addEventListener("visibilitychange", onVisibility);
-    return () =>
-      document.removeEventListener("visibilitychange", onVisibility);
+    return () => document.removeEventListener("visibilitychange", onVisibility);
   }, []);
 
   return (
@@ -167,9 +170,7 @@ export function ScanPageClient() {
         resolving={resolving}
         onAssetUpdated={(asset) =>
           setTarget((current) =>
-            current?.status === "asset"
-              ? { status: "asset", asset }
-              : current,
+            current?.status === "asset" ? { status: "asset", asset } : current,
           )
         }
         onDismiss={() => setTarget(null)}
@@ -346,4 +347,3 @@ function ManualEntrySheet({
     </MobileActionSheet>
   );
 }
-

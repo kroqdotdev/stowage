@@ -19,9 +19,10 @@ const listLocationsMock = vi.fn();
 const listServiceProviderOptionsMock = vi.fn();
 
 vi.mock("@/lib/api/assets", async () => {
-  const actual = await vi.importActual<typeof import("@/lib/api/assets")>(
-    "@/lib/api/assets",
-  );
+  const actual =
+    await vi.importActual<typeof import("@/lib/api/assets")>(
+      "@/lib/api/assets",
+    );
   return {
     ...actual,
     updateAsset: (...args: unknown[]) => updateAssetMock(...args),
@@ -34,8 +35,7 @@ vi.mock("@/lib/api/attachments", () => ({
 }));
 
 vi.mock("@/lib/api/service-records", () => ({
-  createServiceRecord: (...args: unknown[]) =>
-    createServiceRecordMock(...args),
+  createServiceRecord: (...args: unknown[]) => createServiceRecordMock(...args),
 }));
 
 vi.mock("@/lib/api/service-providers", () => ({
@@ -209,9 +209,7 @@ describe("ScanResultSheet", () => {
       asset: makeAsset(),
     });
     fireEvent.click(screen.getByTestId("scan-action-status"));
-    fireEvent.click(
-      await screen.findByTestId("scan-status-option-retired"),
-    );
+    fireEvent.click(await screen.findByTestId("scan-status-option-retired"));
 
     await waitFor(() => {
       expect(toastError).toHaveBeenCalled();

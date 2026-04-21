@@ -12,11 +12,7 @@ import { createRef } from "react";
 
 import { useBarcodeScanner } from "@/hooks/use-barcode-scanner";
 
-type CallbackFn = (
-  result: unknown,
-  err: unknown,
-  controls: unknown,
-) => void;
+type CallbackFn = (result: unknown, err: unknown, controls: unknown) => void;
 
 const scannerState: {
   capabilities: { torch?: boolean } | undefined;
@@ -249,9 +245,8 @@ describe("useBarcodeScanner", () => {
   });
 
   it("enters 'error' when mediaDevices is missing", async () => {
-    (
-      navigator as unknown as { mediaDevices?: unknown }
-    ).mediaDevices = undefined;
+    (navigator as unknown as { mediaDevices?: unknown }).mediaDevices =
+      undefined;
     const videoRef = makeVideoRef();
     const { result } = renderHook(() =>
       useBarcodeScanner({

@@ -31,7 +31,9 @@ describe("MobileActionSheet", () => {
     expect(screen.getByTestId("sheet-body")).toBeInTheDocument();
     expect(screen.getByText("Sheet title")).toBeInTheDocument();
     expect(screen.getByText("Sheet description")).toBeInTheDocument();
-    expect(screen.getByTestId("mobile-action-sheet-handle")).toBeInTheDocument();
+    expect(
+      screen.getByTestId("mobile-action-sheet-handle"),
+    ).toBeInTheDocument();
   });
 
   it("applies safe-area inset class to the content", () => {

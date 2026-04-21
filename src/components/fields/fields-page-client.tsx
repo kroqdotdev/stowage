@@ -308,9 +308,7 @@ export function FieldsPageClient() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem
-                        onClick={() => openEdit(definition.id)}
-                      >
+                      <DropdownMenuItem onClick={() => openEdit(definition.id)}>
                         <Pencil className="h-4 w-4" />
                         Edit
                       </DropdownMenuItem>

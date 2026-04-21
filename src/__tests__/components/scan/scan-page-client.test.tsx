@@ -242,11 +242,9 @@ describe("ScanPageClient", () => {
       });
     });
 
-    const sheet = await screen.findByTestId(
-      "scan-result-asset",
-      undefined,
-      { timeout: 3_000 },
-    );
+    const sheet = await screen.findByTestId("scan-result-asset", undefined, {
+      timeout: 3_000,
+    });
     expect(sheet).toHaveAttribute("data-asset-id", "b2");
     expect(resolverMock).toHaveBeenCalledWith(
       "https://x.test/assets/b2",

@@ -3,9 +3,10 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, fireEvent } from "@testing-library/react";
 
 vi.mock("@/lib/api/assets", async () => {
-  const actual = await vi.importActual<typeof import("@/lib/api/assets")>(
-    "@/lib/api/assets",
-  );
+  const actual =
+    await vi.importActual<typeof import("@/lib/api/assets")>(
+      "@/lib/api/assets",
+    );
   return { ...actual, getAsset: vi.fn().mockResolvedValue(null) };
 });
 

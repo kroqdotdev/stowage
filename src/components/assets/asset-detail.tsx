@@ -2,13 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import {
-  MapPin,
-  MoreHorizontal,
-  Pencil,
-  Printer,
-  Trash2,
-} from "lucide-react";
+import { MapPin, MoreHorizontal, Pencil, Printer, Trash2 } from "lucide-react";
 import type { FieldDefinition } from "@/components/fields/types";
 import { DynamicFieldDisplay } from "@/components/fields/dynamic-field-display";
 import { ConfirmDialog } from "@/components/crud/confirm-dialog";
@@ -167,9 +161,7 @@ export function AssetDetail({
                       Delete
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent>
-                    Permanently delete this asset
-                  </TooltipContent>
+                  <TooltipContent>Permanently delete this asset</TooltipContent>
                 </Tooltip>
               ) : null}
             </div>

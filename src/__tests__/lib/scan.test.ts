@@ -1,10 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 
 import type { AssetDetail } from "@/lib/api/assets";
-import {
-  extractStowageAssetId,
-  resolveScanTarget,
-} from "@/lib/scan";
+import { extractStowageAssetId, resolveScanTarget } from "@/lib/scan";
 
 const APP_ORIGIN = "https://stowage.example.com";
 
@@ -29,7 +26,10 @@ function makeAsset(id: string, assetTag: string): AssetDetail {
 describe("extractStowageAssetId", () => {
   it("returns the id when the URL matches the app origin and /assets/<id>", () => {
     expect(
-      extractStowageAssetId("https://stowage.example.com/assets/abc123", APP_ORIGIN),
+      extractStowageAssetId(
+        "https://stowage.example.com/assets/abc123",
+        APP_ORIGIN,
+      ),
     ).toBe("abc123");
   });
 
@@ -53,13 +53,19 @@ describe("extractStowageAssetId", () => {
 
   it("returns null for a URL on a different origin", () => {
     expect(
-      extractStowageAssetId("https://evil.example.com/assets/abc123", APP_ORIGIN),
+      extractStowageAssetId(
+        "https://evil.example.com/assets/abc123",
+        APP_ORIGIN,
+      ),
     ).toBeNull();
   });
 
   it("returns null for a URL with matching origin but the wrong path", () => {
     expect(
-      extractStowageAssetId("https://stowage.example.com/foo/abc123", APP_ORIGIN),
+      extractStowageAssetId(
+        "https://stowage.example.com/foo/abc123",
+        APP_ORIGIN,
+      ),
     ).toBeNull();
     expect(
       extractStowageAssetId("https://stowage.example.com/assets", APP_ORIGIN),
@@ -121,9 +127,7 @@ describe("resolveScanTarget", () => {
   });
 
   it("returns unresolved when fetchById throws (network / 403)", async () => {
-    const fetchById = vi
-      .fn()
-      .mockRejectedValue(new Error("forbidden"));
+    const fetchById = vi.fn().mockRejectedValue(new Error("forbidden"));
     const fetchByTag = vi.fn();
 
     const result = await resolveScanTarget(
@@ -173,11 +177,10 @@ describe("resolveScanTarget", () => {
     const fetchById = vi.fn();
     const fetchByTag = vi.fn();
 
-    const result = await resolveScanTarget(
-      "hello world",
-      APP_ORIGIN,
-      { fetchById, fetchByTag },
-    );
+    const result = await resolveScanTarget("hello world", APP_ORIGIN, {
+      fetchById,
+      fetchByTag,
+    });
 
     expect(result.status).toBe("unresolved");
     expect(fetchByTag).not.toHaveBeenCalled();

@@ -67,9 +67,7 @@ describe("ServicesScheduledList", () => {
     expect(
       screen.getByText("Last service 01-02-2026 • Dockside Repair"),
     ).toBeInTheDocument();
-    expect(
-      screen.getByTestId("log-service-schedule1"),
-    ).toBeInTheDocument();
+    expect(screen.getByTestId("log-service-schedule1")).toBeInTheDocument();
   });
 
   it("groups overdue, this-week, this-month and upcoming buckets", async () => {

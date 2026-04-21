@@ -49,17 +49,12 @@ test.describe("web app manifest", () => {
   test("declares apple-touch-icon and web-app meta tags", async ({ page }) => {
     await page.goto("/");
     const apple = page.locator('link[rel="apple-touch-icon"]').first();
-    await expect(apple).toHaveAttribute(
-      "href",
-      /\/apple-touch-icon\.png/,
-    );
+    await expect(apple).toHaveAttribute("href", /\/apple-touch-icon\.png/);
     await expect(apple).toHaveAttribute("sizes", "180x180");
 
     // Next 16 emits `mobile-web-app-capable` (the standardised replacement for
     // the deprecated `apple-mobile-web-app-capable`). iOS Safari accepts both.
-    const capable = page
-      .locator('meta[name="mobile-web-app-capable"]')
-      .first();
+    const capable = page.locator('meta[name="mobile-web-app-capable"]').first();
     await expect(capable).toHaveAttribute("content", "yes");
 
     const title = page
@@ -68,10 +63,7 @@ test.describe("web app manifest", () => {
     await expect(title).toHaveAttribute("content", "Stowage");
 
     const maskIcon = page.locator('link[rel="mask-icon"]').first();
-    await expect(maskIcon).toHaveAttribute(
-      "href",
-      /icon-512-maskable\.png$/,
-    );
+    await expect(maskIcon).toHaveAttribute("href", /icon-512-maskable\.png$/);
   });
 
   test("serves all referenced icon files with 200", async ({ request }) => {

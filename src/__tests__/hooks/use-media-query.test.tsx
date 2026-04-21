@@ -19,9 +19,7 @@ function installMatchMedia(initial: boolean) {
     },
     dispatchChange: (matches: boolean) => {
       mql.matches = matches;
-      listeners
-        .slice()
-        .forEach((cb) => cb({ matches } as MediaQueryListEvent));
+      listeners.slice().forEach((cb) => cb({ matches } as MediaQueryListEvent));
     },
     listenerCount: () => listeners.length,
   };
@@ -44,25 +42,19 @@ describe("useMediaQuery", () => {
 
   it("returns the initial match state", () => {
     installMatchMedia(true);
-    const { result } = renderHook(() =>
-      useMediaQuery("(min-width: 1024px)"),
-    );
+    const { result } = renderHook(() => useMediaQuery("(min-width: 1024px)"));
     expect(result.current).toBe(true);
   });
 
   it("returns false when the query does not match", () => {
     installMatchMedia(false);
-    const { result } = renderHook(() =>
-      useMediaQuery("(min-width: 1024px)"),
-    );
+    const { result } = renderHook(() => useMediaQuery("(min-width: 1024px)"));
     expect(result.current).toBe(false);
   });
 
   it("updates when the media query changes", () => {
     const mql = installMatchMedia(false);
-    const { result } = renderHook(() =>
-      useMediaQuery("(min-width: 1024px)"),
-    );
+    const { result } = renderHook(() => useMediaQuery("(min-width: 1024px)"));
     expect(result.current).toBe(false);
 
     act(() => {
@@ -78,9 +70,7 @@ describe("useMediaQuery", () => {
 
   it("removes its listener on unmount", () => {
     const mql = installMatchMedia(false);
-    const { unmount } = renderHook(() =>
-      useMediaQuery("(min-width: 1024px)"),
-    );
+    const { unmount } = renderHook(() => useMediaQuery("(min-width: 1024px)"));
     expect(mql.listenerCount()).toBe(1);
     unmount();
     expect(mql.listenerCount()).toBe(0);
@@ -93,9 +83,7 @@ describe("useMediaQuery", () => {
     const saved = anyWin.matchMedia;
     delete anyWin.matchMedia;
     try {
-      const { result } = renderHook(() =>
-        useMediaQuery("(min-width: 1024px)"),
-      );
+      const { result } = renderHook(() => useMediaQuery("(min-width: 1024px)"));
       expect(result.current).toBe(false);
     } finally {
       anyWin.matchMedia = saved;
