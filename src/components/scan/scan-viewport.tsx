@@ -39,18 +39,13 @@ function ScanReticle({ active }: { active: boolean }) {
     <div
       aria-hidden="true"
       className="pointer-events-none absolute inset-0 flex items-center justify-center"
+      data-active={active}
     >
       <div className="relative h-[68%] w-[68%]">
         <Corner className="left-0 top-0" rotate="0deg" />
         <Corner className="right-0 top-0" rotate="90deg" />
         <Corner className="right-0 bottom-0" rotate="180deg" />
         <Corner className="left-0 bottom-0" rotate="270deg" />
-        {active ? (
-          <div
-            className="absolute inset-x-2 h-[2px] rounded-full bg-[var(--scan)] shadow-[0_0_12px_var(--scan)] animate-scan-line motion-reduce:hidden"
-            data-testid="scan-line"
-          />
-        ) : null}
       </div>
     </div>
   );

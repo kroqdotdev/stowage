@@ -44,7 +44,7 @@ The topbar stays but shrinks to logo + search icon + avatar. The existing `Sideb
 - Colour: a new token `--scan` that mirrors the existing primary orange (`#c2410c` light / `#ea580c` dark) with `--scan-foreground` white. The button still stands out through its elevation, ring, and shadow glow, but the colour stays inside the warm palette used everywhere else. The token is kept (rather than referencing `--primary` directly) so the SCAN identity can diverge later without touching every call-site.
 - 4px `ring-background`, `shadow-lg` + `shadow-[--scan]/30` glow, `active:scale-95`, `navigator.vibrate(10)` on tap.
 - No label beneath; the icon alone carries it.
-- No idle animation on the icon. The scan-line sweep lives on the `/scan` page.
+- No idle animation on the icon.
 
 ## `/scan` page
 
@@ -79,7 +79,7 @@ Immersive, edge-to-edge. Shell (topbar + bottom nav) stays visible — SCAN must
 ```
 
 - **Reticle.** Four L-shaped corners in `--scan`, 2px stroke, 18px arms, framing a ~260px square.
-- **Scan line.** 2px horizontal line in `--scan` sweeping top-to-bottom at ~1.5s per cycle via `@keyframes`. Pauses on `visibilitychange` to save battery.
+- **No scan-line sweep.** The four corner brackets are the only chrome over the camera feed. An animated sweeping line was considered and rejected as visual noise.
 - **Manual entry.** "Enter asset tag" button is always visible. Opens a sheet with a focused text input that runs the same resolver as a scan.
 - **Torch.** Top-right icon. Shown only when the active `MediaStreamTrack` reports `getCapabilities().torch === true`. Toggles via `applyConstraints({ advanced: [{ torch }] })`.
 - **Back.** Stops the stream and calls `router.back()`.
@@ -359,7 +359,7 @@ Each step includes its own tests before it's "done". No blanket "tests at the en
 1. `useMediaQuery` hook **+ its Vitest test**. Manifest file wiring in `src/app/layout.tsx` **+ e2e assertion that the `<link rel="manifest">` is present**.
 2. `MobileActionSheet` component **+ Vitest**. `BottomNav` component **+ Vitest for slots, active routes, More sheet**. Responsive swap inside `AppShell`. **New `e2e/mobile-shell.spec.ts`** runs green.
 3. `resolveScanTarget` util **+ exhaustive Vitest**. `useBarcodeScanner` hook **+ Vitest with mocked MediaStream and zxing**.
-4. `/scan` page UI with camera viewport, reticle, scan-line animation, torch, manual entry, permission-denied state, insecure-context state. Vitest for `ScanPageClient` rendering branches. **`e2e/scan.spec.ts` manual-entry path** goes green.
+4. `/scan` page UI with camera viewport, reticle, torch, manual entry, permission-denied state, insecure-context state. Vitest for `ScanPageClient` rendering branches. **`e2e/scan.spec.ts` manual-entry path** goes green.
 5. Result sheet + six quick actions. Each action has a Vitest test for the mutation call and optimistic-rollback behavior. Extend `e2e/scan.spec.ts` with the full set of quick-action round-trips.
 6. Assets list card view + filters sheet. Vitest for `AssetCardList`. Extend or add `e2e/mobile-field-flows.spec.ts` with the list + filter assertions.
 7. Remaining field-flow polish (asset detail, services, dashboard, locations). Each gets added to `e2e/mobile-field-flows.spec.ts`.

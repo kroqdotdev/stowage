@@ -110,7 +110,6 @@ describe("ScanPageClient", () => {
       "data-active",
       "true",
     );
-    expect(screen.getByTestId("scan-line")).toBeInTheDocument();
     expect(screen.getByTestId("scan-manual-entry")).toBeInTheDocument();
   });
 
