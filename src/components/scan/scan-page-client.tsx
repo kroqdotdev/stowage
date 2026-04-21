@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
@@ -15,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MobileActionSheet } from "@/components/layout/mobile-action-sheet";
 import { ScanViewport } from "@/components/scan/scan-viewport";
+import { ScanResultSheet } from "@/components/scan/scan-result-sheet";
 import { useBarcodeScanner } from "@/hooks/use-barcode-scanner";
 import { resolveScanTarget, type ResolverResult } from "@/lib/scan";
 import { cn } from "@/lib/utils";
@@ -145,6 +145,13 @@ export function ScanPageClient() {
       <ScanResultSheet
         target={target}
         resolving={resolving}
+        onAssetUpdated={(asset) =>
+          setTarget((current) =>
+            current?.status === "asset"
+              ? { status: "asset", asset }
+              : current,
+          )
+        }
         onDismiss={() => setTarget(null)}
       />
     </div>
@@ -313,102 +320,3 @@ function ManualEntrySheet({
   );
 }
 
-function ScanResultSheet({
-  target,
-  resolving,
-  onDismiss,
-}: {
-  target: ResolverResult | null;
-  resolving: boolean;
-  onDismiss: () => void;
-}) {
-  const open = target !== null;
-
-  if (target?.status === "asset") {
-    const { asset } = target;
-    return (
-      <MobileActionSheet
-        open={open}
-        onOpenChange={(next) => (next ? null : onDismiss())}
-        title={asset.name}
-        description={asset.assetTag}
-      >
-        <div
-          className="flex flex-col gap-3"
-          data-testid="scan-result-asset"
-          data-asset-id={asset.id}
-        >
-          <p className="text-sm text-muted-foreground">
-            Quick actions coming soon — for now, open the asset page to make
-            changes.
-          </p>
-          <div className="flex gap-2">
-            <Button
-              asChild
-              className="flex-1"
-              data-testid="scan-result-view"
-            >
-              <Link href={`/assets/${asset.id}`}>View details</Link>
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              className="flex-1"
-              data-testid="scan-result-dismiss"
-              onClick={onDismiss}
-            >
-              Scan another
-            </Button>
-          </div>
-        </div>
-      </MobileActionSheet>
-    );
-  }
-
-  if (target?.status === "unresolved") {
-    return (
-      <MobileActionSheet
-        open={open}
-        onOpenChange={(next) => (next ? null : onDismiss())}
-        title="Couldn't find an asset"
-        description={
-          target.rawText
-            ? `The code was "${target.rawText}" but doesn't match any asset you can access.`
-            : "Try scanning again or enter the tag manually."
-        }
-      >
-        <div
-          className="flex gap-2"
-          data-testid="scan-result-unresolved"
-        >
-          <Button
-            type="button"
-            className="flex-1 cursor-pointer"
-            data-testid="scan-result-retry"
-            onClick={onDismiss}
-          >
-            Try again
-          </Button>
-        </div>
-      </MobileActionSheet>
-    );
-  }
-
-  if (resolving) {
-    return (
-      <MobileActionSheet
-        open={true}
-        onOpenChange={() => {}}
-        title="Looking up asset…"
-        description="Resolving the scanned code."
-        hideHeader
-      >
-        <p className="py-2 text-center text-sm text-muted-foreground">
-          Looking up asset…
-        </p>
-      </MobileActionSheet>
-    );
-  }
-
-  return null;
-}

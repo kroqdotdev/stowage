@@ -65,9 +65,49 @@ test.describe("scan feature", () => {
 
     const sheet = page.getByTestId("scan-result-asset");
     await expect(sheet).toBeVisible({ timeout: 15_000 });
-    await expect(page.getByText(name, { exact: false })).toBeVisible();
+    await expect(page.getByText(name, { exact: false }).first()).toBeVisible();
     const viewLink = page.getByTestId("scan-result-view");
     await expect(viewLink).toHaveAttribute("href", /\/assets\/[^/]+$/);
+  });
+
+  test("status quick action persists a new status on the asset", async ({
+    page,
+  }) => {
+    await authedScan(page);
+
+    const stamp = Date.now();
+    const name = `Scan Status ${stamp}`;
+    await page.goto("/assets/new");
+    await page.getByLabel(/Name/i).fill(name);
+    await fillRequiredFields(page);
+    await page.getByRole("button", { name: "Create asset" }).click();
+    await expect(
+      page.getByRole("heading", { name: `${name} created` }),
+    ).toBeVisible({ timeout: 20_000 });
+    await page.getByRole("button", { name: "View asset" }).click();
+    await page.waitForURL(/\/assets\/[^/]+$/, { timeout: 20_000 });
+    const assetTag = await readAssetTag(page);
+    const assetUrl = page.url();
+
+    await page.goto("/scan");
+    await page.getByTestId("scan-manual-entry").click();
+    await page.getByTestId("scan-manual-input").fill(assetTag);
+    await page.getByTestId("scan-manual-submit").click();
+    await expect(page.getByTestId("scan-result-asset")).toBeVisible({
+      timeout: 15_000,
+    });
+
+    await page.getByTestId("scan-action-status").click();
+    await page.getByTestId("scan-status-option-under_repair").click();
+
+    // Sheet returns to the grid view with the new status reflected.
+    await expect(page.getByTestId("scan-result-actions")).toBeVisible();
+
+    // The real asset page now carries the new status too.
+    await page.goto(assetUrl);
+    await expect(
+      page.getByText("Under repair", { exact: false }).first(),
+    ).toBeVisible({ timeout: 10_000 });
   });
 
   test("manual entry shows the unresolved sheet for a bogus tag", async ({
