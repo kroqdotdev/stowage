@@ -98,6 +98,37 @@ test.describe("mobile shell", () => {
     await page.waitForURL(/\/locations$/, { timeout: 10_000 });
   });
 
+  test("assets list renders cards (not a table) on mobile", async ({
+    page,
+  }, testInfo) => {
+    test.skip(
+      testInfo.project.name !== "mobile-chromium",
+      "Runs only on mobile-chromium",
+    );
+
+    const email = process.env.E2E_AUTH_EMAIL;
+    const password = process.env.E2E_AUTH_PASSWORD;
+    test.skip(
+      !email || !password,
+      "Set E2E_AUTH_EMAIL and E2E_AUTH_PASSWORD to run the assets card list e2e",
+    );
+
+    const landing = await getLanding(page);
+    test.skip(landing !== "login", "Assets card list e2e requires setup complete");
+
+    await signIn(page, email!, password!);
+    await page.goto("/assets");
+
+    // Card list is visible, mobile filters trigger is visible, no desktop table
+    await expect(page.getByTestId("asset-filters-mobile")).toBeVisible();
+    await expect(page.getByTestId("asset-filters-mobile-trigger")).toBeVisible();
+
+    const filterSheetButton = page.getByTestId("asset-filters-mobile-trigger");
+    await filterSheetButton.click();
+    await expect(page.getByTestId("asset-filters-sheet")).toBeVisible();
+    await expect(page.getByTestId("asset-sort-recent")).toBeVisible();
+  });
+
   test("sidebar is visible on desktop viewports", async ({
     page,
   }, testInfo) => {

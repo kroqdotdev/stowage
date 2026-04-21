@@ -9,6 +9,8 @@ import {
   AssetFilters,
   type AssetFiltersState,
 } from "@/components/assets/asset-filters";
+import { AssetFiltersMobile } from "@/components/assets/asset-filters-mobile";
+import { AssetCardList } from "@/components/assets/asset-card-list";
 import {
   AssetTable,
   type AssetSortBy,
@@ -20,6 +22,7 @@ import type {
 } from "@/components/assets/types";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
+import { useMediaQuery } from "@/hooks/use-media-query";
 import {
   getAssetFilterOptions,
   listAssets,
@@ -49,6 +52,7 @@ function AssetsPageClientContent({
   initialFilters: AssetFiltersState;
 }) {
   const router = useRouter();
+  const isDesktop = useMediaQuery("(min-width: 1024px)");
 
   const [searchInput, setSearchInput] = useState("");
   const deferredSearch = useDeferredValue(searchInput);
@@ -153,32 +157,67 @@ function AssetsPageClientContent({
         </Button>
       </div>
 
-      <AssetFilters
-        options={options}
-        search={searchInput}
-        filters={filters}
-        onSearchChange={(value) => {
-          startTransition(() => {
-            setSearchInput(value);
-          });
-        }}
-        onFiltersChange={(nextFilters) => {
-          startTransition(() => {
-            setFilters(nextFilters);
-          });
-        }}
-        onReset={() => {
-          startTransition(() => {
-            setSearchInput("");
-            setFilters({
-              categoryId: null,
-              status: null,
-              locationId: null,
-              tagIds: [],
+      {isDesktop ? (
+        <AssetFilters
+          options={options}
+          search={searchInput}
+          filters={filters}
+          onSearchChange={(value) => {
+            startTransition(() => {
+              setSearchInput(value);
             });
-          });
-        }}
-      />
+          }}
+          onFiltersChange={(nextFilters) => {
+            startTransition(() => {
+              setFilters(nextFilters);
+            });
+          }}
+          onReset={() => {
+            startTransition(() => {
+              setSearchInput("");
+              setFilters({
+                categoryId: null,
+                status: null,
+                locationId: null,
+                tagIds: [],
+              });
+            });
+          }}
+        />
+      ) : (
+        <AssetFiltersMobile
+          options={options}
+          search={searchInput}
+          filters={filters}
+          sortBy={sortBy}
+          sortDirection={sortDirection}
+          onSearchChange={(value) => {
+            startTransition(() => {
+              setSearchInput(value);
+            });
+          }}
+          onFiltersChange={(nextFilters) => {
+            startTransition(() => {
+              setFilters(nextFilters);
+            });
+          }}
+          onSortChange={(nextSortBy, nextDirection) => {
+            setSortBy(nextSortBy);
+            setSortDirection(nextDirection);
+          }}
+          onReset={() => {
+            startTransition(() => {
+              setSearchInput("");
+              setFilters({
+                categoryId: null,
+                status: null,
+                locationId: null,
+                tagIds: [],
+              });
+            });
+          }}
+        />
+      )}
 
       {showEmptyState ? (
         <EmptyState
@@ -196,35 +235,39 @@ function AssetsPageClientContent({
         />
       ) : null}
 
-      <AssetTable
-        rows={rows}
-        loading={loading}
-        sortBy={sortBy}
-        sortDirection={sortDirection}
-        selectedIds={selectedIds}
-        onSort={handleSort}
-        onSelectRow={(assetId, checked) => {
-          setSelectedIds((prev) => {
-            const next = new Set(prev);
-            if (checked) {
-              next.add(assetId);
-            } else {
-              next.delete(assetId);
+      {isDesktop ? (
+        <AssetTable
+          rows={rows}
+          loading={loading}
+          sortBy={sortBy}
+          sortDirection={sortDirection}
+          selectedIds={selectedIds}
+          onSort={handleSort}
+          onSelectRow={(assetId, checked) => {
+            setSelectedIds((prev) => {
+              const next = new Set(prev);
+              if (checked) {
+                next.add(assetId);
+              } else {
+                next.delete(assetId);
+              }
+              return next;
+            });
+          }}
+          onSelectAll={(checked) => {
+            if (!checked) {
+              setSelectedIds(new Set());
+              return;
             }
-            return next;
-          });
-        }}
-        onSelectAll={(checked) => {
-          if (!checked) {
-            setSelectedIds(new Set());
-            return;
-          }
 
-          setSelectedIds(new Set(rows.map((row) => row.id)));
-        }}
-        onRowOpen={(assetId) => router.push(`/assets/${assetId}`)}
-        onRowEdit={(assetId) => router.push(`/assets/${assetId}/edit`)}
-      />
+            setSelectedIds(new Set(rows.map((row) => row.id)));
+          }}
+          onRowOpen={(assetId) => router.push(`/assets/${assetId}`)}
+          onRowEdit={(assetId) => router.push(`/assets/${assetId}/edit`)}
+        />
+      ) : (
+        <AssetCardList rows={rows} loading={loading} />
+      )}
 
       {selectedCount > 0 ? (
         <div className="sticky bottom-4 z-10 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/70 bg-background px-4 py-3 shadow-lg">
