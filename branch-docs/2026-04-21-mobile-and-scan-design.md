@@ -41,7 +41,7 @@ The topbar stays but shrinks to logo + search icon + avatar. The existing `Sideb
 
 - Icon: `ScanLine` from `lucide-react` (the universal "laser through a frame" icon).
 - Shape: 60×60px circle, floats ~18px above the bar on a notched background.
-- Colour: a new token `--scan` (teal-600 `#0d9488` light / teal-500 `#14b8a6` dark) with `--scan-foreground` white. Distinct from the existing burnt-orange `--primary`, read as "scanner beam".
+- Colour: a new token `--scan` that mirrors the existing primary orange (`#c2410c` light / `#ea580c` dark) with `--scan-foreground` white. The button still stands out through its elevation, ring, and shadow glow, but the colour stays inside the warm palette used everywhere else. The token is kept (rather than referencing `--primary` directly) so the SCAN identity can diverge later without touching every call-site.
 - 4px `ring-background`, `shadow-lg` + `shadow-[--scan]/30` glow, `active:scale-95`, `navigator.vibrate(10)` on tap.
 - No label beneath; the icon alone carries it.
 - No idle animation on the icon. The scan-line sweep lives on the `/scan` page.
@@ -65,7 +65,7 @@ Immersive, edge-to-edge. Shell (topbar + bottom nav) stays visible — SCAN must
 │    │   [camera preview]      │      │
 │    │   ╭─╮             ╭─╮   │      │
 │    │                         │      │
-│    │  ← animated teal line → │      │
+│    │  ← animated scan line → │      │
 │    │                         │      │
 │    │   ╭─╮             ╭─╮   │      │
 │    └─────────────────────────┘      │
@@ -255,7 +255,7 @@ Mirror the source structure under `src/__tests__/`. Each new source file gets a 
   - Removes its listener on unmount
 - `src/__tests__/components/layout/bottom-nav.test.tsx`:
   - Renders all five slots with correct icons (`ScanLine` in the center)
-  - Scan center button is present with the `--scan` teal styling class
+  - Scan center button is present with the `--scan` token styling class
   - Active-route highlighting: Home active on `/dashboard`, Assets active on `/assets` and `/assets/abc`, Services active on `/services`, More active when the sheet is open
   - Tapping More opens the sheet with Locations / Taxonomy / Labels / Settings / theme / sign-out entries
 - `src/__tests__/components/scan/scan-page-client.test.tsx`:

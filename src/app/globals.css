@@ -82,7 +82,7 @@
   --sidebar-accent-foreground: #1c1917;
   --sidebar-border: #e7e5e4;
   --sidebar-ring: #c2410c;
-  --scan: #0d9488;
+  --scan: #c2410c;
   --scan-foreground: #ffffff;
 }
 
@@ -118,7 +118,7 @@
   --sidebar-accent-foreground: #fafaf9;
   --sidebar-border: #44403c;
   --sidebar-ring: #ea580c;
-  --scan: #14b8a6;
+  --scan: #ea580c;
   --scan-foreground: #ffffff;
 }
 
