@@ -20,8 +20,21 @@ export const metadata: Metadata = {
   title: "Stowage",
   description: "Asset management for small teams",
   icons: {
-    icon: "/images/stowage-logo-square-tight.png",
-    apple: "/images/stowage-logo-square-tight.png",
+    icon: [
+      { url: "/images/web/favicon.ico", sizes: "any" },
+      {
+        url: "/images/web/icon-192.png",
+        type: "image/png",
+        sizes: "192x192",
+      },
+      {
+        url: "/images/web/icon-512.png",
+        type: "image/png",
+        sizes: "512x512",
+      },
+    ],
+    shortcut: "/images/web/favicon.ico",
+    apple: "/images/web/apple-touch-icon.png",
   },
 };
 

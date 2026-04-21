@@ -11,7 +11,17 @@ Until then, version numbers still communicate upgrade risk:
 
 ## [Unreleased]
 
-- No unreleased changes yet.
+## [0.2.0] - 2026-04-21
+
+### Added
+
+- Deployable release bundle via `docker-compose.release.yml` using published GHCR images.
+- Published `stowage-caddy` release image for the optional built-in TLS proxy.
+- Release deployment modes for app-only, app plus PocketBase, or full stack.
+
+### Changed
+
+- Updated the in-app logo, favicon, and app icons to the new branding asset set.
 
 ## [0.1.0] - 2026-04-21
 

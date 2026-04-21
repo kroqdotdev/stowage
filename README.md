@@ -87,7 +87,7 @@ Notes:
 
 ## Releases
 
-Stowage uses numbered releases such as `0.1.0`, `0.2.0`, and `0.2.1`.
+Stowage uses numbered releases such as `0.2.0`, `0.2.1`, and `1.0.0`.
 
 Each release publishes:
 
@@ -95,6 +95,8 @@ Each release publishes:
 - a GitHub Release with human-readable notes
 - `ghcr.io/kroqdotdev/stowage-app:<version>`
 - `ghcr.io/kroqdotdev/stowage-pocketbase:<version>`
+- `ghcr.io/kroqdotdev/stowage-caddy:<version>`
+- `docker-compose.release.yml` as a release deployment bundle
 
 For production/self-hosted deploys, pin exact image tags instead of floating to a
 new version unintentionally.
@@ -103,9 +105,46 @@ Image contents:
 
 - `stowage-app` contains the production Next.js standalone server plus static/public assets
 - `stowage-pocketbase` contains the pinned PocketBase binary plus this repo's `pb_migrations/`
+- `stowage-caddy` contains the bundled Caddy config for TLS termination and `/pb` proxying
 - neither image contains your persistent PocketBase data; that still lives in `pb_data/`
 
 See [RELEASING.md](/Users/sauer/Documents/cc/stowage.cc/RELEASING.md) for the release checklist and tag flow.
+
+### Release Deployment Modes
+
+Tagged releases can now be deployed directly with [docker-compose.release.yml](/Users/sauer/Documents/cc/stowage.cc/docker-compose.release.yml).
+
+App only:
+
+```bash
+STOWAGE_VERSION=0.2.0 docker compose -f docker-compose.release.yml up -d
+```
+
+Use this when PocketBase and/or your reverse proxy already live elsewhere. In
+that mode, set `POCKETBASE_URL` and `NEXT_PUBLIC_POCKETBASE_URL` to your
+existing PocketBase endpoints.
+
+App + PocketBase:
+
+```bash
+STOWAGE_VERSION=0.2.0 docker compose -f docker-compose.release.yml --profile pocketbase up -d
+```
+
+Full stack (app + PocketBase + TLS proxy):
+
+```bash
+STOWAGE_VERSION=0.2.0 docker compose -f docker-compose.release.yml --profile full up -d
+```
+
+For the full stack profile, set:
+
+- `APP_DOMAIN` to your public domain
+- `SITE_URL=https://<APP_DOMAIN>`
+- `NEXT_PUBLIC_POCKETBASE_URL=https://<APP_DOMAIN>/pb`
+
+By default, the release compose file binds the app and PocketBase ports to
+`127.0.0.1`; set `APP_HOST_BIND=0.0.0.0` and/or `POCKETBASE_HOST_BIND=0.0.0.0`
+if you intentionally want them reachable off-host without Caddy.
 
 ### Production deployment
 

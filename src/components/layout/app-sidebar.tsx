@@ -108,7 +108,7 @@ export function AppSidebar() {
           className="flex items-center gap-2 font-semibold text-foreground"
         >
           <Image
-            src="/images/stowage-logo-square-tight.png"
+            src="/images/web/icon-512.png"
             alt="Stowage"
             width={20}
             height={20}

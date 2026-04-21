@@ -21,6 +21,8 @@ Each tagged release publishes:
 - a GitHub Release with changelog notes
 - a multi-arch app image at `ghcr.io/kroqdotdev/stowage-app:<version>`
 - a multi-arch PocketBase image at `ghcr.io/kroqdotdev/stowage-pocketbase:<version>`
+- a multi-arch Caddy image at `ghcr.io/kroqdotdev/stowage-caddy:<version>`
+- the release deployment bundle file `docker-compose.release.yml`
 
 Those image tags are meant to be pinned in deployment config so upgrades happen
 intentionally one release at a time.
@@ -31,6 +33,8 @@ Image contents:
   output, and the repo's `public/` plus `.next/static/` assets
 - `stowage-pocketbase` contains the pinned PocketBase binary plus the repo's
   bundled `pb_migrations/`; persistent user data still lives in `/pb_data`
+- `stowage-caddy` contains the repo's Caddyfile for TLS termination and `/pb`
+  reverse proxy routing, while certificate state lives in `/data` and `/config`
 
 ## Release checklist
 
@@ -48,7 +52,7 @@ git push origin main --tags
 6. Wait for the `Release` GitHub Actions workflow to:
    - verify the tag matches `package.json`
    - run lint, typecheck, and tests
-   - build and publish Docker images to GHCR
+   - build and publish app, PocketBase, and Caddy images to GHCR
    - create the GitHub Release from the matching changelog section
 
 ## Prereleases

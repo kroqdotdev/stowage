@@ -1,0 +1,5 @@
+# syntax=docker/dockerfile:1.6
+
+FROM caddy:2-alpine
+
+COPY deploy/Caddyfile /etc/caddy/Caddyfile
