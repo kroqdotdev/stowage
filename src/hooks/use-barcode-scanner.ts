@@ -49,6 +49,10 @@ export type UseBarcodeScannerReturn = {
 };
 
 const DEFAULT_DEDUPE_WINDOW_MS = 2000;
+const MAX_SCAN_TEXT_LENGTH = 2048;
+// zxing DecodeHintType enum key for POSSIBLE_FORMATS (inlined to avoid
+// importing from @zxing/library, which is only a transitive dep).
+const DECODE_HINT_POSSIBLE_FORMATS = 2;
 
 export function useBarcodeScanner(
   options: UseBarcodeScannerOptions,
@@ -68,8 +72,14 @@ export function useBarcodeScanner(
   onResultRef.current = onResult;
 
   useEffect(() => {
+    // Capture the video node at effect-run time so the cleanup below always
+    // releases the tracks on the element we wired up, even if the ref has
+    // been re-pointed (React will re-run the effect in that case anyway).
+    const videoAtMount = videoRef.current;
+
     if (!enabled) {
       teardown(controlsRef);
+      clearVideoSource(videoAtMount);
       setState("idle");
       setError(null);
       setTorchSupported(false);
@@ -101,7 +111,7 @@ export function useBarcodeScanner(
         const zxing = await import("@zxing/browser");
         const { BrowserMultiFormatReader, BarcodeFormat } = zxing;
         const hints = new Map<number, unknown>();
-        hints.set(2 /* DecodeHintType.POSSIBLE_FORMATS */, [
+        hints.set(DECODE_HINT_POSSIBLE_FORMATS, [
           BarcodeFormat.CODE_128,
           BarcodeFormat.DATA_MATRIX,
           BarcodeFormat.QR_CODE,
@@ -120,8 +130,12 @@ export function useBarcodeScanner(
           video,
           (result) => {
             if (cancelled || !result) return;
-            const text = safeGetText(result);
-            if (!text) return;
+            const raw = safeGetText(result);
+            if (!raw) return;
+            const text =
+              raw.length > MAX_SCAN_TEXT_LENGTH
+                ? raw.slice(0, MAX_SCAN_TEXT_LENGTH)
+                : raw;
             const now = Date.now();
             const last = lastResultRef.current;
             if (last && last.text === text && now - last.at < dedupeWindowMs) {
@@ -143,9 +157,22 @@ export function useBarcodeScanner(
 
         if (cancelled) {
           controls.stop();
+          clearVideoSource(videoAtMount);
           return;
         }
 
+        // If a previous effect instance already left controls behind (e.g.,
+        // two quick `enabled` toggles during the async init above), stop it
+        // before replacing — otherwise the old MediaStream keeps the camera
+        // indicator on.
+        const previous = controlsRef.current;
+        if (previous) {
+          try {
+            previous.stop();
+          } catch {
+            // ignore
+          }
+        }
         controlsRef.current = controls;
         setState("scanning");
 
@@ -168,6 +195,7 @@ export function useBarcodeScanner(
     return () => {
       cancelled = true;
       teardown(controlsRef);
+      clearVideoSource(videoAtMount);
     };
   }, [enabled, attempt, dedupeWindowMs, videoRef]);
 
@@ -178,8 +206,10 @@ export function useBarcodeScanner(
     void controls
       .switchTorch(next)
       .then(() => setTorchOn(next))
-      .catch(() => {
-        // leave state as-is on failure
+      .catch((err) => {
+        // leave UI state as-is; log so operators can distinguish "unsupported"
+        // from "permission revoked mid-session" during incident response.
+        console.warn("[scanner] torch toggle failed", err);
       });
   }, [torchOn]);
 
@@ -205,10 +235,25 @@ function teardown(controlsRef: RefObject<IScannerControls | null>) {
   if (controls) {
     try {
       controls.stop();
-    } catch {
-      // ignore
+    } catch (err) {
+      console.warn("[scanner] controls.stop() failed", err);
     }
   }
+}
+
+function clearVideoSource(video: HTMLVideoElement | null) {
+  if (!video) return;
+  const stream = video.srcObject;
+  if (stream && "getTracks" in stream) {
+    try {
+      for (const track of (stream as MediaStream).getTracks()) {
+        track.stop();
+      }
+    } catch {
+      // ignore — zxing's stop() should have already released tracks
+    }
+  }
+  video.srcObject = null;
 }
 
 function firstTrack(track: MediaStreamTrack) {

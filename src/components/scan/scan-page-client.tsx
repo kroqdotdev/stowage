@@ -10,6 +10,7 @@ import {
   Keyboard,
   Lock,
 } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MobileActionSheet } from "@/components/layout/mobile-action-sheet";
@@ -37,8 +38,23 @@ export function ScanPageClient() {
   const [manualValue, setManualValue] = useState("");
   const [resolving, setResolving] = useState(false);
   const [detected, setDetected] = useState<DetectedFrame | null>(null);
+  const [pageHidden, setPageHidden] = useState(false);
+  // Synchronous re-entry guard for decoder callbacks that fire while a
+  // previous `handleScanResult` is still in flight (dedupe window + 1100ms
+  // dwell). React state flips lag the next camera frame by a tick; this ref
+  // blocks the second call immediately.
+  const busyRef = useRef(false);
+  const mountedRef = useRef(true);
 
-  const scannerEnabled = target === null && !manualOpen && detected === null;
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  const scannerEnabled =
+    target === null && !manualOpen && detected === null && !pageHidden;
 
   const handleResolved = useCallback((result: ResolverResult) => {
     setTarget(result);
@@ -59,6 +75,8 @@ export function ScanPageClient() {
       videoWidth: number;
       videoHeight: number;
     }) => {
+      if (busyRef.current) return;
+      busyRef.current = true;
       setDetected({
         points: result.points,
         videoWidth: result.videoWidth,
@@ -71,14 +89,24 @@ export function ScanPageClient() {
           resolveScanTarget(result.text, appOrigin()),
           new Promise((resolve) => setTimeout(resolve, 1100)),
         ]);
+        if (!mountedRef.current) return;
         setDetected((current) =>
           current ? { ...current, phase: "confirmed" } : current,
         );
         await new Promise((resolve) => setTimeout(resolve, 300));
+        if (!mountedRef.current) return;
         handleResolved(resolved);
+      } catch (err) {
+        console.warn("[scan] resolver failed", err);
+        if (!mountedRef.current) return;
+        toast.error("Couldn't look up the scan. Try again.");
+        handleResolved({ status: "unresolved", rawText: result.text });
       } finally {
-        setResolving(false);
-        setDetected(null);
+        if (mountedRef.current) {
+          setResolving(false);
+          setDetected(null);
+        }
+        busyRef.current = false;
       }
     },
     [handleResolved],
@@ -96,14 +124,25 @@ export function ScanPageClient() {
     async (event: React.FormEvent<HTMLFormElement>) => {
       event.preventDefault();
       if (!manualValue.trim()) return;
+      if (busyRef.current) return;
+      busyRef.current = true;
       setResolving(true);
       try {
         const resolved = await resolveScanTarget(manualValue, appOrigin());
+        if (!mountedRef.current) return;
         setManualOpen(false);
         setManualValue("");
         handleResolved(resolved);
+      } catch (err) {
+        console.warn("[scan] manual resolver failed", err);
+        if (!mountedRef.current) return;
+        toast.error("Couldn't look up the tag. Try again.");
+        handleResolved({ status: "unresolved", rawText: manualValue });
+        setManualOpen(false);
+        setManualValue("");
       } finally {
-        setResolving(false);
+        if (mountedRef.current) setResolving(false);
+        busyRef.current = false;
       }
     },
     [manualValue, handleResolved],
@@ -111,11 +150,13 @@ export function ScanPageClient() {
 
   useEffect(() => {
     function onVisibility() {
-      if (document.hidden) {
-        // nothing to do — hook re-evaluates from enabled, and the scan line
-        // animation pauses automatically via CSS when the tab is hidden.
-      }
+      // Pausing the scanner when the tab is hidden releases the camera stream
+      // (the scanner effect tears down when `enabled` flips to false) so the
+      // OS camera indicator turns off and we don't hold the sensor while the
+      // page is in the background.
+      setPageHidden(document.hidden);
     }
+    setPageHidden(document.hidden);
     document.addEventListener("visibilitychange", onVisibility);
     return () => document.removeEventListener("visibilitychange", onVisibility);
   }, []);
@@ -170,7 +211,12 @@ export function ScanPageClient() {
         resolving={resolving}
         onAssetUpdated={(asset) =>
           setTarget((current) =>
-            current?.status === "asset" ? { status: "asset", asset } : current,
+            // Guard against a late mutation from a previously-open asset:
+            // only apply the update if it's still the asset the sheet is
+            // showing.
+            current?.status === "asset" && current.asset.id === asset.id
+              ? { status: "asset", asset }
+              : current,
           )
         }
         onDismiss={() => setTarget(null)}
