@@ -57,8 +57,8 @@ export function Topbar() {
 
   return (
     <header className="flex h-14 shrink-0 items-center gap-2 border-b border-border px-4">
-      <SidebarTrigger className="cursor-pointer" />
-      <Separator orientation="vertical" className="mr-2 h-4" />
+      <SidebarTrigger className="hidden cursor-pointer lg:flex" />
+      <Separator orientation="vertical" className="mr-2 hidden h-4 lg:block" />
 
       <div className="flex flex-1 items-center gap-2">
         <GlobalSearch />

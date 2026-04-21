@@ -5,6 +5,9 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: process.cwd(),
   },
+  devIndicators: {
+    position: "top-right",
+  },
 };
 
 export default nextConfig;

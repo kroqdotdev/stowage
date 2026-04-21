@@ -26,6 +26,8 @@
   --color-input: var(--input);
   --color-border: var(--border);
   --color-destructive: var(--destructive);
+  --color-scan: var(--scan);
+  --color-scan-foreground: var(--scan-foreground);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
@@ -80,6 +82,8 @@
   --sidebar-accent-foreground: #1c1917;
   --sidebar-border: #e7e5e4;
   --sidebar-ring: #c2410c;
+  --scan: #0d9488;
+  --scan-foreground: #ffffff;
 }
 
 .dark {
@@ -114,6 +118,8 @@
   --sidebar-accent-foreground: #fafaf9;
   --sidebar-border: #44403c;
   --sidebar-ring: #ea580c;
+  --scan: #14b8a6;
+  --scan-foreground: #ffffff;
 }
 
 @layer base {
