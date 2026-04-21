@@ -33,7 +33,10 @@ describe("ServiceGroupFieldsPanel", () => {
 
     renderWithClient(<ServiceGroupFieldsPanel groupId="group1" canManage />);
 
-    expect(screen.getByText("Loading service fields...")).toBeInTheDocument();
+    // Both mobile card list and desktop table render copies of the text
+    expect(
+      screen.getAllByText("Loading service fields...").length,
+    ).toBeGreaterThan(0);
   });
 
   it("shows empty state when no fields exist", async () => {
@@ -43,10 +46,10 @@ describe("ServiceGroupFieldsPanel", () => {
 
     await waitFor(() => {
       expect(
-        screen.getByText(
+        screen.getAllByText(
           "No fields yet. Add required service fields for this group.",
-        ),
-      ).toBeInTheDocument();
+        ).length,
+      ).toBeGreaterThan(0);
     });
   });
 
@@ -72,7 +75,7 @@ describe("ServiceGroupFieldsPanel", () => {
     renderWithClient(<ServiceGroupFieldsPanel groupId="group1" canManage />);
 
     await waitFor(() => {
-      expect(screen.getByText("Technician note")).toBeInTheDocument();
+      expect(screen.getAllByText("Technician note").length).toBeGreaterThan(0);
     });
     expect(screen.getAllByText("Required").length).toBeGreaterThanOrEqual(1);
 

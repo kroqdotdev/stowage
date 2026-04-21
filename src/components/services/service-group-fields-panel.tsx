@@ -405,7 +405,78 @@ export function ServiceGroupFieldsPanel({
           ) : null}
         </div>
 
-        <div className="mt-4 overflow-x-auto rounded-lg border border-border/60">
+        {rowsQuery.isPending ? (
+          <p className="mt-4 text-sm text-muted-foreground md:hidden">
+            Loading service fields...
+          </p>
+        ) : fields.length === 0 ? (
+          <p className="mt-4 text-sm text-muted-foreground md:hidden">
+            No fields yet. Add required service fields for this group.
+          </p>
+        ) : (
+          <ul
+            className="mt-4 flex flex-col gap-2 md:hidden"
+            data-testid="service-group-fields-card-list"
+          >
+            {fields.map((field) => (
+              <li
+                key={field.id}
+                data-testid={`service-group-field-card-${field.id}`}
+                className="flex items-start justify-between gap-3 rounded-lg border border-border/70 bg-card p-3 shadow-sm"
+              >
+                <div className="min-w-0 flex-1 space-y-1.5">
+                  <p className="truncate text-sm font-semibold">
+                    {field.label}
+                  </p>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <Badge className="bg-muted/20 capitalize">
+                      {field.fieldType}
+                    </Badge>
+                    {field.required ? (
+                      <Badge className="border-amber-300/70 bg-amber-100 text-amber-900 dark:border-amber-400/30 dark:bg-amber-500/15 dark:text-amber-200">
+                        Required
+                      </Badge>
+                    ) : null}
+                  </div>
+                </div>
+                {canManage ? (
+                  <div className="flex shrink-0 items-center gap-1">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon-sm"
+                      className="cursor-pointer"
+                      onClick={() => {
+                        setEditorMode("edit");
+                        setActiveFieldId(field.id);
+                        setEditorOpen(true);
+                      }}
+                      aria-label={`Edit field ${field.label}`}
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon-sm"
+                      className="cursor-pointer text-destructive"
+                      onClick={() => setDeleteFieldId(field.id)}
+                      aria-label={`Delete field ${field.label}`}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <span className="text-xs text-muted-foreground">
+                    Read only
+                  </span>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+
+        <div className="mt-4 hidden overflow-x-auto rounded-lg border border-border/60 md:block">
           <table className="min-w-full text-sm">
             <thead className="bg-muted/40 text-left">
               <tr>

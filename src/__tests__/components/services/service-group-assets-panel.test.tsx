@@ -32,7 +32,8 @@ describe("ServiceGroupAssetsPanel", () => {
 
     renderWithClient(<ServiceGroupAssetsPanel groupId="group1" />);
 
-    expect(screen.getByText("Loading assets...")).toBeInTheDocument();
+    // Mobile card list and desktop table each render their own loading copy
+    expect(screen.getAllByText("Loading assets...").length).toBeGreaterThan(0);
   });
 
   it("shows empty state when no assets are assigned", async () => {
@@ -42,8 +43,9 @@ describe("ServiceGroupAssetsPanel", () => {
 
     await waitFor(() => {
       expect(
-        screen.getByText("No assets are currently assigned to this group."),
-      ).toBeInTheDocument();
+        screen.getAllByText("No assets are currently assigned to this group.")
+          .length,
+      ).toBeGreaterThan(0);
     });
   });
 
@@ -60,10 +62,12 @@ describe("ServiceGroupAssetsPanel", () => {
     renderWithClient(<ServiceGroupAssetsPanel groupId="group1" />);
 
     await waitFor(() => {
-      expect(screen.getByText("Generator")).toBeInTheDocument();
+      expect(screen.getAllByText("Generator").length).toBeGreaterThan(0);
     });
-    expect(screen.getByText("AST-0001")).toBeInTheDocument();
-    expect(screen.getByText("active")).toBeInTheDocument();
+    expect(screen.getAllByText("AST-0001").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("active").length).toBeGreaterThan(0);
+    // Desktop table exposes an explicit "Open asset" link; mobile cards use
+    // the full card as a link via the asset name. Verify the desktop link.
     expect(screen.getByRole("link", { name: "Open asset" })).toHaveAttribute(
       "href",
       "/assets/asset1",
