@@ -1,5 +1,7 @@
 procs:
   next:
-    cmd: ["pnpm", "run", "dev:next:https"]
+    # Binds Next to 0.0.0.0 so a phone on the same LAN can reach it for scan
+    # testing. Only use on a trusted network — see README "Phone testing".
+    cmd: ["pnpm", "run", "dev:next:lan"]
   pocketbase:
     cmd: ["pnpm", "run", "pb:dev"]

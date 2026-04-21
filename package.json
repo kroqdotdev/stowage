@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "mprocs",
     "dev:next": "next dev --turbopack",
-    "dev:next:https": "next dev --turbopack --experimental-https -H 0.0.0.0",
+    "dev:next:https": "next dev --turbopack --experimental-https -H 127.0.0.1",
+    "dev:next:lan": "next dev --turbopack --experimental-https -H 0.0.0.0",
     "dev:https": "mprocs --config mprocs.https.yaml",
     "build": "next build",
     "start": "next start",
