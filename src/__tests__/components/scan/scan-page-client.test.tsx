@@ -10,6 +10,14 @@ import {
 
 import type { AssetDetail } from "@/lib/api/assets";
 
+type ScannerMockResult = {
+  text: string;
+  format: string;
+  points: Array<{ x: number; y: number }>;
+  videoWidth: number;
+  videoHeight: number;
+};
+
 const scannerMock: {
   state: "idle" | "requesting" | "scanning" | "denied" | "insecure" | "error";
   error: string | null;
@@ -17,7 +25,7 @@ const scannerMock: {
   torchOn: boolean;
   toggle: Mock;
   restart: Mock;
-  onResult: ((result: { text: string; format: string }) => void) | null;
+  onResult: ((result: ScannerMockResult) => void) | null;
 } = {
   state: "scanning",
   error: null,
@@ -30,7 +38,7 @@ const scannerMock: {
 
 vi.mock("@/hooks/use-barcode-scanner", () => ({
   useBarcodeScanner: (options: {
-    onResult: (result: { text: string; format: string }) => void;
+    onResult: (result: ScannerMockResult) => void;
     enabled: boolean;
   }) => {
     scannerMock.onResult = options.onResult;
@@ -223,14 +231,63 @@ describe("ScanPageClient", () => {
       scannerMock.onResult?.({
         text: "https://x.test/assets/b2",
         format: "QR_CODE",
+        points: [
+          { x: 10, y: 20 },
+          { x: 90, y: 20 },
+          { x: 90, y: 80 },
+          { x: 10, y: 80 },
+        ],
+        videoWidth: 640,
+        videoHeight: 480,
       });
     });
 
-    const sheet = await screen.findByTestId("scan-result-asset");
+    const sheet = await screen.findByTestId(
+      "scan-result-asset",
+      undefined,
+      { timeout: 3_000 },
+    );
     expect(sheet).toHaveAttribute("data-asset-id", "b2");
     expect(resolverMock).toHaveBeenCalledWith(
       "https://x.test/assets/b2",
       expect.any(String),
+    );
+  });
+
+  it("shows the detected overlay during the ~1s dwell before opening the sheet", async () => {
+    const asset = makeAsset({ id: "b2" });
+    resolverMock.mockResolvedValue({ status: "asset", asset });
+
+    renderScanPage();
+    await waitFor(() => expect(scannerMock.onResult).toBeTruthy());
+    act(() => {
+      scannerMock.onResult?.({
+        text: "https://x.test/assets/b2",
+        format: "QR_CODE",
+        points: [
+          { x: 10, y: 20 },
+          { x: 90, y: 80 },
+        ],
+        videoWidth: 640,
+        videoHeight: 480,
+      });
+    });
+
+    // Viewport flips into detected state
+    await waitFor(() =>
+      expect(screen.getByTestId("scan-viewport")).toHaveAttribute(
+        "data-detected",
+        "true",
+      ),
+    );
+
+    // Sheet does not appear before the dwell finishes
+    await screen.findByTestId("scan-result-asset", undefined, {
+      timeout: 3_000,
+    });
+    expect(screen.getByTestId("scan-viewport")).toHaveAttribute(
+      "data-detected",
+      "false",
     );
   });
 });

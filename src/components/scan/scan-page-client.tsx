@@ -13,7 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MobileActionSheet } from "@/components/layout/mobile-action-sheet";
-import { ScanViewport } from "@/components/scan/scan-viewport";
+import { ScanViewport, type DetectedFrame } from "@/components/scan/scan-viewport";
 import { ScanResultSheet } from "@/components/scan/scan-result-sheet";
 import { useBarcodeScanner } from "@/hooks/use-barcode-scanner";
 import { resolveScanTarget, type ResolverResult } from "@/lib/scan";
@@ -33,8 +33,9 @@ export function ScanPageClient() {
   const [manualOpen, setManualOpen] = useState(false);
   const [manualValue, setManualValue] = useState("");
   const [resolving, setResolving] = useState(false);
+  const [detected, setDetected] = useState<DetectedFrame | null>(null);
 
-  const scannerEnabled = target === null && !manualOpen;
+  const scannerEnabled = target === null && !manualOpen && detected === null;
 
   const handleResolved = useCallback((result: ResolverResult) => {
     setTarget(result);
@@ -48,13 +49,27 @@ export function ScanPageClient() {
   }, []);
 
   const handleScanResult = useCallback(
-    async (result: { text: string }) => {
+    async (result: {
+      text: string;
+      points: DetectedFrame["points"];
+      videoWidth: number;
+      videoHeight: number;
+    }) => {
+      setDetected({
+        points: result.points,
+        videoWidth: result.videoWidth,
+        videoHeight: result.videoHeight,
+      });
       setResolving(true);
       try {
-        const resolved = await resolveScanTarget(result.text, appOrigin());
+        const [resolved] = await Promise.all([
+          resolveScanTarget(result.text, appOrigin()),
+          new Promise((resolve) => setTimeout(resolve, 900)),
+        ]);
         handleResolved(resolved);
       } finally {
         setResolving(false);
+        setDetected(null);
       }
     },
     [handleResolved],
@@ -121,7 +136,7 @@ export function ScanPageClient() {
         />
       </div>
 
-      <ScannerBody scanner={scanner} videoRef={videoRef} />
+      <ScannerBody scanner={scanner} videoRef={videoRef} detected={detected} />
 
       <Button
         type="button"
@@ -161,9 +176,11 @@ export function ScanPageClient() {
 function ScannerBody({
   scanner,
   videoRef,
+  detected,
 }: {
   scanner: ReturnType<typeof useBarcodeScanner>;
   videoRef: React.RefObject<HTMLVideoElement | null>;
+  detected: DetectedFrame | null;
 }) {
   if (scanner.state === "denied") {
     return (
@@ -202,9 +219,10 @@ function ScannerBody({
       <ScanViewport
         videoRef={videoRef}
         active={scanner.state === "scanning"}
+        detected={detected}
       />
       <p className="text-sm text-muted-foreground">
-        Point at a Stowage label
+        {detected ? "Got it — opening…" : "Point at a Stowage label"}
       </p>
     </>
   );

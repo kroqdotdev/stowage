@@ -131,3 +131,22 @@
   }
 }
 
+@keyframes scan-detected {
+  0% {
+    opacity: 0;
+    transform: scale(1.05);
+  }
+  25% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-scan-detected {
+  animation: scan-detected 220ms ease-out;
+}
+

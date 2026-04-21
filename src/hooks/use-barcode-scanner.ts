@@ -9,7 +9,15 @@ import {
 } from "react";
 import type { IScannerControls } from "@zxing/browser";
 
-export type ScanResult = { text: string; format: string };
+export type ScanResultPoint = { x: number; y: number };
+
+export type ScanResult = {
+  text: string;
+  format: string;
+  points: ScanResultPoint[];
+  videoWidth: number;
+  videoHeight: number;
+};
 
 export type ScannerState =
   | "idle"
@@ -110,7 +118,7 @@ export function useBarcodeScanner(
         const controls = await reader.decodeFromConstraints(
           { video: { facingMode: { ideal: "environment" } } },
           video,
-          (result, err) => {
+          (result) => {
             if (cancelled || !result) return;
             const text = safeGetText(result);
             if (!text) return;
@@ -125,7 +133,15 @@ export function useBarcodeScanner(
             }
             lastResultRef.current = { text, at: now };
             const format = safeGetFormat(result);
-            onResultRef.current({ text, format });
+            const points = safeGetPoints(result);
+            const videoEl = videoRef.current;
+            onResultRef.current({
+              text,
+              format,
+              points,
+              videoWidth: videoEl?.videoWidth ?? 0,
+              videoHeight: videoEl?.videoHeight ?? 0,
+            });
           },
         );
 
@@ -213,6 +229,27 @@ function safeGetText(result: unknown): string | null {
   if (typeof maybe.getText === "function") return maybe.getText();
   if (typeof maybe.text === "string") return maybe.text;
   return null;
+}
+
+function safeGetPoints(result: unknown): ScanResultPoint[] {
+  if (!result || typeof result !== "object") return [];
+  const maybe = result as {
+    getResultPoints?: () => Array<{ getX?: () => number; getY?: () => number }>;
+    resultPoints?: Array<{ x?: number; y?: number }>;
+  };
+  const raw = maybe.getResultPoints?.() ?? maybe.resultPoints ?? [];
+  const points: ScanResultPoint[] = [];
+  for (const p of raw) {
+    if (!p) continue;
+    const getter = p as { getX?: () => number; getY?: () => number };
+    const fallback = p as { x?: number; y?: number };
+    const x = getter.getX?.() ?? fallback.x;
+    const y = getter.getY?.() ?? fallback.y;
+    if (typeof x === "number" && typeof y === "number") {
+      points.push({ x, y });
+    }
+  }
+  return points;
 }
 
 function safeGetFormat(result: unknown): string {

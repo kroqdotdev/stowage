@@ -186,26 +186,34 @@ describe("useBarcodeScanner", () => {
 
     act(() => {
       scannerState.lastCallback?.(
-        { getText: () => "one", getBarcodeFormat: () => 1 },
+        {
+          getText: () => "one",
+          getBarcodeFormat: () => 1,
+          getResultPoints: () => [{ getX: () => 10, getY: () => 20 }],
+        },
         undefined,
         makeControls(),
       );
       scannerState.lastCallback?.(
-        { getText: () => "two", getBarcodeFormat: () => 1 },
+        {
+          getText: () => "two",
+          getBarcodeFormat: () => 1,
+          getResultPoints: () => [],
+        },
         undefined,
         makeControls(),
       );
     });
 
     expect(onResult).toHaveBeenCalledTimes(2);
-    expect(onResult).toHaveBeenCalledWith({
-      text: "one",
-      format: "FORMAT_1",
-    });
-    expect(onResult).toHaveBeenCalledWith({
-      text: "two",
-      format: "FORMAT_1",
-    });
+    expect(onResult).toHaveBeenCalledWith(
+      expect.objectContaining({ text: "one", format: "FORMAT_1" }),
+    );
+    const firstCall = onResult.mock.calls[0][0];
+    expect(firstCall.points).toEqual([{ x: 10, y: 20 }]);
+    expect(onResult).toHaveBeenCalledWith(
+      expect.objectContaining({ text: "two", format: "FORMAT_1" }),
+    );
   });
 
   it("enters 'denied' state on NotAllowedError", async () => {
