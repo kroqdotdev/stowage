@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { Loader2, Plus } from "lucide-react";
-import { useAction, useMutation, useQuery } from "convex/react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { CrudModal } from "@/components/crud/modal";
 import { Button } from "@/components/ui/button";
@@ -14,8 +14,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { api, type Id } from "@/lib/convex-api";
-import { getConvexUiMessage } from "@/lib/convex-errors";
+import { ApiRequestError } from "@/lib/api-client";
+import { createUser, listUsers, updateUserRole } from "@/lib/api/users";
 import { formatDateFromTimestamp, type AppDateFormat } from "@/lib/date-format";
 import { useAppDateFormat } from "@/lib/use-app-date-format";
 
@@ -38,7 +38,13 @@ function formatCreatedDate(timestamp: number, format: AppDateFormat) {
 }
 
 function normalizeErrorMessage(error: unknown, fallback: string) {
-  return getConvexUiMessage(error, fallback);
+  if (error instanceof ApiRequestError) {
+    return error.message || fallback;
+  }
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+  return fallback;
 }
 
 function normalizeRoleUpdateErrorMessage(error: unknown) {
@@ -54,25 +60,57 @@ function normalizeRoleUpdateErrorMessage(error: unknown) {
 export function UserManagementSection({
   currentUserId,
 }: {
-  currentUserId: Id<"users">;
+  currentUserId: string;
 }) {
   const dateFormat = useAppDateFormat();
-  const users = useQuery(api.users.listUsers, {});
-  const createUser = useAction(api.users.createUser);
-  const updateUserRole = useMutation(api.users.updateUserRole);
+  const queryClient = useQueryClient();
+
+  const usersQuery = useQuery({
+    queryKey: ["users"],
+    queryFn: listUsers,
+  });
+
+  const createMutation = useMutation({
+    mutationFn: createUser,
+    onSuccess: () => {
+      toast.success("User created");
+      setCreateForm(INITIAL_CREATE_USER_FORM);
+      setIsDialogOpen(false);
+      void queryClient.invalidateQueries({ queryKey: ["users"] });
+    },
+    onError: (error) => {
+      toast.error(normalizeErrorMessage(error, "Unable to create user"));
+    },
+  });
+
+  const updateRoleMutation = useMutation({
+    mutationFn: ({
+      userId,
+      role,
+    }: {
+      userId: string;
+      role: "admin" | "user";
+    }) => updateUserRole(userId, role),
+    onSuccess: () => {
+      toast.success("User role updated");
+      void queryClient.invalidateQueries({ queryKey: ["users"] });
+    },
+    onError: (error) => {
+      toast.error(normalizeRoleUpdateErrorMessage(error));
+    },
+  });
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [createForm, setCreateForm] = useState<CreateUserFormState>(
     INITIAL_CREATE_USER_FORM,
   );
-  const [creating, setCreating] = useState(false);
 
   const [roleEdits, setRoleEdits] = useState<Record<string, "admin" | "user">>(
     {},
   );
   const [savingRoleUserId, setSavingRoleUserId] = useState<string | null>(null);
 
-  const rows = useMemo(() => users ?? [], [users]);
+  const rows = useMemo(() => usersQuery.data ?? [], [usersQuery.data]);
   const adminCount = useMemo(
     () => rows.filter((user) => user.role === "admin").length,
     [rows],
@@ -83,7 +121,7 @@ export function UserManagementSection({
   }
 
   function closeDialog() {
-    if (creating) {
+    if (createMutation.isPending) {
       return;
     }
     setIsDialogOpen(false);
@@ -98,38 +136,24 @@ export function UserManagementSection({
       return;
     }
 
-    setCreating(true);
-    try {
-      await createUser({
-        email: createForm.email,
-        name: createForm.name,
-        password: createForm.password,
-        role: createForm.role,
-      });
-      toast.success("User created");
-      setCreateForm(INITIAL_CREATE_USER_FORM);
-      setIsDialogOpen(false);
-    } catch (error) {
-      const message = normalizeErrorMessage(error, "Unable to create user");
-      toast.error(message);
-    } finally {
-      setCreating(false);
-    }
+    createMutation.mutate({
+      email: createForm.email,
+      name: createForm.name,
+      password: createForm.password,
+      role: createForm.role,
+    });
   }
 
-  async function handleSaveRole(
-    userId: Id<"users">,
-    currentRole: "admin" | "user",
-  ) {
+  async function handleSaveRole(userId: string, currentRole: "admin" | "user") {
     const nextRole = roleEdits[userId] ?? currentRole;
     if (nextRole === currentRole) {
       return;
     }
 
     if (currentRole === "admin" && nextRole !== "admin" && adminCount <= 1) {
-      const message =
-        "You can't remove the last admin. Promote another user to admin first.";
-      toast.error(message);
+      toast.error(
+        "You can't remove the last admin. Promote another user to admin first.",
+      );
       setRoleEdits((prev) => {
         const next = { ...prev };
         delete next[userId];
@@ -140,16 +164,12 @@ export function UserManagementSection({
 
     setSavingRoleUserId(userId);
     try {
-      await updateUserRole({ userId, role: nextRole });
-      toast.success("User role updated");
+      await updateRoleMutation.mutateAsync({ userId, role: nextRole });
       setRoleEdits((prev) => {
         const next = { ...prev };
         delete next[userId];
         return next;
       });
-    } catch (error) {
-      const message = normalizeRoleUpdateErrorMessage(error);
-      toast.error(message);
     } finally {
       setSavingRoleUserId(null);
     }
@@ -195,7 +215,7 @@ export function UserManagementSection({
             </tr>
           </thead>
           <tbody>
-            {rows === undefined ? null : rows.length === 0 ? (
+            {usersQuery.isPending ? null : rows.length === 0 ? (
               <tr>
                 <td
                   colSpan={5}
@@ -206,14 +226,14 @@ export function UserManagementSection({
               </tr>
             ) : (
               rows.map((user) => {
-                const pendingRole = roleEdits[user._id] ?? user.role;
+                const pendingRole = roleEdits[user.id] ?? user.role;
                 const roleChanged = pendingRole !== user.role;
-                const isSaving = savingRoleUserId === user._id;
+                const isSaving = savingRoleUserId === user.id;
                 return (
-                  <tr key={user._id} className="border-t border-border/50">
+                  <tr key={user.id} className="border-t border-border/50">
                     <td className="px-3 py-2">
                       <div className="font-medium">{user.name}</div>
-                      {user._id === currentUserId ? (
+                      {user.id === currentUserId ? (
                         <div className="text-xs text-muted-foreground">You</div>
                       ) : null}
                     </td>
@@ -226,7 +246,7 @@ export function UserManagementSection({
                         onValueChange={(value) =>
                           setRoleEdits((prev) => ({
                             ...prev,
-                            [user._id]: value as "admin" | "user",
+                            [user.id]: value as "admin" | "user",
                           }))
                         }
                         disabled={isSaving}
@@ -253,7 +273,7 @@ export function UserManagementSection({
                         size="sm"
                         className="cursor-pointer"
                         disabled={!roleChanged || isSaving}
-                        onClick={() => void handleSaveRole(user._id, user.role)}
+                        onClick={() => void handleSaveRole(user.id, user.role)}
                       >
                         {isSaving ? (
                           <Loader2 className="h-4 w-4 animate-spin" />
@@ -281,7 +301,7 @@ export function UserManagementSection({
               variant="outline"
               className="cursor-pointer"
               onClick={closeDialog}
-              disabled={creating}
+              disabled={createMutation.isPending}
             >
               Cancel
             </Button>
@@ -289,10 +309,12 @@ export function UserManagementSection({
               form="create-user-form"
               type="submit"
               className="cursor-pointer"
-              disabled={creating}
+              disabled={createMutation.isPending}
             >
-              {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-              {creating ? "Creating..." : "Create user"}
+              {createMutation.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : null}
+              {createMutation.isPending ? "Creating..." : "Create user"}
             </Button>
           </>
         }

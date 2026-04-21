@@ -36,7 +36,7 @@ import { cn } from "@/lib/utils";
 import styles from "./location-tree.module.css";
 
 export type LocationTreeItem = {
-  _id: string;
+  id: string;
   name: string;
   parentId: string | null;
   description: string | null;
@@ -81,9 +81,9 @@ export function collectDescendantIds(
 
     const children = childrenByParent.get(current) ?? [];
     for (const child of children) {
-      if (!descendants.has(child._id)) {
-        descendants.add(child._id);
-        stack.push(child._id);
+      if (!descendants.has(child.id)) {
+        descendants.add(child.id);
+        stack.push(child.id);
       }
     }
   }
@@ -127,10 +127,10 @@ export function LocationTree({
   }
 
   function renderNode(node: LocationTreeItem): React.ReactNode {
-    const children = childrenByParent.get(node._id) ?? [];
+    const children = childrenByParent.get(node.id) ?? [];
     const hasChildren = children.length > 0;
-    const isExpanded = expandedIds.has(node._id);
-    const isSelected = selectedId === node._id;
+    const isExpanded = expandedIds.has(node.id);
+    const isSelected = selectedId === node.id;
 
     const nodeContent = (
       <div className="relative z-10">
@@ -145,7 +145,7 @@ export function LocationTree({
               <button
                 type="button"
                 className="mt-0.5 inline-flex h-6 w-6 cursor-pointer items-center justify-center rounded-md border border-transparent text-muted-foreground hover:border-border/60 hover:bg-background/80"
-                onClick={() => onToggleExpand(node._id)}
+                onClick={() => onToggleExpand(node.id)}
                 aria-label={isExpanded ? "Collapse" : "Expand"}
               >
                 {isExpanded ? (
@@ -166,7 +166,7 @@ export function LocationTree({
             <button
               type="button"
               className="min-w-0 flex-1 cursor-pointer text-left"
-              onClick={() => onSelect(node._id)}
+              onClick={() => onSelect(node.id)}
             >
               <div className="flex items-center gap-2">
                 <FolderTree className="h-4 w-4 text-muted-foreground" />
@@ -204,22 +204,22 @@ export function LocationTree({
                 </Tooltip>
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem asChild>
-                    <Link href={`/assets?location=${node._id}`}>
+                    <Link href={`/assets?location=${node.id}`}>
                       <Eye className="h-4 w-4" />
                       View assets here
                     </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => onSelect(node._id)}>
+                  <DropdownMenuItem onClick={() => onSelect(node.id)}>
                     <Pencil className="h-4 w-4" />
                     Edit details
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => onAddChild(node._id)}>
+                  <DropdownMenuItem onClick={() => onAddChild(node.id)}>
                     <Plus className="h-4 w-4" />
                     Add child
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     variant="destructive"
-                    onClick={() => onDelete(node._id)}
+                    onClick={() => onDelete(node.id)}
                   >
                     <Trash2 className="h-4 w-4" />
                     Delete
@@ -233,30 +233,30 @@ export function LocationTree({
     );
 
     return (
-      <li key={node._id} className={styles.node}>
+      <li key={node.id} className={styles.node}>
         {canManage ? (
           <ContextMenu>
             <ContextMenuTrigger asChild>{nodeContent}</ContextMenuTrigger>
             <ContextMenuContent>
               <ContextMenuItem asChild>
-                <Link href={`/assets?location=${node._id}`}>
+                <Link href={`/assets?location=${node.id}`}>
                   <Eye className="h-4 w-4" />
                   View assets here
                 </Link>
               </ContextMenuItem>
               <ContextMenuSeparator />
-              <ContextMenuItem onClick={() => onSelect(node._id)}>
+              <ContextMenuItem onClick={() => onSelect(node.id)}>
                 <Pencil className="h-4 w-4" />
                 Edit details
               </ContextMenuItem>
-              <ContextMenuItem onClick={() => onAddChild(node._id)}>
+              <ContextMenuItem onClick={() => onAddChild(node.id)}>
                 <Plus className="h-4 w-4" />
                 Add child
               </ContextMenuItem>
               <ContextMenuSeparator />
               <ContextMenuItem
                 variant="destructive"
-                onClick={() => onDelete(node._id)}
+                onClick={() => onDelete(node.id)}
               >
                 <Trash2 className="h-4 w-4" />
                 Delete

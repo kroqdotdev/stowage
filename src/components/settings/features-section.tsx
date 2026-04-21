@@ -1,43 +1,45 @@
 "use client";
 
-import { useState } from "react";
-import { useMutation, useQuery } from "convex/react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
-import { getConvexErrorCode, getConvexUiMessage } from "@/lib/convex-errors";
-import { api } from "@/lib/convex-api";
+import { ApiRequestError } from "@/lib/api-client";
+import {
+  getAppSettings,
+  setServiceSchedulingEnabled,
+} from "@/lib/api/app-settings";
 
 function mapError(error: unknown, fallback: string) {
-  const code = getConvexErrorCode(error);
-  if (code === "FORBIDDEN") {
-    return "Only admins can update feature settings.";
+  if (error instanceof ApiRequestError) {
+    if (error.status === 403) {
+      return "Only admins can update feature settings.";
+    }
+    return error.message || fallback;
   }
-  return getConvexUiMessage(error, fallback);
+  return fallback;
 }
 
 export function FeaturesSection() {
-  const settings = useQuery(api.appSettings.getAppSettings, {});
-  const updateServiceSchedulingEnabled = useMutation(
-    api.appSettings.updateServiceSchedulingEnabled,
-  );
+  const queryClient = useQueryClient();
+  const settingsQuery = useQuery({
+    queryKey: ["app-settings"],
+    queryFn: getAppSettings,
+  });
 
-  const [saving, setSaving] = useState(false);
-
-  const enabled = settings?.serviceSchedulingEnabled ?? true;
-
-  async function handleToggle(checked: boolean) {
-    setSaving(true);
-    try {
-      await updateServiceSchedulingEnabled({ enabled: checked });
+  const mutation = useMutation({
+    mutationFn: (enabled: boolean) => setServiceSchedulingEnabled(enabled),
+    onSuccess: (_data, enabled) => {
       toast.success(
-        checked ? "Service scheduling enabled" : "Service scheduling disabled",
+        enabled ? "Service scheduling enabled" : "Service scheduling disabled",
       );
-    } catch (error) {
+      void queryClient.invalidateQueries({ queryKey: ["app-settings"] });
+    },
+    onError: (error) => {
       toast.error(mapError(error, "Unable to update feature setting"));
-    } finally {
-      setSaving(false);
-    }
-  }
+    },
+  });
+
+  const enabled = settingsQuery.data?.serviceSchedulingEnabled ?? true;
 
   return (
     <section className="rounded-xl border border-border/70 bg-background p-5 shadow-sm">
@@ -48,7 +50,7 @@ export function FeaturesSection() {
         </p>
       </div>
 
-      {settings === undefined ? (
+      {settingsQuery.isPending ? (
         <div className="mt-4 text-sm text-muted-foreground">Loading...</div>
       ) : (
         <div className="mt-4">
@@ -64,8 +66,8 @@ export function FeaturesSection() {
             </div>
             <Switch
               checked={enabled}
-              onCheckedChange={handleToggle}
-              disabled={saving}
+              onCheckedChange={(checked) => mutation.mutate(checked)}
+              disabled={mutation.isPending}
               aria-label="Toggle service scheduling"
             />
           </div>

@@ -1,6 +1,5 @@
 import { PageHeader } from "@/components/layout/page-header";
 import { ServiceGroupDetailPageClient } from "@/components/services/service-group-detail-page-client";
-import type { Id } from "@/lib/convex-api";
 
 export default async function ServiceGroupDetailPage({
   params,
@@ -21,7 +20,7 @@ export default async function ServiceGroupDetailPage({
           { label: "Group detail" },
         ]}
       />
-      <ServiceGroupDetailPageClient groupId={id as Id<"serviceGroups">} />
+      <ServiceGroupDetailPageClient groupId={id} />
     </div>
   );
 }

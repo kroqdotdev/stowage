@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { useMutation, useQuery } from "convex/react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { AssetDetail } from "@/components/assets/asset-detail";
 import { getAssetUiErrorMessage } from "@/components/assets/error-messages";
@@ -13,60 +13,71 @@ import type {
 } from "@/components/assets/types";
 import type { FieldDefinition } from "@/components/fields/types";
 import { Button } from "@/components/ui/button";
-import type { Id } from "@/lib/convex-api";
-import { api } from "@/lib/convex-api";
+import { useCurrentUser } from "@/hooks/use-current-user";
+import { deleteAsset, getAsset, updateAssetStatus } from "@/lib/api/assets";
+import { listCustomFields } from "@/lib/api/custom-fields";
 
-export function AssetDetailPageClient({ assetId }: { assetId: Id<"assets"> }) {
+export function AssetDetailPageClient({ assetId }: { assetId: string }) {
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const { data: currentUser, isPending: currentUserPending } = useCurrentUser();
 
-  const currentUser = useQuery(api.users.getCurrentUser, {});
-  const asset = useQuery(api.assets.getAsset, { assetId });
-  const fieldDefinitions = useQuery(api.customFields.listFieldDefinitions, {});
+  const assetQuery = useQuery({
+    queryKey: ["assets", "detail", assetId],
+    queryFn: () => getAsset(assetId),
+  });
+  const fieldsQuery = useQuery({
+    queryKey: ["custom-fields", "list"],
+    queryFn: listCustomFields,
+  });
 
-  const updateAssetStatus = useMutation(api.assets.updateAssetStatus);
-  const deleteAsset = useMutation(api.assets.deleteAsset);
+  const updateStatusMutation = useMutation({
+    mutationFn: (status: AssetStatus) => updateAssetStatus(assetId, status),
+    onSuccess: () => {
+      toast.success("Asset status updated");
+      void queryClient.invalidateQueries({
+        queryKey: ["assets", "detail", assetId],
+      });
+      void queryClient.invalidateQueries({ queryKey: ["assets", "list"] });
+      void queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+    },
+    onError: (error) => {
+      toast.error(getAssetUiErrorMessage(error, "Unable to update status"));
+    },
+  });
 
-  const [updatingStatus, setUpdatingStatus] = useState(false);
-  const [deleting, setDeleting] = useState(false);
+  const deleteMutation = useMutation({
+    mutationFn: () => deleteAsset(assetId),
+    onSuccess: () => {
+      toast.success("Asset deleted");
+      void queryClient.invalidateQueries({ queryKey: ["assets", "list"] });
+      void queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      void queryClient.invalidateQueries({ queryKey: ["service-schedules"] });
+      router.push("/assets");
+    },
+    onError: (error) => {
+      toast.error(getAssetUiErrorMessage(error, "Unable to delete asset"));
+    },
+  });
 
   const loading =
-    currentUser === undefined ||
-    asset === undefined ||
-    fieldDefinitions === undefined;
+    currentUserPending || assetQuery.isPending || fieldsQuery.isPending;
 
-  const detail = (asset ?? null) as AssetDetailType | null;
+  const detail = (assetQuery.data ?? null) as AssetDetailType | null;
   const customFieldDefinitions = useMemo(
-    () => (fieldDefinitions ?? []) as unknown as FieldDefinition[],
-    [fieldDefinitions],
+    () => (fieldsQuery.data ?? []) as unknown as FieldDefinition[],
+    [fieldsQuery.data],
   );
 
   async function handleStatusChange(status: AssetStatus) {
     if (!detail || detail.status === status) {
       return;
     }
-
-    setUpdatingStatus(true);
-    try {
-      await updateAssetStatus({ assetId, status });
-      toast.success("Asset status updated");
-    } catch (error) {
-      toast.error(getAssetUiErrorMessage(error, "Unable to update status"));
-    } finally {
-      setUpdatingStatus(false);
-    }
+    await updateStatusMutation.mutateAsync(status);
   }
 
   async function handleDelete() {
-    setDeleting(true);
-    try {
-      await deleteAsset({ assetId });
-      toast.success("Asset deleted");
-      router.push("/assets");
-    } catch (error) {
-      toast.error(getAssetUiErrorMessage(error, "Unable to delete asset"));
-    } finally {
-      setDeleting(false);
-    }
+    await deleteMutation.mutateAsync();
   }
 
   if (loading) {
@@ -98,8 +109,8 @@ export function AssetDetailPageClient({ assetId }: { assetId: Id<"assets"> }) {
       asset={detail}
       fieldDefinitions={customFieldDefinitions}
       canDelete={currentUser?.role === "admin"}
-      deleting={deleting}
-      updatingStatus={updatingStatus}
+      deleting={deleteMutation.isPending}
+      updatingStatus={updateStatusMutation.isPending}
       onStatusChange={handleStatusChange}
       onDelete={handleDelete}
     />

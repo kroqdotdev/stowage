@@ -1,25 +1,51 @@
 "use client";
 
-import { useMutation, useQuery } from "convex/react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+
 import {
   TaxonomyManager,
   type TaxonomyFormValues,
 } from "@/components/catalog/taxonomy-manager";
-import { api } from "@/lib/convex-api";
+import { useCurrentUser } from "@/hooks/use-current-user";
+import {
+  createCategory,
+  deleteCategory,
+  listCategories,
+  updateCategory,
+} from "@/lib/api/categories";
+
+const CATEGORIES_QUERY_KEY = ["categories"] as const;
 
 export function CategoriesPageClient() {
-  const currentUser = useQuery(api.users.getCurrentUser, {});
-  const categories = useQuery(api.categories.listCategories, {});
-  const createCategory = useMutation(api.categories.createCategory);
-  const updateCategory = useMutation(api.categories.updateCategory);
-  const deleteCategory = useMutation(api.categories.deleteCategory);
+  const qc = useQueryClient();
+  const { data: currentUser, isLoading: loadingUser } = useCurrentUser();
+  const { data: categories, isLoading: loadingCategories } = useQuery({
+    queryKey: CATEGORIES_QUERY_KEY,
+    queryFn: listCategories,
+  });
+
+  const createM = useMutation({
+    mutationFn: createCategory,
+    onSuccess: () => qc.invalidateQueries({ queryKey: CATEGORIES_QUERY_KEY }),
+  });
+  const updateM = useMutation({
+    mutationFn: (vars: {
+      categoryId: string;
+      input: Parameters<typeof updateCategory>[1];
+    }) => updateCategory(vars.categoryId, vars.input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: CATEGORIES_QUERY_KEY }),
+  });
+  const deleteM = useMutation({
+    mutationFn: deleteCategory,
+    onSuccess: () => qc.invalidateQueries({ queryKey: CATEGORIES_QUERY_KEY }),
+  });
 
   const rows = categories ?? [];
-  const loading = categories === undefined || currentUser === undefined;
+  const loading = loadingCategories || loadingUser;
   const canManage = currentUser?.role === "admin";
 
   async function handleCreate(values: TaxonomyFormValues) {
-    await createCategory({
+    await createM.mutateAsync({
       name: values.name,
       prefix: values.prefix || null,
       description: values.description || null,
@@ -28,17 +54,19 @@ export function CategoriesPageClient() {
   }
 
   async function handleUpdate(categoryId: string, values: TaxonomyFormValues) {
-    await updateCategory({
-      categoryId: categoryId as never,
-      name: values.name,
-      prefix: values.prefix || null,
-      description: values.description || null,
-      color: values.color,
+    await updateM.mutateAsync({
+      categoryId,
+      input: {
+        name: values.name,
+        prefix: values.prefix || null,
+        description: values.description || null,
+        color: values.color,
+      },
     });
   }
 
   async function handleDelete(categoryId: string) {
-    await deleteCategory({ categoryId: categoryId as never });
+    await deleteM.mutateAsync(categoryId);
   }
 
   return (

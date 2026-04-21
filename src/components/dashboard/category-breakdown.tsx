@@ -3,7 +3,7 @@
 import Link from "next/link";
 
 type CategoryItem = {
-  _id: string;
+  id: string;
   name: string;
   color: string;
   count: number;
@@ -25,8 +25,8 @@ export function CategoryBreakdown({ items }: { items: CategoryItem[] }) {
         <div className="mt-3 min-h-0 flex-1 space-y-2.5 overflow-y-auto">
           {items.map((item) => (
             <Link
-              key={item._id}
-              href={`/assets?category=${item._id}`}
+              key={item.id}
+              href={`/assets?category=${item.id}`}
               className="group block"
             >
               <div className="flex items-center justify-between gap-2">

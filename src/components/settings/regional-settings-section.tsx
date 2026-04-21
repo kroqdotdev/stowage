@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
-import { useMutation, useQuery } from "convex/react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,49 +18,48 @@ import {
   formatDateFromTimestamp,
   type AppDateFormat,
 } from "@/lib/date-format";
-import { getConvexErrorCode, getConvexUiMessage } from "@/lib/convex-errors";
-import { api } from "@/lib/convex-api";
+import { ApiRequestError } from "@/lib/api-client";
+import { getAppSettings, setDateFormat } from "@/lib/api/app-settings";
 
 function mapSettingsError(error: unknown, fallback: string) {
-  const code = getConvexErrorCode(error);
-  if (code === "FORBIDDEN") {
-    return "Only admins can update settings.";
+  if (error instanceof ApiRequestError) {
+    if (error.status === 403) {
+      return "Only admins can update settings.";
+    }
+    return error.message || fallback;
   }
-  if (code === "INVALID_DATE_FORMAT") {
-    return "Select one of the supported date formats.";
-  }
-  return getConvexUiMessage(error, fallback);
+  return fallback;
 }
 
 export function RegionalSettingsSection() {
-  const settings = useQuery(api.appSettings.getAppSettings, {});
-  const updateDateFormat = useMutation(api.appSettings.updateDateFormat);
+  const queryClient = useQueryClient();
+  const settingsQuery = useQuery({
+    queryKey: ["app-settings"],
+    queryFn: getAppSettings,
+  });
+
+  const mutation = useMutation({
+    mutationFn: (format: AppDateFormat) => setDateFormat(format),
+    onSuccess: () => {
+      setSelectedFormat(null);
+      toast.success("Date format updated");
+      void queryClient.invalidateQueries({ queryKey: ["app-settings"] });
+    },
+    onError: (error) => {
+      toast.error(mapSettingsError(error, "Unable to update date format"));
+    },
+  });
 
   const [selectedFormat, setSelectedFormat] = useState<AppDateFormat | null>(
     null,
   );
-  const [saving, setSaving] = useState(false);
 
   const persistedFormat =
-    (settings?.dateFormat as AppDateFormat | undefined) ??
+    (settingsQuery.data?.dateFormat as AppDateFormat | undefined) ??
     DEFAULT_APP_DATE_FORMAT;
   const effectiveFormat = selectedFormat ?? persistedFormat;
-
   const hasChanges =
-    settings !== undefined && effectiveFormat !== persistedFormat;
-
-  async function handleSave() {
-    setSaving(true);
-    try {
-      await updateDateFormat({ dateFormat: effectiveFormat });
-      setSelectedFormat(null);
-      toast.success("Date format updated");
-    } catch (error) {
-      toast.error(mapSettingsError(error, "Unable to update date format"));
-    } finally {
-      setSaving(false);
-    }
-  }
+    !settingsQuery.isPending && effectiveFormat !== persistedFormat;
 
   return (
     <section className="rounded-xl border border-border/70 bg-background p-5 shadow-sm">
@@ -71,7 +70,7 @@ export function RegionalSettingsSection() {
         </p>
       </div>
 
-      {settings === undefined ? (
+      {settingsQuery.isPending ? (
         <div className="mt-4 text-sm text-muted-foreground">
           Loading preferences...
         </div>
@@ -84,7 +83,7 @@ export function RegionalSettingsSection() {
               onValueChange={(value) =>
                 setSelectedFormat(value as AppDateFormat)
               }
-              disabled={saving}
+              disabled={mutation.isPending}
             >
               <SelectTrigger className="w-full sm:max-w-xs">
                 <SelectValue />
@@ -109,12 +108,12 @@ export function RegionalSettingsSection() {
                 )}
               </span>
             </div>
-            {settings.updatedAt ? (
+            {settingsQuery.data?.updatedAt ? (
               <div className="mt-1 text-xs">
                 Last updated:{" "}
                 {formatDateFromTimestamp(
-                  settings.updatedAt,
-                  settings.dateFormat as AppDateFormat,
+                  settingsQuery.data.updatedAt,
+                  settingsQuery.data.dateFormat as AppDateFormat,
                 )}
               </div>
             ) : (
@@ -125,10 +124,12 @@ export function RegionalSettingsSection() {
           <Button
             type="button"
             className="cursor-pointer"
-            onClick={() => void handleSave()}
-            disabled={saving || !hasChanges}
+            onClick={() => mutation.mutate(effectiveFormat)}
+            disabled={mutation.isPending || !hasChanges}
           >
-            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+            {mutation.isPending ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : null}
             Save format
           </Button>
         </div>

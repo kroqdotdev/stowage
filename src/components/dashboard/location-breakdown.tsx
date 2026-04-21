@@ -4,7 +4,7 @@ import Link from "next/link";
 import { MapPin } from "lucide-react";
 
 type LocationItem = {
-  _id: string;
+  id: string;
   name: string;
   count: number;
 };
@@ -23,8 +23,8 @@ export function LocationBreakdown({ items }: { items: LocationItem[] }) {
         <div className="mt-3 min-h-0 flex-1 space-y-1 overflow-y-auto">
           {items.map((item) => (
             <Link
-              key={item._id}
-              href={`/assets?location=${item._id}`}
+              key={item.id}
+              href={`/assets?location=${item.id}`}
               className="flex items-center justify-between gap-2 rounded-lg px-2 py-1.5 transition-colors hover:bg-accent"
             >
               <div className="flex items-center gap-2 text-sm">

@@ -2,12 +2,13 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { FileUp, Loader2, XCircle } from "lucide-react";
-import { useMutation, useQuery } from "convex/react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { getAttachmentUiErrorMessage } from "@/components/attachments/error-messages";
+import type { AttachmentItem } from "@/components/attachments/types";
 import { cn } from "@/lib/utils";
-import type { Id } from "@/lib/convex-api";
-import { api } from "@/lib/convex-api";
+import { getStorageUsage, listAttachments } from "@/lib/api/attachments";
+import { ApiRequestError } from "@/lib/api-client";
 
 function formatStorageSize(bytes: number) {
   const gb = bytes / (1024 * 1024 * 1024);
@@ -23,6 +24,7 @@ const MAX_FILES_PER_BATCH = 20;
 const UPLOAD_CONCURRENCY = 3;
 const READY_REMOVE_DELAY_MS = 5_000;
 const QUEUED_OR_FAILED_REMOVE_DELAY_MS = 30_000;
+const QUEUE_POLL_MS = 2_000;
 
 const ALLOWED_EXTENSIONS = new Set([
   "jpg",
@@ -52,14 +54,8 @@ type UploadJob = {
   fileName: string;
   status: UploadStatus;
   progress: number;
-  attachmentId: Id<"attachments"> | null;
+  attachmentId: string | null;
   error: string | null;
-};
-
-type QueueTrackingItem = {
-  _id: Id<"attachments">;
-  status: "pending" | "processing" | "ready" | "failed";
-  optimizationError: string | null;
 };
 
 function getExtension(fileName: string) {
@@ -78,14 +74,19 @@ function formatFileSize(size: number) {
 }
 
 function uploadWithProgress(
-  uploadUrl: string,
+  assetId: string,
   file: File,
   onProgress: (progress: number) => void,
 ) {
-  return new Promise<Id<"_storage">>((resolve, reject) => {
+  return new Promise<{ attachmentId: string }>((resolve, reject) => {
+    const form = new FormData();
+    form.append("assetId", assetId);
+    form.append("file", file);
+
     const request = new XMLHttpRequest();
-    request.open("POST", uploadUrl, true);
+    request.open("POST", "/api/attachments", true);
     request.responseType = "json";
+    request.withCredentials = true;
 
     request.upload.onprogress = (event) => {
       if (!event.lengthComputable) {
@@ -96,41 +97,53 @@ function uploadWithProgress(
 
     request.onload = () => {
       if (request.status < 200 || request.status >= 300) {
-        reject(new Error("Upload failed"));
+        const body = request.response as {
+          error?: string;
+          issues?: unknown;
+        } | null;
+        reject(
+          new ApiRequestError({
+            error: body?.error ?? "Upload failed",
+            status: request.status,
+            issues: body?.issues,
+          }),
+        );
         return;
       }
-
-      const response = request.response as { storageId?: string } | null;
-      const storageId = response?.storageId;
-      if (!storageId) {
-        reject(new Error("Upload did not return a storage id"));
+      const response = request.response as {
+        attachmentId?: string;
+      } | null;
+      if (!response?.attachmentId) {
+        reject(new Error("Upload did not return an attachment id"));
         return;
       }
-
-      resolve(storageId as Id<"_storage">);
+      resolve({ attachmentId: response.attachmentId });
     };
 
     request.onerror = () => {
       reject(new Error("Upload failed"));
     };
 
-    request.setRequestHeader(
-      "Content-Type",
-      file.type || "application/octet-stream",
-    );
-    request.send(file);
+    request.send(form);
   });
 }
 
-export function FileUploadZone({ assetId }: { assetId: Id<"assets"> }) {
+export function FileUploadZone({ assetId }: { assetId: string }) {
+  const queryClient = useQueryClient();
   const inputRef = useRef<HTMLInputElement | null>(null);
-  const createAttachment = useMutation(api.attachments.createAttachment);
-  const generateUploadUrl = useMutation(api.attachments.generateUploadUrl);
-  const attachmentQueueStatuses = useQuery(
-    api.attachments.listAttachmentQueueStatuses,
-    { assetId },
-  );
-  const storageUsage = useQuery(api.storage_quota.getStorageUsage);
+
+  const storageUsageQuery = useQuery({
+    queryKey: ["storage-usage"],
+    queryFn: getStorageUsage,
+    staleTime: 30_000,
+  });
+  const attachmentsQuery = useQuery({
+    queryKey: ["attachments", assetId],
+    queryFn: () => listAttachments(assetId),
+    refetchInterval: QUEUE_POLL_MS,
+  });
+
+  const storageUsage = storageUsageQuery.data ?? null;
   const quotaExceeded =
     storageUsage?.limitBytes != null &&
     storageUsage.usedBytes >= storageUsage.limitBytes;
@@ -142,12 +155,12 @@ export function FileUploadZone({ assetId }: { assetId: Id<"assets"> }) {
   >(new Map());
 
   const attachmentStatusById = useMemo(() => {
-    const map = new Map<Id<"attachments">, QueueTrackingItem>();
-    for (const row of (attachmentQueueStatuses ?? []) as QueueTrackingItem[]) {
-      map.set(row._id, row);
+    const map = new Map<string, AttachmentItem>();
+    for (const row of attachmentsQuery.data ?? []) {
+      map.set(row.id, row);
     }
     return map;
-  }, [attachmentQueueStatuses]);
+  }, [attachmentsQuery.data]);
 
   const queueJobs = useMemo(
     () =>
@@ -322,29 +335,23 @@ export function FileUploadZone({ assetId }: { assetId: Id<"assets"> }) {
     const jobId = appendJob(file.name);
 
     try {
-      const { uploadUrl } = await generateUploadUrl({});
-      const storageId = await uploadWithProgress(uploadUrl, file, (progress) =>
-        upsertJob(jobId, { progress, status: "uploading" }),
+      const { attachmentId } = await uploadWithProgress(
+        assetId,
+        file,
+        (progress) => upsertJob(jobId, { progress, status: "uploading" }),
       );
 
       upsertJob(jobId, {
-        status: "registering",
-        progress: 100,
-      });
-
-      const created = await createAttachment({
-        assetId,
-        storageId,
-        fileName: file.name,
-        fileType: file.type || null,
-        fileSize: file.size,
-      });
-
-      upsertJob(jobId, {
         status: "queued",
-        attachmentId: created.attachmentId,
+        progress: 100,
+        attachmentId,
         error: null,
       });
+
+      void queryClient.invalidateQueries({
+        queryKey: ["attachments", assetId],
+      });
+      void queryClient.invalidateQueries({ queryKey: ["storage-usage"] });
     } catch (error) {
       upsertJob(jobId, {
         status: "error",

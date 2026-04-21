@@ -64,7 +64,7 @@ const template: Pick<LabelTemplate, "widthMm" | "heightMm" | "elements"> = {
 };
 
 const asset: LabelPreviewAsset = {
-  _id: "asset-1" as never,
+  id: "asset-1",
   name: "Main winch",
   assetTag: "WIN-001",
   categoryName: "Deck gear",
@@ -84,8 +84,7 @@ describe("LabelPreview", () => {
         origin="https://stowage.test"
         fieldDefinitions={[
           {
-            _id: "field-1" as never,
-            _creationTime: 1,
+            id: "field-1" as never,
             name: "Bin",
             fieldType: "text",
             options: [],

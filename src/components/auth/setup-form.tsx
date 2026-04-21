@@ -1,24 +1,25 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { useAuthActions, useAuthToken } from "@convex-dev/auth/react";
-import { useAction, useConvexAuth, useQuery } from "convex/react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+
 import { AuthPanel } from "@/components/auth/auth-panel";
 import { getSetupErrorMessage } from "@/components/auth/auth-error-messages";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { setAuthTokenCookie } from "@/lib/auth-token-cookie";
-import { api } from "@/lib/convex-api";
+import { CURRENT_USER_QUERY_KEY } from "@/hooks/use-current-user";
+import { checkFirstRun, createFirstAdmin } from "@/lib/api/auth";
 
 export function SetupForm() {
   const router = useRouter();
-  const { signIn } = useAuthActions();
-  const authToken = useAuthToken();
-  const { isAuthenticated, isLoading } = useConvexAuth();
-  const firstRun = useQuery(api.users.checkFirstRun, {});
-  const createFirstAdmin = useAction(api.users.createFirstAdmin);
+  const qc = useQueryClient();
+  const { data: firstRun, isLoading } = useQuery({
+    queryKey: ["auth", "first-run"],
+    queryFn: checkFirstRun,
+    staleTime: 60_000,
+  });
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -26,13 +27,6 @@ export function SetupForm() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!isLoading && isAuthenticated && authToken) {
-      setAuthTokenCookie(authToken);
-      router.replace("/dashboard");
-    }
-  }, [authToken, isAuthenticated, isLoading, router]);
 
   useEffect(() => {
     if (firstRun === false) {
@@ -52,23 +46,10 @@ export function SetupForm() {
     setSubmitting(true);
 
     try {
-      await createFirstAdmin({
-        email,
-        name,
-        password,
-      });
-
-      const result = await signIn("password", {
-        flow: "signIn",
-        email: email.trim().toLowerCase(),
-        password,
-      });
-
-      if (!result.signingIn) {
-        setError(
-          "Setup completed, but sign-in did not finish. Try signing in.",
-        );
-      }
+      const user = await createFirstAdmin({ email, name, password });
+      qc.setQueryData(CURRENT_USER_QUERY_KEY, user);
+      qc.setQueryData(["auth", "first-run"], false);
+      router.replace("/dashboard");
     } catch (caught) {
       setError(getSetupErrorMessage(caught));
     } finally {
@@ -76,7 +57,7 @@ export function SetupForm() {
     }
   }
 
-  if (firstRun === undefined) {
+  if (isLoading) {
     return (
       <AuthPanel
         title="Set up Stowage"

@@ -1,25 +1,31 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useAuthActions, useAuthToken } from "@convex-dev/auth/react";
-import { useConvexAuth } from "convex/react";
-import { Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
+
+import { AuthPanel } from "@/components/auth/auth-panel";
 import { getLoginErrorMessage } from "@/components/auth/auth-error-messages";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { AuthPanel } from "@/components/auth/auth-panel";
-import { setAuthTokenCookie } from "@/lib/auth-token-cookie";
-import { api } from "@/lib/convex-api";
-import { useQuery } from "convex/react";
+import {
+  CURRENT_USER_QUERY_KEY,
+  useCurrentUser,
+} from "@/hooks/use-current-user";
+import { checkFirstRun, login } from "@/lib/api/auth";
+import { useQuery } from "@tanstack/react-query";
 
 export function LoginForm() {
   const router = useRouter();
-  const { signIn } = useAuthActions();
-  const authToken = useAuthToken();
-  const { isAuthenticated, isLoading } = useConvexAuth();
-  const firstRun = useQuery(api.users.checkFirstRun, {});
+  const qc = useQueryClient();
+  const { data: currentUser, isLoading } = useCurrentUser();
+  const { data: firstRun } = useQuery({
+    queryKey: ["auth", "first-run"],
+    queryFn: checkFirstRun,
+    staleTime: 60_000,
+  });
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -27,11 +33,10 @@ export function LoginForm() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!isLoading && isAuthenticated && authToken) {
-      setAuthTokenCookie(authToken);
+    if (!isLoading && currentUser) {
       router.replace("/dashboard");
     }
-  }, [authToken, isAuthenticated, isLoading, router]);
+  }, [currentUser, isLoading, router]);
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -39,15 +44,9 @@ export function LoginForm() {
     setError(null);
 
     try {
-      const result = await signIn("password", {
-        flow: "signIn",
-        email: email.trim().toLowerCase(),
-        password,
-      });
-
-      if (!result.signingIn) {
-        setError("Invalid email or password");
-      }
+      const user = await login({ email, password });
+      qc.setQueryData(CURRENT_USER_QUERY_KEY, user);
+      router.replace("/dashboard");
     } catch (caught) {
       setError(getLoginErrorMessage(caught));
     } finally {

@@ -1,5 +1,4 @@
 import type { FieldDefinition } from "@/components/fields/types";
-import type { Id } from "@/lib/convex-api";
 import type {
   EditableLabelTemplate,
   LabelElementType,
@@ -112,7 +111,7 @@ export function createLabelElementDraft({
   type: LabelElementType;
   index: number;
   template: Pick<EditableLabelTemplate, "widthMm" | "heightMm">;
-  fieldId?: Id<"customFieldDefinitions"> | null;
+  fieldId?: string | null;
 }): LabelTemplateElement {
   const offset = Math.min(index * 1.5, 8);
   const { widthMm, heightMm } = getDefaultSize(type);
@@ -153,7 +152,7 @@ export function cloneEditableLabelTemplate(
   template: LabelTemplate | EditableLabelTemplate,
 ): EditableLabelTemplate {
   return {
-    _id: template._id,
+    id: template.id,
     name: template.name,
     widthMm: template.widthMm,
     heightMm: template.heightMm,
@@ -164,7 +163,7 @@ export function cloneEditableLabelTemplate(
 
 export function createEmptyLabelTemplate(): EditableLabelTemplate {
   return {
-    _id: null,
+    id: null,
     name: "",
     widthMm: 57,
     heightMm: 32,
@@ -195,10 +194,7 @@ export function applyDimensionPreset(
   };
 }
 
-export function buildLabelAssetUrl(
-  assetId: Id<"assets"> | string,
-  origin: string,
-) {
+export function buildLabelAssetUrl(assetId: string, origin: string) {
   return `${origin.replace(/\/$/, "")}/assets/${assetId}`;
 }
 
@@ -237,7 +233,7 @@ export function resolveLabelElementText({
         return `${value}`;
       }
       const definition = fieldDefinitions?.find(
-        (field) => String(field._id) === fieldKey,
+        (field) => String(field.id) === fieldKey,
       );
       return definition?.name ?? "Custom field";
     }
@@ -255,7 +251,7 @@ export function getLabelElementAriaLabel(
   }
 
   const definition = fieldDefinitions?.find(
-    (field) => String(field._id) === String(element.fieldId ?? ""),
+    (field) => String(field.id) === String(element.fieldId ?? ""),
   );
   return definition ? `Custom field: ${definition.name}` : "Custom field";
 }

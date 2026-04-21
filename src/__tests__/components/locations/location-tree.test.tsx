@@ -10,7 +10,7 @@ import {
 
 const locations: LocationTreeItem[] = [
   {
-    _id: "root",
+    id: "root",
     name: "Warehouse",
     parentId: null,
     description: null,
@@ -19,7 +19,7 @@ const locations: LocationTreeItem[] = [
     updatedAt: 1,
   },
   {
-    _id: "child",
+    id: "child",
     name: "Aisle 1",
     parentId: "root",
     description: null,
@@ -28,7 +28,7 @@ const locations: LocationTreeItem[] = [
     updatedAt: 2,
   },
   {
-    _id: "grandchild",
+    id: "grandchild",
     name: "Bin 2",
     parentId: "child",
     description: null,

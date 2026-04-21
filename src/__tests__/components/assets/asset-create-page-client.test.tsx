@@ -1,15 +1,27 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
-import { getFunctionName } from "convex/server";
-import { AssetCreatePageClient } from "@/components/assets/asset-create-page-client";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { render, screen, waitFor } from "@testing-library/react";
 
-const mockUseQuery = vi.fn();
-const mockUseMutation = vi.fn(() => vi.fn());
+const getFilterOptionsMock = vi.fn();
+const listCustomFieldsMock = vi.fn();
+const getAppSettingsMock = vi.fn();
 const mockPush = vi.fn();
 
-vi.mock("convex/react", () => ({
-  useQuery: (...args: unknown[]) => mockUseQuery(...args),
-  useMutation: (...args: unknown[]) => mockUseMutation(...args),
+vi.mock("@/lib/api/assets", () => ({
+  createAsset: vi.fn(),
+  getAssetFilterOptions: () => getFilterOptionsMock(),
+}));
+
+vi.mock("@/lib/api/custom-fields", () => ({
+  listCustomFields: () => listCustomFieldsMock(),
+}));
+
+vi.mock("@/lib/api/app-settings", () => ({
+  getAppSettings: () => getAppSettingsMock(),
+}));
+
+vi.mock("@/lib/api/service-schedules", () => ({
+  upsertSchedule: vi.fn(),
 }));
 
 vi.mock("next/navigation", () => ({
@@ -33,6 +45,8 @@ vi.mock("@/components/assets/error-messages", () => ({
   getAssetUiErrorMessage: (_e: unknown, fallback: string) => fallback,
 }));
 
+import { AssetCreatePageClient } from "@/components/assets/asset-create-page-client";
+
 const filterOptions = {
   categories: [],
   locations: [],
@@ -40,52 +54,60 @@ const filterOptions = {
   serviceGroups: [],
 };
 
+function renderWithClient(ui: React.ReactElement) {
+  const qc = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  return render(<QueryClientProvider client={qc}>{ui}</QueryClientProvider>);
+}
+
 describe("AssetCreatePageClient", () => {
   beforeEach(() => {
-    mockUseQuery.mockReset();
-    mockUseMutation.mockReset();
-    mockUseMutation.mockReturnValue(vi.fn());
+    getFilterOptionsMock.mockReset();
+    listCustomFieldsMock.mockReset();
+    getAppSettingsMock.mockReset();
     mockPush.mockReset();
   });
 
   it("shows loading state when queries are pending", () => {
-    mockUseQuery.mockReturnValue(undefined);
+    getFilterOptionsMock.mockImplementation(() => new Promise(() => {}));
+    listCustomFieldsMock.mockImplementation(() => new Promise(() => {}));
+    getAppSettingsMock.mockImplementation(() => new Promise(() => {}));
 
-    render(<AssetCreatePageClient />);
+    renderWithClient(<AssetCreatePageClient />);
 
     expect(screen.getByText("Loading form...")).toBeInTheDocument();
   });
 
-  it("renders form when data is loaded", () => {
-    mockUseQuery.mockImplementation((reference: unknown) => {
-      const functionName = getFunctionName(reference as never);
-      if (functionName === "assets:getAssetFilterOptions")
-        return filterOptions;
-      if (functionName === "customFields:listFieldDefinitions") return [];
-      if (functionName === "appSettings:getAppSettings")
-        return { serviceSchedulingEnabled: true };
-      return undefined;
+  it("renders form when data is loaded", async () => {
+    getFilterOptionsMock.mockResolvedValue(filterOptions);
+    listCustomFieldsMock.mockResolvedValue([]);
+    getAppSettingsMock.mockResolvedValue({
+      dateFormat: "DD-MM-YYYY",
+      serviceSchedulingEnabled: true,
+      updatedAt: null,
     });
 
-    render(<AssetCreatePageClient />);
+    renderWithClient(<AssetCreatePageClient />);
 
-    expect(screen.getByText("form-mode:create")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText("form-mode:create")).toBeInTheDocument();
+    });
     expect(
       screen.getByRole("button", { name: "Create asset" }),
     ).toBeInTheDocument();
   });
 
-  it("shows loading when only some queries have resolved", () => {
-    mockUseQuery.mockImplementation((reference: unknown) => {
-      const functionName = getFunctionName(reference as never);
-      if (functionName === "assets:getAssetFilterOptions")
-        return filterOptions;
-      // fieldDefinitions and appSettings still undefined
-      return undefined;
+  it("shows loading when only some queries have resolved", async () => {
+    getFilterOptionsMock.mockResolvedValue(filterOptions);
+    listCustomFieldsMock.mockImplementation(() => new Promise(() => {}));
+    getAppSettingsMock.mockImplementation(() => new Promise(() => {}));
+
+    renderWithClient(<AssetCreatePageClient />);
+
+    await waitFor(() => {
+      expect(getFilterOptionsMock).toHaveBeenCalled();
     });
-
-    render(<AssetCreatePageClient />);
-
     expect(screen.getByText("Loading form...")).toBeInTheDocument();
   });
 });

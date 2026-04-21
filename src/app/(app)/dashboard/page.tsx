@@ -1,7 +1,6 @@
 "use client";
 
-import { useQuery } from "convex/react";
-import { api } from "@/lib/convex-api";
+import { useQuery } from "@tanstack/react-query";
 import { PageHeader } from "@/components/layout/page-header";
 import { DashboardStatsBar } from "@/components/dashboard/dashboard-stats-bar";
 import { CategoryBreakdown } from "@/components/dashboard/category-breakdown";
@@ -9,10 +8,15 @@ import { LocationBreakdown } from "@/components/dashboard/location-breakdown";
 import { QuickActions } from "@/components/dashboard/quick-actions";
 import { RecentAssetsCard } from "@/components/dashboard/recent-assets-card";
 import { UpcomingServicesWidget } from "@/components/dashboard/upcoming-services-widget";
+import { useCurrentUser } from "@/hooks/use-current-user";
+import { getDashboardOverview } from "@/lib/api/dashboard";
 
 export default function DashboardPage() {
-  const currentUser = useQuery(api.users.getCurrentUser, {});
-  const overview = useQuery(api.dashboard.getOverview, {});
+  const { data: currentUser } = useCurrentUser();
+  const { data: overview } = useQuery({
+    queryKey: ["dashboard", "overview"],
+    queryFn: getDashboardOverview,
+  });
 
   const greeting = currentUser?.name
     ? `Welcome back, ${currentUser.name}`

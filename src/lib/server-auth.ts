@@ -1,62 +1,30 @@
 import "server-only";
 
-import { fetchQuery } from "convex/nextjs";
 import { cookies } from "next/headers";
-import { api } from "@/lib/convex-api";
-import { AUTH_TOKEN_COOKIE_NAME } from "@/lib/auth-token-cookie";
-import type { RouteAuthState } from "@/lib/auth-route-logic";
 
-function getConvexUrl() {
-  const url = process.env.CONVEX_URL ?? process.env.NEXT_PUBLIC_CONVEX_URL;
-  if (!url) {
-    throw new Error(
-      "Missing Convex URL. Set CONVEX_URL (or NEXT_PUBLIC_CONVEX_URL) in your environment.",
-    );
-  }
-  return url;
-}
+import { PB_AUTH_COOKIE } from "@/server/auth/cookies";
+import { resolveSession } from "@/server/auth/session";
+import { checkFirstRun } from "@/server/domain/users";
+import { createAdminCtx } from "@/server/pb/context";
 
-async function getAuthTokenFromCookie() {
-  const cookieStore = await cookies();
-  const token = cookieStore.get(AUTH_TOKEN_COOKIE_NAME)?.value;
-  if (!token) {
-    return null;
-  }
+import type { RouteAuthState } from "./auth-route-logic";
 
-  try {
-    return decodeURIComponent(token);
-  } catch {
-    return token;
-  }
-}
-
-async function getServerIsAuthenticated() {
-  const token = await getAuthTokenFromCookie();
-  if (!token) {
-    return false;
-  }
-
-  try {
-    return await fetchQuery(
-      api.auth.isAuthenticated,
-      {},
-      { token, url: getConvexUrl() },
-    );
-  } catch {
-    return false;
-  }
+async function readPbToken() {
+  const store = await cookies();
+  return store.get(PB_AUTH_COOKIE)?.value ?? null;
 }
 
 export async function getServerRouteAuthState(): Promise<RouteAuthState> {
-  const convexUrl = getConvexUrl();
+  const token = await readPbToken();
 
-  const [firstRun, isAuthenticated] = await Promise.all([
-    fetchQuery(api.users.checkFirstRun, {}, { url: convexUrl }),
-    getServerIsAuthenticated(),
+  const [user, ctx] = await Promise.all([
+    resolveSession(token),
+    createAdminCtx(),
   ]);
+  const firstRun = await checkFirstRun(ctx);
 
   return {
     firstRun,
-    isAuthenticated,
+    isAuthenticated: user !== null,
   };
 }

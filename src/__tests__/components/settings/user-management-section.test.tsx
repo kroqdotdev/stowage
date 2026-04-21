@@ -1,35 +1,45 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
-const createUserMock = vi.fn();
-const updateUserRoleMock = vi.fn();
-const changePasswordMock = vi.fn();
-const toastErrorMock = vi.fn();
-const toastSuccessMock = vi.fn();
-const mockUseQuery = vi.fn();
-const mockUseAction = vi.fn();
-const mockUseMutation = vi.fn();
+const listUsersMock = vi.fn();
+const getCurrentUserMock = vi.fn();
 
-vi.mock("convex/react", () => ({
-  useQuery: (...args: unknown[]) => mockUseQuery(...args),
-  useAction: (...args: unknown[]) => mockUseAction(...args),
-  useMutation: (...args: unknown[]) => mockUseMutation(...args),
+vi.mock("@/lib/api/users", () => ({
+  listUsers: () => listUsersMock(),
+  createUser: vi.fn(),
+  updateUserRole: vi.fn(),
+  changePassword: vi.fn(),
+}));
+
+vi.mock("@/lib/api/auth", () => ({
+  getCurrentUser: () => getCurrentUserMock(),
+}));
+
+vi.mock("@/lib/api/app-settings", () => ({
+  getAppSettings: vi.fn().mockResolvedValue({
+    dateFormat: "DD-MM-YYYY",
+    serviceSchedulingEnabled: true,
+    updatedAt: null,
+  }),
+  setDateFormat: vi.fn(),
+  setServiceSchedulingEnabled: vi.fn(),
+}));
+
+vi.mock("@/lib/use-app-date-format", () => ({
+  useAppDateFormat: () => "DD-MM-YYYY",
 }));
 
 vi.mock("sonner", () => ({
-  toast: {
-    error: (...args: unknown[]) => toastErrorMock(...args),
-    success: (...args: unknown[]) => toastSuccessMock(...args),
-  },
+  toast: { error: vi.fn(), success: vi.fn() },
 }));
 
 import { SettingsPageClient } from "@/components/settings/settings-page-client";
 import { UserManagementSection } from "@/components/settings/user-management-section";
 
 const adminUser = {
-  _id: "user_admin" as never,
-  _creationTime: Date.now(),
+  id: "user_admin",
   email: "admin@example.com",
   name: "Alex Admin",
   role: "admin" as const,
@@ -38,38 +48,34 @@ const adminUser = {
 };
 
 const secondUser = {
-  _id: "user_member" as never,
-  _creationTime: Date.now(),
+  id: "user_member",
   email: "member@example.com",
   name: "Morgan Member",
   role: "user" as const,
-  createdBy: "user_admin" as never,
+  createdBy: "user_admin",
   createdAt: Date.now(),
 };
 
+function renderWithClient(ui: React.ReactElement) {
+  const qc = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  return render(<QueryClientProvider client={qc}>{ui}</QueryClientProvider>);
+}
+
 describe("UserManagementSection", () => {
   beforeEach(() => {
-    createUserMock.mockReset();
-    updateUserRoleMock.mockReset();
-    changePasswordMock.mockReset();
-    mockUseQuery.mockReset();
-    mockUseAction.mockReset();
-    mockUseMutation.mockReset();
-    toastErrorMock.mockReset();
-    toastSuccessMock.mockReset();
-
-    mockUseQuery.mockReturnValue([adminUser, secondUser]);
-
-    mockUseAction.mockReturnValue(createUserMock);
-
-    mockUseMutation.mockReturnValue(updateUserRoleMock);
+    listUsersMock.mockReset();
+    listUsersMock.mockResolvedValue([adminUser, secondUser]);
   });
 
   it("renders user list and opens the Add User dialog", async () => {
     const user = userEvent.setup();
-    render(<UserManagementSection currentUserId={adminUser._id} />);
+    renderWithClient(<UserManagementSection currentUserId={adminUser.id} />);
 
-    expect(screen.getByText("Alex Admin")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText("Alex Admin")).toBeInTheDocument();
+    });
     expect(screen.getByText("Morgan Member")).toBeInTheDocument();
     expect(screen.getByText("member@example.com")).toBeInTheDocument();
 
@@ -79,12 +85,14 @@ describe("UserManagementSection", () => {
     expect(screen.getByLabelText("Temporary password")).toBeInTheDocument();
   });
 
-  it("renders role select comboboxes for each user", () => {
-    render(<UserManagementSection currentUserId={adminUser._id} />);
+  it("renders role select comboboxes for each user", async () => {
+    renderWithClient(<UserManagementSection currentUserId={adminUser.id} />);
 
-    expect(
-      screen.getByRole("combobox", { name: "Role for Alex Admin" }),
-    ).toBeInTheDocument();
+    await waitFor(() => {
+      expect(
+        screen.getByRole("combobox", { name: "Role for Alex Admin" }),
+      ).toBeInTheDocument();
+    });
     expect(
       screen.getByRole("combobox", { name: "Role for Morgan Member" }),
     ).toBeInTheDocument();
@@ -92,44 +100,45 @@ describe("UserManagementSection", () => {
 
   it("renders role select in create user dialog", async () => {
     const user = userEvent.setup();
-    render(<UserManagementSection currentUserId={adminUser._id} />);
+    renderWithClient(<UserManagementSection currentUserId={adminUser.id} />);
 
+    await waitFor(() => {
+      expect(screen.getByText("Alex Admin")).toBeInTheDocument();
+    });
     await user.click(screen.getByRole("button", { name: /add user/i }));
 
-    // Dialog should have the role combobox (3rd combobox after the 2 in the table)
     const comboboxes = screen.getAllByRole("combobox");
     expect(comboboxes.length).toBeGreaterThanOrEqual(3);
   });
 
-  it("renders save buttons for each user row", () => {
-    render(<UserManagementSection currentUserId={adminUser._id} />);
+  it("renders save buttons for each user row", async () => {
+    renderWithClient(<UserManagementSection currentUserId={adminUser.id} />);
 
-    const saveButtons = screen.getAllByRole("button", { name: "Save" });
-    expect(saveButtons).toHaveLength(2);
+    await waitFor(() => {
+      const saveButtons = screen.getAllByRole("button", { name: "Save" });
+      expect(saveButtons).toHaveLength(2);
+    });
   });
 });
 
-describe("SettingsPageClient", () => {
+describe("SettingsPageClient with non-admin", () => {
   beforeEach(() => {
-    mockUseQuery.mockReset();
-    mockUseAction.mockReset();
-    mockUseMutation.mockReset();
-    toastErrorMock.mockReset();
-    toastSuccessMock.mockReset();
-    mockUseAction.mockReturnValue(changePasswordMock);
-    mockUseMutation.mockReturnValue(updateUserRoleMock);
+    getCurrentUserMock.mockReset();
+    listUsersMock.mockReset();
   });
 
-  it("shows reduced settings for non-admin users", () => {
-    mockUseQuery.mockReturnValue({ ...secondUser, role: "user" as const });
+  it("shows reduced settings for non-admin users", async () => {
+    getCurrentUserMock.mockResolvedValue({ ...secondUser });
 
-    render(<SettingsPageClient />);
+    renderWithClient(<SettingsPageClient />);
 
-    expect(
-      screen.getByText(
-        "Only admins can manage date format, features, and users.",
-      ),
-    ).toBeInTheDocument();
+    await waitFor(() => {
+      expect(
+        screen.getByText(
+          "Only admins can manage date format, features, and users.",
+        ),
+      ).toBeInTheDocument();
+    });
     expect(
       screen.getByRole("heading", { name: "Change password" }),
     ).toBeInTheDocument();

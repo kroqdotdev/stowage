@@ -1,44 +1,36 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
-import { getFunctionName } from "convex/server";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { render, screen, waitFor } from "@testing-library/react";
+
+const listServiceRecordAttachmentsMock = vi.fn();
+
+vi.mock("@/lib/api/attachments", () => ({
+  listServiceRecordAttachments: (serviceRecordId: string) =>
+    listServiceRecordAttachmentsMock(serviceRecordId),
+  uploadServiceRecordAttachment: vi.fn().mockResolvedValue(null),
+  deleteServiceRecordAttachment: vi.fn().mockResolvedValue(null),
+}));
+
 import { ServiceRecordAttachments } from "@/components/services/service-record-attachments";
 
-const mockUseQuery = vi.fn();
-const generateUploadUrlMock = vi.fn().mockResolvedValue({ uploadUrl: "https://upload.example.com" });
-const createAttachmentMock = vi.fn().mockResolvedValue(null);
-const deleteAttachmentMock = vi.fn().mockResolvedValue(null);
-
-vi.mock("convex/react", () => ({
-  useQuery: (...args: unknown[]) => mockUseQuery(...args),
-  useMutation: (reference: unknown) => {
-    const functionName = getFunctionName(reference as never);
-    if (functionName === "serviceRecordAttachments:generateUploadUrl") {
-      return generateUploadUrlMock;
-    }
-    if (functionName === "serviceRecordAttachments:createAttachment") {
-      return createAttachmentMock;
-    }
-    if (functionName === "serviceRecordAttachments:deleteAttachment") {
-      return deleteAttachmentMock;
-    }
-    return vi.fn();
-  },
-}));
+function renderWithClient(ui: React.ReactElement) {
+  const qc = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  return render(<QueryClientProvider client={qc}>{ui}</QueryClientProvider>);
+}
 
 describe("ServiceRecordAttachments", () => {
   beforeEach(() => {
-    mockUseQuery.mockReset();
-    generateUploadUrlMock.mockClear();
-    createAttachmentMock.mockClear();
-    deleteAttachmentMock.mockClear();
+    listServiceRecordAttachmentsMock.mockReset();
   });
 
-  it("shows loading state when attachments are undefined", () => {
-    mockUseQuery.mockReturnValue(undefined);
-
-    render(
-      <ServiceRecordAttachments serviceRecordId={"record1" as never} />,
+  it("shows loading state when attachments are pending", () => {
+    listServiceRecordAttachmentsMock.mockImplementation(
+      () => new Promise(() => {}),
     );
+
+    renderWithClient(<ServiceRecordAttachments serviceRecordId="record1" />);
 
     expect(screen.getByText("Loading attachments...")).toBeInTheDocument();
     expect(
@@ -46,41 +38,40 @@ describe("ServiceRecordAttachments", () => {
     ).toBeInTheDocument();
   });
 
-  it("shows empty state when no attachments exist", () => {
-    mockUseQuery.mockReturnValue([]);
+  it("shows empty state when no attachments exist", async () => {
+    listServiceRecordAttachmentsMock.mockResolvedValue([]);
 
-    render(
-      <ServiceRecordAttachments serviceRecordId={"record1" as never} />,
-    );
+    renderWithClient(<ServiceRecordAttachments serviceRecordId="record1" />);
 
-    expect(
-      screen.getByText("No record attachments yet."),
-    ).toBeInTheDocument();
+    await waitFor(() => {
+      expect(
+        screen.getByText("No record attachments yet."),
+      ).toBeInTheDocument();
+    });
   });
 
-  it("renders attachment list with file info", () => {
-    mockUseQuery.mockReturnValue([
+  it("renders attachment list with file info", async () => {
+    listServiceRecordAttachmentsMock.mockResolvedValue([
       {
-        _id: "att1" as never,
-        _creationTime: 1,
-        serviceRecordId: "record1" as never,
+        id: "att1",
+        serviceRecordId: "record1",
         fileName: "report.pdf",
         fileType: "application/pdf",
         fileExtension: "pdf",
         fileKind: "pdf",
         fileSize: 1048576,
-        uploadedBy: "user1" as never,
+        uploadedBy: "user1",
         uploadedAt: 1,
         updatedAt: 1,
         url: "https://files.example.com/report.pdf",
       },
     ]);
 
-    render(
-      <ServiceRecordAttachments serviceRecordId={"record1" as never} />,
-    );
+    renderWithClient(<ServiceRecordAttachments serviceRecordId="record1" />);
 
-    expect(screen.getByText("report.pdf")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText("report.pdf")).toBeInTheDocument();
+    });
     expect(screen.getByText("1.0 MB")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Open" })).toHaveAttribute(
       "href",

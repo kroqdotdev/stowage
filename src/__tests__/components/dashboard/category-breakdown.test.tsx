@@ -15,8 +15,8 @@ vi.mock("next/link", () => ({
 }));
 
 const items = [
-  { _id: "cat1", name: "Electronics", color: "#3b82f6", count: 15 },
-  { _id: "cat2", name: "Furniture", color: "#f59e0b", count: 8 },
+  { id: "cat1", name: "Electronics", color: "#3b82f6", count: 15 },
+  { id: "cat2", name: "Furniture", color: "#f59e0b", count: 8 },
 ];
 
 describe("CategoryBreakdown", () => {
@@ -33,19 +33,19 @@ describe("CategoryBreakdown", () => {
   it("links each category to filtered assets page", () => {
     render(<CategoryBreakdown items={items} />);
 
-    expect(
-      screen.getByText("Electronics").closest("a"),
-    ).toHaveAttribute("href", "/assets?category=cat1");
-    expect(
-      screen.getByText("Furniture").closest("a"),
-    ).toHaveAttribute("href", "/assets?category=cat2");
+    expect(screen.getByText("Electronics").closest("a")).toHaveAttribute(
+      "href",
+      "/assets?category=cat1",
+    );
+    expect(screen.getByText("Furniture").closest("a")).toHaveAttribute(
+      "href",
+      "/assets?category=cat2",
+    );
   });
 
   it("shows empty state when no categories", () => {
     render(<CategoryBreakdown items={[]} />);
 
-    expect(
-      screen.getByText("No categories with assets yet."),
-    ).toBeVisible();
+    expect(screen.getByText("No categories with assets yet.")).toBeVisible();
   });
 });

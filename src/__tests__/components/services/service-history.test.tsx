@@ -1,21 +1,24 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
-import { render, screen } from "@testing-library/react";
-import { getFunctionName } from "convex/server";
-import { ServiceHistory } from "@/components/services/service-history";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { render, screen, waitFor } from "@testing-library/react";
 
-const mockUseQuery = vi.fn();
-const deleteRecordMock = vi.fn().mockResolvedValue(null);
+const getScheduleByAssetIdMock = vi.fn();
+const listAssetServiceRecordsMock = vi.fn();
+const getCurrentUserMock = vi.fn();
 
-vi.mock("convex/react", () => ({
-  useQuery: (...args: unknown[]) => mockUseQuery(...args),
-  useMutation: (reference: unknown) => {
-    const functionName = getFunctionName(reference as never);
-    if (functionName === "serviceRecords:deleteRecord") {
-      return deleteRecordMock;
-    }
-    return vi.fn();
-  },
+vi.mock("@/lib/api/service-schedules", () => ({
+  getScheduleByAssetId: (assetId: string) => getScheduleByAssetIdMock(assetId),
+}));
+
+vi.mock("@/lib/api/service-records", () => ({
+  listAssetServiceRecords: (assetId: string) =>
+    listAssetServiceRecordsMock(assetId),
+  deleteServiceRecord: vi.fn().mockResolvedValue(null),
+}));
+
+vi.mock("@/lib/api/auth", () => ({
+  getCurrentUser: () => getCurrentUserMock(),
 }));
 
 vi.mock("@/components/services/service-record-form", () => ({
@@ -30,64 +33,78 @@ vi.mock("@/lib/use-app-date-format", () => ({
   useAppDateFormat: () => "DD-MM-YYYY",
 }));
 
+import { ServiceHistory } from "@/components/services/service-history";
+
+function renderWithClient(ui: React.ReactElement) {
+  const qc = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  return render(<QueryClientProvider client={qc}>{ui}</QueryClientProvider>);
+}
+
 describe("ServiceHistory", () => {
   beforeEach(() => {
-    mockUseQuery.mockReset();
-    deleteRecordMock.mockClear();
+    getScheduleByAssetIdMock.mockReset();
+    listAssetServiceRecordsMock.mockReset();
+    getCurrentUserMock.mockReset();
+    getCurrentUserMock.mockResolvedValue({
+      id: "user1",
+      email: "a@x.com",
+      name: "Admin User",
+      role: "admin",
+    });
   });
 
   it("renders schedule summary and service records", async () => {
     const user = userEvent.setup();
-    mockUseQuery.mockImplementation((reference: unknown) => {
-      const functionName = getFunctionName(reference as never);
-      if (functionName === "users:getCurrentUser") {
-        return { _id: "user1", role: "admin" };
-      }
-      if (functionName === "serviceSchedules:getScheduleByAssetId") {
-        return {
-          nextServiceDate: "2026-03-10",
-          intervalValue: 6,
-          intervalUnit: "months",
-          reminderStartDate: "2026-02-24",
-        };
-      }
-      if (functionName === "serviceRecords:listAssetRecords") {
-        return [
-          {
-            _id: "record1",
-            _creationTime: 1,
-            assetId: "asset1",
-            serviceGroupId: "group1",
-            serviceGroupName: "Engine checks",
-            values: { field1: "Checked belts" },
-            valueEntries: [
-              {
-                fieldId: "field1",
-                label: "Technician note",
-                value: "Checked belts",
-              },
-            ],
-            scheduleId: "schedule1",
-            scheduledForDate: "2026-03-10",
-            serviceDate: "2026-03-04",
-            description: "Completed service",
-            cost: 125,
-            providerId: "provider1",
-            providerName: "Dockside Repair",
-            completedAt: 1,
-            completedBy: "user1",
-            completedByName: "Admin User",
-            createdAt: 1,
-            updatedAt: 1,
-          },
-        ];
-      }
-      return undefined;
+    getScheduleByAssetIdMock.mockResolvedValue({
+      id: "schedule1",
+      assetId: "asset1",
+      nextServiceDate: "2026-03-10",
+      intervalValue: 6,
+      intervalUnit: "months",
+      reminderLeadValue: 14,
+      reminderLeadUnit: "days",
+      reminderStartDate: "2026-02-24",
+      createdAt: 1,
+      updatedAt: 1,
+      createdBy: "user1",
+      updatedBy: "user1",
     });
+    listAssetServiceRecordsMock.mockResolvedValue([
+      {
+        id: "record1",
+        assetId: "asset1",
+        serviceGroupId: "group1",
+        serviceGroupName: "Engine checks",
+        values: { field1: "Checked belts" },
+        valueEntries: [
+          {
+            fieldId: "field1",
+            label: "Technician note",
+            value: "Checked belts",
+          },
+        ],
+        scheduleId: "schedule1",
+        scheduledForDate: "2026-03-10",
+        serviceDate: "2026-03-04",
+        description: "Completed service",
+        cost: 125,
+        providerId: "provider1",
+        providerName: "Dockside Repair",
+        completedAt: 1,
+        completedBy: "user1",
+        completedByName: "Admin User",
+        createdAt: 1,
+        updatedAt: 1,
+      },
+    ]);
 
-    render(<ServiceHistory assetId={"asset1" as never} />);
+    renderWithClient(<ServiceHistory assetId="asset1" />);
 
-    expect(screen.getByText("Next due 10-03-2026")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText("Next due 10-03-2026")).toBeInTheDocument();
+    });
     expect(screen.getByText("Completed service")).toBeInTheDocument();
 
     await user.click(screen.getByText("Completed service"));
@@ -95,23 +112,14 @@ describe("ServiceHistory", () => {
     expect(screen.getByText("Record attachments")).toBeInTheDocument();
   });
 
-  it("renders empty state when no records exist", () => {
-    mockUseQuery.mockImplementation((reference: unknown) => {
-      const functionName = getFunctionName(reference as never);
-      if (functionName === "users:getCurrentUser") {
-        return { _id: "user1", role: "admin" };
-      }
-      if (functionName === "serviceSchedules:getScheduleByAssetId") {
-        return null;
-      }
-      if (functionName === "serviceRecords:listAssetRecords") {
-        return [];
-      }
-      return undefined;
+  it("renders empty state when no records exist", async () => {
+    getScheduleByAssetIdMock.mockResolvedValue(null);
+    listAssetServiceRecordsMock.mockResolvedValue([]);
+
+    renderWithClient(<ServiceHistory assetId="asset1" />);
+
+    await waitFor(() => {
+      expect(screen.getByText("No service records yet.")).toBeInTheDocument();
     });
-
-    render(<ServiceHistory assetId={"asset1" as never} />);
-
-    expect(screen.getByText("No service records yet.")).toBeInTheDocument();
   });
 });

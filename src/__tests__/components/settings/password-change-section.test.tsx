@@ -1,23 +1,24 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
-const mockUseAction = vi.fn();
-
-vi.mock("convex/react", () => ({
-  useAction: (...args: unknown[]) => mockUseAction(...args),
+vi.mock("@/lib/api/users", () => ({
+  changePassword: vi.fn(),
 }));
 
 import { PasswordChangeSection } from "@/components/settings/password-change-section";
 
-describe("PasswordChangeSection", () => {
-  beforeEach(() => {
-    mockUseAction.mockReset();
-    mockUseAction.mockReturnValue(vi.fn());
+function renderWithClient(ui: React.ReactElement) {
+  const qc = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
   });
+  return render(<QueryClientProvider client={qc}>{ui}</QueryClientProvider>);
+}
 
+describe("PasswordChangeSection", () => {
   it("renders password form fields", () => {
-    render(<PasswordChangeSection />);
+    renderWithClient(<PasswordChangeSection />);
 
     expect(
       screen.getByRole("heading", { name: "Change password" }),
@@ -33,14 +34,12 @@ describe("PasswordChangeSection", () => {
   it("shows error when new password is too short", async () => {
     const user = userEvent.setup();
 
-    render(<PasswordChangeSection />);
+    renderWithClient(<PasswordChangeSection />);
 
     await user.type(screen.getByLabelText("Current password"), "oldpass");
     await user.type(screen.getByLabelText("New password"), "short");
     await user.type(screen.getByLabelText("Confirm new password"), "short");
-    await user.click(
-      screen.getByRole("button", { name: "Update password" }),
-    );
+    await user.click(screen.getByRole("button", { name: "Update password" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "New password must be at least 8 characters",
@@ -50,7 +49,7 @@ describe("PasswordChangeSection", () => {
   it("shows error when passwords do not match", async () => {
     const user = userEvent.setup();
 
-    render(<PasswordChangeSection />);
+    renderWithClient(<PasswordChangeSection />);
 
     await user.type(screen.getByLabelText("Current password"), "oldpassword");
     await user.type(screen.getByLabelText("New password"), "newpassword1");
@@ -58,9 +57,7 @@ describe("PasswordChangeSection", () => {
       screen.getByLabelText("Confirm new password"),
       "newpassword2",
     );
-    await user.click(
-      screen.getByRole("button", { name: "Update password" }),
-    );
+    await user.click(screen.getByRole("button", { name: "Update password" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "New passwords do not match",

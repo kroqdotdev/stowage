@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { ConvexClientProvider } from "@/app/ConvexClientProvider";
+import { PocketBaseClientProvider } from "@/app/PocketBaseClientProvider";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -30,28 +30,22 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const convexUrl =
-    process.env.CONVEX_URL ?? process.env.NEXT_PUBLIC_CONVEX_URL;
-
-  if (!convexUrl) {
-    throw new Error(
-      "Missing Convex URL. Set CONVEX_URL (or NEXT_PUBLIC_CONVEX_URL) in your environment.",
-    );
-  }
+  const pocketbaseUrl =
+    process.env.NEXT_PUBLIC_POCKETBASE_URL ?? "http://127.0.0.1:8090";
 
   return (
     <html lang="en" suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <ConvexClientProvider convexUrl={convexUrl}>
+        <PocketBaseClientProvider pocketbaseUrl={pocketbaseUrl}>
           <ThemeProvider>
             <TooltipProvider>
               {children}
               <Toaster richColors closeButton />
             </TooltipProvider>
           </ThemeProvider>
-        </ConvexClientProvider>
+        </PocketBaseClientProvider>
       </body>
     </html>
   );

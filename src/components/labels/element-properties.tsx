@@ -68,7 +68,7 @@ export function ElementProperties({
             <h3 className="text-sm font-semibold tracking-tight">Template</h3>
             <p className="text-xs text-muted-foreground">
               Saved as{" "}
-              {template._id ? "an existing template" : "a new template draft"}.
+              {template.id ? "an existing template" : "a new template draft"}.
             </p>
           </div>
           <span className="rounded-full border border-border/70 bg-background px-2.5 py-1 text-xs text-muted-foreground">
@@ -204,7 +204,7 @@ export function ElementProperties({
           >
             {saving
               ? "Saving..."
-              : template._id
+              : template.id
                 ? "Save changes"
                 : "Save template"}
           </Button>
@@ -217,7 +217,7 @@ export function ElementProperties({
           >
             New template
           </Button>
-          {template._id ? (
+          {template.id ? (
             <Button
               type="button"
               variant="outline"
@@ -402,7 +402,7 @@ export function ElementProperties({
                   </SelectTrigger>
                   <SelectContent>
                     {fieldDefinitions.map((field) => (
-                      <SelectItem key={field._id} value={field._id}>
+                      <SelectItem key={field.id} value={field.id}>
                         {field.name}
                       </SelectItem>
                     ))}

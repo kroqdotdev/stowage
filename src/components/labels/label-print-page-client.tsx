@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useMutation, useQuery } from "convex/react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Printer } from "lucide-react";
 import { toast } from "sonner";
 import type { FieldDefinition } from "@/components/fields/types";
@@ -20,8 +20,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { Id } from "@/lib/convex-api";
-import { api } from "@/lib/convex-api";
+import { useCurrentUser } from "@/hooks/use-current-user";
+import { getAssetsForLabels } from "@/lib/api/assets";
+import { listCustomFields } from "@/lib/api/custom-fields";
+import {
+  ensureDefaultLabelTemplates,
+  getDefaultLabelTemplate,
+  getLabelUrlBase,
+  listLabelTemplates,
+} from "@/lib/api/label-templates";
 import { useSearchParams } from "next/navigation";
 
 function parseAssetIds(rawAssetIds: string | null, rawAssetId: string | null) {
@@ -31,7 +38,7 @@ function parseAssetIds(rawAssetIds: string | null, rawAssetId: string | null) {
       ? [rawAssetId]
       : [];
 
-  return Array.from(new Set(values.filter(Boolean))) as Id<"assets">[];
+  return Array.from(new Set(values.filter(Boolean)));
 }
 
 type BarcodeRenderState = "loading" | "ready" | "error";
@@ -66,20 +73,32 @@ function getBarcodeRenderState(
 
 export function LabelPrintPageClient() {
   const searchParams = useSearchParams();
-  const currentUser = useQuery(api.users.getCurrentUser, {});
-  const templatesQuery = useQuery(api.labelTemplates.listTemplates, {});
-  const defaultTemplateQuery = useQuery(
-    api.labelTemplates.getDefaultTemplate,
-    {},
-  );
-  const labelUrlBaseQuery = useQuery(api.labelTemplates.getLabelUrlBase, {});
-  const fieldDefinitionsQuery = useQuery(
-    api.customFields.listFieldDefinitions,
-    {},
-  );
-  const ensureDefaultTemplates = useMutation(
-    api.labelTemplates.ensureDefaultTemplates,
-  );
+  const queryClient = useQueryClient();
+  const { data: currentUser, isPending: currentUserPending } = useCurrentUser();
+
+  const templatesQuery = useQuery({
+    queryKey: ["label-templates"],
+    queryFn: listLabelTemplates,
+  });
+  const defaultTemplateQuery = useQuery({
+    queryKey: ["label-templates", "default"],
+    queryFn: getDefaultLabelTemplate,
+  });
+  const labelUrlBaseQuery = useQuery({
+    queryKey: ["label-templates", "url-base"],
+    queryFn: getLabelUrlBase,
+  });
+  const fieldDefinitionsQuery = useQuery({
+    queryKey: ["custom-fields", "list"],
+    queryFn: listCustomFields,
+  });
+
+  const ensureMutation = useMutation({
+    mutationFn: ensureDefaultLabelTemplates,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["label-templates"] });
+    },
+  });
   const seededRef = useRef(false);
   const previewRef = useRef<HTMLDivElement | null>(null);
 
@@ -88,21 +107,20 @@ export function LabelPrintPageClient() {
       parseAssetIds(searchParams.get("assetIds"), searchParams.get("assetId")),
     [searchParams],
   );
-  const requestedTemplateId = searchParams.get(
-    "templateId",
-  ) as Id<"labelTemplates"> | null;
-  const assetsQuery = useQuery(
-    api.assets.getAssetsForLabels,
-    assetIds.length > 0 ? { assetIds } : "skip",
+  const requestedTemplateId = searchParams.get("templateId");
+
+  const assetsQuery = useQuery({
+    queryKey: ["assets", "for-labels", assetIds],
+    queryFn: () => getAssetsForLabels(assetIds),
+    enabled: assetIds.length > 0,
+  });
+
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(
+    requestedTemplateId,
   );
-  const [selectedTemplateId, setSelectedTemplateId] =
-    useState<Id<"labelTemplates"> | null>(requestedTemplateId);
   const [barcodeRenderState, setBarcodeRenderState] =
     useState<BarcodeRenderState>("loading");
 
-  // Sync local selection when the URL search param changes. The user can
-  // also change the selection via the dropdown, so we keep local state
-  // rather than deriving it purely from search params.
   useEffect(() => {
     setSelectedTemplateId(requestedTemplateId);
   }, [requestedTemplateId]);
@@ -112,43 +130,55 @@ export function LabelPrintPageClient() {
       return;
     }
 
-    if (currentUser === undefined || templatesQuery === undefined) {
+    if (
+      currentUserPending ||
+      templatesQuery.isPending ||
+      !templatesQuery.data
+    ) {
       return;
     }
 
-    if (currentUser?.role !== "admin" || templatesQuery.length > 0) {
+    if (currentUser?.role !== "admin" || templatesQuery.data.length > 0) {
       return;
     }
 
     seededRef.current = true;
-    void ensureDefaultTemplates().catch(() => {
-      seededRef.current = false;
+    ensureMutation.mutate(undefined, {
+      onError: () => {
+        seededRef.current = false;
+      },
     });
-  }, [currentUser, ensureDefaultTemplates, templatesQuery]);
+  }, [
+    currentUser,
+    currentUserPending,
+    ensureMutation,
+    templatesQuery.data,
+    templatesQuery.isPending,
+  ]);
 
   const templates = useMemo(
-    () => (templatesQuery ?? []) as LabelTemplate[],
-    [templatesQuery],
+    () => (templatesQuery.data ?? []) as LabelTemplate[],
+    [templatesQuery.data],
   );
   const defaultTemplate = useMemo(
-    () => (defaultTemplateQuery ?? null) as LabelTemplate | null,
-    [defaultTemplateQuery],
+    () => (defaultTemplateQuery.data ?? null) as LabelTemplate | null,
+    [defaultTemplateQuery.data],
   );
   const fieldDefinitions = useMemo(
-    () => (fieldDefinitionsQuery ?? []) as FieldDefinition[],
-    [fieldDefinitionsQuery],
+    () => (fieldDefinitionsQuery.data ?? []) as FieldDefinition[],
+    [fieldDefinitionsQuery.data],
   );
   const labelUrlBase = useMemo(
-    () => (labelUrlBaseQuery ?? null) as string | null,
-    [labelUrlBaseQuery],
+    () => labelUrlBaseQuery.data ?? null,
+    [labelUrlBaseQuery.data],
   );
   const assets = useMemo(
-    () => (assetsQuery ?? []) as LabelPreviewAsset[],
-    [assetsQuery],
+    () => (assetsQuery.data ?? []) as LabelPreviewAsset[],
+    [assetsQuery.data],
   );
   const selectedTemplate = useMemo(
     () =>
-      templates.find((template) => template._id === selectedTemplateId) ?? null,
+      templates.find((template) => template.id === selectedTemplateId) ?? null,
     [selectedTemplateId, templates],
   );
 
@@ -159,26 +189,21 @@ export function LabelPrintPageClient() {
 
     if (
       selectedTemplateId &&
-      templates.some((template) => template._id === selectedTemplateId)
+      templates.some((template) => template.id === selectedTemplateId)
     ) {
       return;
     }
 
     const nextTemplateId =
       requestedTemplateId &&
-      templates.some((template) => template._id === requestedTemplateId)
+      templates.some((template) => template.id === requestedTemplateId)
         ? requestedTemplateId
-        : (defaultTemplate?._id ?? templates[0]!._id);
+        : (defaultTemplate?.id ?? templates[0]!.id);
 
     if (nextTemplateId !== selectedTemplateId) {
       setSelectedTemplateId(nextTemplateId);
     }
-  }, [
-    defaultTemplate?._id,
-    requestedTemplateId,
-    selectedTemplateId,
-    templates,
-  ]);
+  }, [defaultTemplate?.id, requestedTemplateId, selectedTemplateId, templates]);
 
   useEffect(() => {
     if (!selectedTemplate) {
@@ -213,12 +238,12 @@ export function LabelPrintPageClient() {
   }, [assets, selectedTemplate]);
 
   if (
-    currentUser === undefined ||
-    templatesQuery === undefined ||
-    defaultTemplateQuery === undefined ||
-    labelUrlBaseQuery === undefined ||
-    fieldDefinitionsQuery === undefined ||
-    (assetIds.length > 0 && assetsQuery === undefined)
+    currentUserPending ||
+    templatesQuery.isPending ||
+    defaultTemplateQuery.isPending ||
+    labelUrlBaseQuery.isPending ||
+    fieldDefinitionsQuery.isPending ||
+    (assetIds.length > 0 && assetsQuery.isPending)
   ) {
     return (
       <div className="rounded-2xl border border-border/70 bg-background p-6 text-sm text-muted-foreground shadow-sm">
@@ -332,17 +357,15 @@ export function LabelPrintPageClient() {
               Template
             </label>
             <Select
-              value={selectedTemplate._id}
-              onValueChange={(value) =>
-                setSelectedTemplateId(value as Id<"labelTemplates">)
-              }
+              value={selectedTemplate.id}
+              onValueChange={(value) => setSelectedTemplateId(value)}
             >
               <SelectTrigger id="label-print-template" className="w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 {templates.map((template) => (
-                  <SelectItem key={template._id} value={template._id}>
+                  <SelectItem key={template.id} value={template.id}>
                     {template.name}
                   </SelectItem>
                 ))}

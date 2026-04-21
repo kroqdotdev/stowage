@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   GripVertical,
   Loader2,
@@ -10,15 +10,15 @@ import {
   SlidersHorizontal,
   Trash2,
 } from "lucide-react";
-import { useMutation, useQuery } from "convex/react";
+import React, { useMemo, useState } from "react";
 import { toast } from "sonner";
+
 import { ConfirmDialog } from "@/components/crud/confirm-dialog";
-import { getConvexUiErrorMessage } from "@/components/crud/error-messages";
+import { getApiErrorMessage } from "@/components/crud/error-messages";
 import { FieldDefinitionForm } from "@/components/fields/field-definition-form";
 import type { FieldDefinition } from "@/components/fields/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { EmptyState } from "@/components/ui/empty-state";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -32,70 +32,88 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { EmptyState } from "@/components/ui/empty-state";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { getConvexErrorCode } from "@/lib/convex-errors";
-import { api } from "@/lib/convex-api";
+import { useCurrentUser } from "@/hooks/use-current-user";
+import {
+  createCustomField,
+  deleteCustomField,
+  listCustomFields,
+  reorderCustomFields,
+  updateCustomField,
+} from "@/lib/api/custom-fields";
+
+const FIELDS_QUERY_KEY = ["custom-fields"] as const;
 
 function moveId(ids: string[], fromId: string, toId: string) {
   const fromIndex = ids.indexOf(fromId);
   const toIndex = ids.indexOf(toId);
-
   if (fromIndex === -1 || toIndex === -1 || fromIndex === toIndex) {
     return ids;
   }
-
   const next = ids.slice();
   const [moved] = next.splice(fromIndex, 1);
   next.splice(toIndex, 0, moved);
   return next;
 }
 
-function mapFieldDefinitionError(error: unknown, fallback: string) {
-  const code = getConvexErrorCode(error);
-  if (code === "INVALID_DROPDOWN_OPTIONS") {
+function mapFieldError(error: unknown, fallback: string) {
+  const message = getApiErrorMessage(error, fallback);
+  if (message.includes("at least one option")) {
     return "Dropdown fields need at least one option.";
   }
-  if (code === "UNSAFE_TYPE_CHANGE") {
+  if (message.includes("type change")) {
     return "This type change would invalidate existing values. Create a new field instead.";
   }
-  if (code === "FIELD_IN_USE") {
+  if (message.includes("assets") && message.includes("cannot be deleted")) {
     return "This field is already used by assets and cannot be deleted.";
   }
-  if (code === "FORBIDDEN") {
-    return "Only admins can manage custom fields.";
-  }
-  return getConvexUiErrorMessage(error, fallback);
+  return message;
 }
 
 export function FieldsPageClient() {
-  const currentUser = useQuery(api.users.getCurrentUser, {});
-  const fieldDefinitions = useQuery(api.customFields.listFieldDefinitions, {});
-  const createFieldDefinition = useMutation(
-    api.customFields.createFieldDefinition,
-  );
-  const updateFieldDefinition = useMutation(
-    api.customFields.updateFieldDefinition,
-  );
-  const deleteFieldDefinition = useMutation(
-    api.customFields.deleteFieldDefinition,
-  );
-  const reorderFieldDefinitions = useMutation(
-    api.customFields.reorderFieldDefinitions,
-  );
+  const qc = useQueryClient();
+  const { data: currentUser, isLoading: loadingUser } = useCurrentUser();
+  const { data: fieldDefinitions, isLoading: loadingFields } = useQuery({
+    queryKey: FIELDS_QUERY_KEY,
+    queryFn: listCustomFields,
+  });
+
+  const invalidate = () => qc.invalidateQueries({ queryKey: FIELDS_QUERY_KEY });
+
+  const createM = useMutation({
+    mutationFn: createCustomField,
+    onSuccess: invalidate,
+  });
+  const updateM = useMutation({
+    mutationFn: (vars: {
+      id: string;
+      input: Parameters<typeof updateCustomField>[1];
+    }) => updateCustomField(vars.id, vars.input),
+    onSuccess: invalidate,
+  });
+  const deleteM = useMutation({
+    mutationFn: deleteCustomField,
+    onSuccess: invalidate,
+  });
+  const reorderM = useMutation({
+    mutationFn: reorderCustomFields,
+    onSuccess: invalidate,
+  });
 
   const rows = useMemo(
-    () => (fieldDefinitions ?? []) as unknown as FieldDefinition[],
+    () => (fieldDefinitions ?? []) as FieldDefinition[],
     [fieldDefinitions],
   );
   const rowsById = useMemo(
-    () => new Map(rows.map((row) => [row._id, row])),
+    () => new Map(rows.map((row) => [row.id, row])),
     [rows],
   );
-  const loading = currentUser === undefined || fieldDefinitions === undefined;
+  const loading = loadingUser || loadingFields;
   const canManage = currentUser?.role === "admin";
 
   const [editorOpen, setEditorOpen] = useState(false);
@@ -107,10 +125,10 @@ export function FieldsPageClient() {
   const [reordering, setReordering] = useState(false);
   const [draggingId, setDraggingId] = useState<string | null>(null);
 
-  const activeDefinition =
-    activeId !== null ? (rowsById.get(activeId as never) ?? null) : null;
-  const activeDeleteDefinition =
-    deleteId !== null ? (rowsById.get(deleteId as never) ?? null) : null;
+  const activeDefinition = activeId ? (rowsById.get(activeId) ?? null) : null;
+  const activeDeleteDefinition = deleteId
+    ? (rowsById.get(deleteId) ?? null)
+    : null;
 
   function openCreate() {
     setEditorMode("create");
@@ -134,24 +152,20 @@ export function FieldsPageClient() {
       toast.error("Enter a field name");
       return;
     }
-
     setSubmitting(true);
     try {
       if (editorMode === "create") {
-        await createFieldDefinition(values);
+        await createM.mutateAsync(values);
         toast.success("Field created");
       } else if (activeId) {
-        await updateFieldDefinition({
-          fieldDefinitionId: activeId as never,
-          ...values,
-        });
+        await updateM.mutateAsync({ id: activeId, input: values });
         toast.success("Field updated");
       }
       setEditorOpen(false);
       setActiveId(null);
     } catch (error) {
       toast.error(
-        mapFieldDefinitionError(
+        mapFieldError(
           error,
           editorMode === "create"
             ? "Unable to create field"
@@ -164,17 +178,14 @@ export function FieldsPageClient() {
   }
 
   async function handleDelete() {
-    if (!deleteId) {
-      return;
-    }
-
+    if (!deleteId) return;
     setDeleting(true);
     try {
-      await deleteFieldDefinition({ fieldDefinitionId: deleteId as never });
+      await deleteM.mutateAsync(deleteId);
       toast.success("Field deleted");
       setDeleteId(null);
     } catch (error) {
-      toast.error(mapFieldDefinitionError(error, "Unable to delete field"));
+      toast.error(mapFieldError(error, "Unable to delete field"));
     } finally {
       setDeleting(false);
     }
@@ -183,9 +194,9 @@ export function FieldsPageClient() {
   async function saveOrder(nextIds: string[]) {
     setReordering(true);
     try {
-      await reorderFieldDefinitions({ fieldDefinitionIds: nextIds as never });
+      await reorderM.mutateAsync(nextIds);
     } catch (error) {
-      toast.error(mapFieldDefinitionError(error, "Unable to save field order"));
+      toast.error(mapFieldError(error, "Unable to save field order"));
     } finally {
       setReordering(false);
       setDraggingId(null);
@@ -276,23 +287,19 @@ export function FieldsPageClient() {
                       className="border-t border-border/50"
                       draggable={canManage && !reordering}
                       onDragStart={(event) => {
-                        setDraggingId(definition._id);
+                        setDraggingId(definition.id);
                         event.dataTransfer.effectAllowed = "move";
                       }}
                       onDragOver={(event) => {
-                        if (canManage) {
-                          event.preventDefault();
-                        }
+                        if (canManage) event.preventDefault();
                       }}
                       onDrop={(event) => {
                         event.preventDefault();
-                        if (!canManage || !draggingId) {
-                          return;
-                        }
+                        if (!canManage || !draggingId) return;
                         const orderedIds = moveId(
-                          rows.map((row) => row._id as string),
+                          rows.map((row) => row.id),
                           draggingId,
-                          definition._id as string,
+                          definition.id,
                         );
                         void saveOrder(orderedIds);
                       }}
@@ -346,18 +353,14 @@ export function FieldsPageClient() {
                             </Tooltip>
                             <DropdownMenuContent align="end">
                               <DropdownMenuItem
-                                onClick={() =>
-                                  openEdit(definition._id as string)
-                                }
+                                onClick={() => openEdit(definition.id)}
                               >
                                 <Pencil className="h-4 w-4" />
                                 Edit
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 variant="destructive"
-                                onClick={() =>
-                                  setDeleteId(definition._id as string)
-                                }
+                                onClick={() => setDeleteId(definition.id)}
                               >
                                 <Trash2 className="h-4 w-4" />
                                 Delete
@@ -374,13 +377,13 @@ export function FieldsPageClient() {
                   );
 
                   return canManage ? (
-                    <ContextMenu key={definition._id}>
+                    <ContextMenu key={definition.id}>
                       <ContextMenuTrigger asChild>
                         {rowContent}
                       </ContextMenuTrigger>
                       <ContextMenuContent>
                         <ContextMenuItem
-                          onClick={() => openEdit(definition._id as string)}
+                          onClick={() => openEdit(definition.id)}
                         >
                           <Pencil className="h-4 w-4" />
                           Edit
@@ -388,7 +391,7 @@ export function FieldsPageClient() {
                         <ContextMenuSeparator />
                         <ContextMenuItem
                           variant="destructive"
-                          onClick={() => setDeleteId(definition._id as string)}
+                          onClick={() => setDeleteId(definition.id)}
                         >
                           <Trash2 className="h-4 w-4" />
                           Delete
@@ -396,7 +399,7 @@ export function FieldsPageClient() {
                       </ContextMenuContent>
                     </ContextMenu>
                   ) : (
-                    <React.Fragment key={definition._id}>
+                    <React.Fragment key={definition.id}>
                       {rowContent}
                     </React.Fragment>
                   );
@@ -433,15 +436,13 @@ export function FieldsPageClient() {
         title="Delete field"
         description={
           activeDeleteDefinition
-            ? `Delete “${activeDeleteDefinition.name}”?`
+            ? `Delete "${activeDeleteDefinition.name}"?`
             : "Delete this field?"
         }
         confirmLabel="Delete field"
         busy={deleting}
         onClose={() => {
-          if (!deleting) {
-            setDeleteId(null);
-          }
+          if (!deleting) setDeleteId(null);
         }}
         onConfirm={() => void handleDelete()}
       />

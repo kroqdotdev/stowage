@@ -1,15 +1,14 @@
 "use client";
 
 import { ServiceRecordForm } from "@/components/services/service-record-form";
-import type { Id } from "@/lib/convex-api";
 
 export function ServiceRecordDynamicForm({
   assetId,
   onCreated,
 }: {
-  assetId: Id<"assets">;
+  assetId: string;
   scheduledForDate?: string | null;
-  onCreated?: (recordId: Id<"serviceRecords">) => void;
+  onCreated?: (recordId: string) => void;
 }) {
   return (
     <ServiceRecordForm

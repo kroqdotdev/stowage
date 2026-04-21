@@ -5,6 +5,7 @@ Tests identified during code review. All component tests and E2E specs below hav
 ## Component Tests (S49) — DONE
 
 ### High Priority — Page Client Components (stateful, route-level)
+
 - [x] `src/components/dashboard/dashboard-stats-bar.tsx`
 - [x] `src/components/dashboard/recent-assets-card.tsx`
 - [x] `src/components/dashboard/upcoming-services-widget.tsx`
@@ -30,6 +31,7 @@ Tests identified during code review. All component tests and E2E specs below hav
 - [x] `src/components/settings/settings-page-client.tsx`
 
 ### Medium Priority — Feature Components
+
 - [x] `src/components/catalog/taxonomy-manager.tsx`
 - [x] `src/components/tags/tag-picker.tsx`
 - [x] `src/components/fields/field-definition-form.tsx` — already tested
@@ -53,6 +55,7 @@ Tests identified during code review. All component tests and E2E specs below hav
 - [x] `src/components/settings/password-change-section.tsx`
 
 ### Lower Priority — CRUD / Auth Primitives
+
 - [x] `src/components/crud/crud-table.tsx`
 - [x] `src/components/crud/confirm-dialog.tsx`
 - [x] `src/components/crud/modal.tsx`

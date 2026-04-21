@@ -178,10 +178,7 @@ export function FieldDefinitionForm({
 
             <div className="space-y-2">
               {options.map((option, index) => (
-                <div
-                  key={option}
-                  className="flex items-center gap-2"
-                >
+                <div key={option} className="flex items-center gap-2">
                   <Input
                     aria-label={`Dropdown option ${index + 1}`}
                     value={option}

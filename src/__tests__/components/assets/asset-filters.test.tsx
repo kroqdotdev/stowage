@@ -7,12 +7,10 @@ import {
 } from "@/components/assets/asset-filters";
 
 const options = {
-  categories: [
-    { _id: "cat1" as never, name: "IT", prefix: "IT", color: "#2563EB" },
-  ],
+  categories: [{ id: "cat1", name: "IT", prefix: "IT", color: "#2563EB" }],
   locations: [
     {
-      _id: "loc1" as never,
+      id: "loc1",
       name: "Warehouse",
       parentId: null,
       path: "Warehouse",
@@ -20,8 +18,7 @@ const options = {
   ],
   tags: [
     {
-      _id: "tag1" as never,
-      _creationTime: 1,
+      id: "tag1",
       name: "Urgent",
       color: "#DC2626",
       createdAt: 1,
@@ -84,7 +81,7 @@ describe("AssetFilters", () => {
         options={options}
         search="router"
         filters={{
-          categoryId: "cat1" as never,
+          categoryId: "cat1",
           status: "active",
           locationId: null,
           tagIds: [],

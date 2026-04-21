@@ -1,15 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render } from "@testing-library/react";
-import { getFunctionName } from "convex/server";
-import { AssetsPageClient } from "@/components/assets/assets-page-client";
+import { render, waitFor } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
-const mockUseQuery = vi.fn();
+const listAssetsMock = vi.fn();
+const getFilterOptionsMock = vi.fn();
 const mockPush = vi.fn();
 let currentSearchParams = new URLSearchParams();
-const capturedListAssetArgs: Record<string, unknown>[] = [];
 
-vi.mock("convex/react", () => ({
-  useQuery: (...args: unknown[]) => mockUseQuery(...args),
+vi.mock("@/lib/api/assets", () => ({
+  listAssets: (params: unknown) => listAssetsMock(params),
+  getAssetFilterOptions: () => getFilterOptionsMock(),
 }));
 
 vi.mock("next/navigation", () => ({
@@ -25,35 +25,47 @@ vi.mock("@/components/assets/asset-table", () => ({
   AssetTable: () => <div>table</div>,
 }));
 
+import { AssetsPageClient } from "@/components/assets/assets-page-client";
+
+function renderWithClient(ui: React.ReactElement) {
+  const qc = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  const result = render(
+    <QueryClientProvider client={qc}>{ui}</QueryClientProvider>,
+  );
+  return {
+    ...result,
+    rerender: (next: React.ReactElement) =>
+      result.rerender(
+        <QueryClientProvider client={qc}>{next}</QueryClientProvider>,
+      ),
+  };
+}
+
 describe("AssetsPageClient", () => {
   beforeEach(() => {
-    mockUseQuery.mockReset();
+    listAssetsMock.mockReset();
+    getFilterOptionsMock.mockReset();
     mockPush.mockReset();
-    capturedListAssetArgs.length = 0;
     currentSearchParams = new URLSearchParams("category=cat1");
 
-    mockUseQuery.mockImplementation((reference: unknown, args: unknown) => {
-      const functionName = getFunctionName(reference as never);
-      if (functionName === "assets:getAssetFilterOptions") {
-        return {
-          categories: [],
-          locations: [],
-          tags: [],
-          serviceGroups: [],
-        };
-      }
-      if (functionName === "assets:listAssets") {
-        capturedListAssetArgs.push(args as Record<string, unknown>);
-        return [];
-      }
-      return undefined;
+    listAssetsMock.mockResolvedValue([]);
+    getFilterOptionsMock.mockResolvedValue({
+      categories: [],
+      locations: [],
+      tags: [],
+      serviceGroups: [],
     });
   });
 
-  it("re-applies URL-driven filters when search params change", () => {
-    const { rerender } = render(<AssetsPageClient />);
+  it("re-applies URL-driven filters when search params change", async () => {
+    const { rerender } = renderWithClient(<AssetsPageClient />);
 
-    expect(capturedListAssetArgs.at(-1)).toMatchObject({
+    await waitFor(() => {
+      expect(listAssetsMock).toHaveBeenCalled();
+    });
+    expect(listAssetsMock.mock.calls.at(-1)?.[0]).toMatchObject({
       categoryId: "cat1",
       locationId: undefined,
       tagIds: [],
@@ -62,10 +74,12 @@ describe("AssetsPageClient", () => {
     currentSearchParams = new URLSearchParams("location=loc1&tag=tag1");
     rerender(<AssetsPageClient />);
 
-    expect(capturedListAssetArgs.at(-1)).toMatchObject({
-      categoryId: undefined,
-      locationId: "loc1",
-      tagIds: ["tag1"],
+    await waitFor(() => {
+      expect(listAssetsMock.mock.calls.at(-1)?.[0]).toMatchObject({
+        categoryId: undefined,
+        locationId: "loc1",
+        tagIds: ["tag1"],
+      });
     });
   });
 });

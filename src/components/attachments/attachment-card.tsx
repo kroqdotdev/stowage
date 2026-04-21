@@ -82,8 +82,8 @@ export function AttachmentCard({
   attachment: AttachmentItem;
   deleting: boolean;
   retrying: boolean;
-  onDelete: (attachmentId: AttachmentItem["_id"]) => Promise<void>;
-  onRetry: (attachmentId: AttachmentItem["_id"]) => Promise<void>;
+  onDelete: (attachmentId: AttachmentItem["id"]) => Promise<void>;
+  onRetry: (attachmentId: AttachmentItem["id"]) => Promise<void>;
 }) {
   const dateFormat = useAppDateFormat();
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -160,7 +160,7 @@ export function AttachmentCard({
               className="cursor-pointer"
               disabled={retrying}
               onClick={() => {
-                void onRetry(attachment._id);
+                void onRetry(attachment.id);
               }}
             >
               <RefreshCcw className="size-3.5" />
@@ -189,7 +189,7 @@ export function AttachmentCard({
         confirmLabel="Delete attachment"
         busy={deleting}
         onConfirm={() => {
-          void onDelete(attachment._id);
+          void onDelete(attachment.id);
         }}
         onClose={() => {
           if (!deleting) {

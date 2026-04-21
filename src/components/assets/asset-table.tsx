@@ -100,7 +100,7 @@ export function AssetTable({
 }) {
   const dateFormat = useAppDateFormat();
   const allSelected =
-    rows.length > 0 && rows.every((row) => selectedIds.has(row._id));
+    rows.length > 0 && rows.every((row) => selectedIds.has(row.id));
 
   return (
     <div className="overflow-x-auto rounded-xl border border-border/70 bg-background shadow-sm">
@@ -176,18 +176,18 @@ export function AssetTable({
             </tr>
           ) : (
             rows.map((asset) => {
-              const selected = selectedIds.has(asset._id);
+              const selected = selectedIds.has(asset.id);
 
               return (
-                <ContextMenu key={asset._id}>
+                <ContextMenu key={asset.id}>
                   <ContextMenuTrigger asChild>
                     <tr
                       className="cursor-pointer border-t border-border/50 transition hover:bg-orange-50/50 focus-visible:bg-orange-50/50 dark:hover:bg-stone-800/50 dark:focus-visible:bg-stone-800/50"
-                      onClick={() => onRowOpen(asset._id)}
+                      onClick={() => onRowOpen(asset.id)}
                       onKeyDown={(event) => {
                         if (event.key === "Enter" || event.key === " ") {
                           event.preventDefault();
-                          onRowOpen(asset._id);
+                          onRowOpen(asset.id);
                         }
                       }}
                       tabIndex={0}
@@ -200,7 +200,7 @@ export function AssetTable({
                           aria-label={`Select ${asset.name}`}
                           checked={selected}
                           onCheckedChange={(checked) =>
-                            onSelectRow(asset._id, checked === true)
+                            onSelectRow(asset.id, checked === true)
                           }
                         />
                       </td>
@@ -256,19 +256,19 @@ export function AssetTable({
                     </tr>
                   </ContextMenuTrigger>
                   <ContextMenuContent>
-                    <ContextMenuItem onClick={() => onRowOpen(asset._id)}>
+                    <ContextMenuItem onClick={() => onRowOpen(asset.id)}>
                       <Eye className="h-4 w-4" />
                       View details
                     </ContextMenuItem>
                     {onRowEdit ? (
-                      <ContextMenuItem onClick={() => onRowEdit(asset._id)}>
+                      <ContextMenuItem onClick={() => onRowEdit(asset.id)}>
                         <Pencil className="h-4 w-4" />
                         Edit
                       </ContextMenuItem>
                     ) : null}
                     <ContextMenuSeparator />
                     <ContextMenuItem
-                      onClick={() => onSelectRow(asset._id, !selected)}
+                      onClick={() => onSelectRow(asset.id, !selected)}
                     >
                       {selected ? (
                         <Square className="h-4 w-4" />

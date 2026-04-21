@@ -1,19 +1,23 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useMutation, useQuery } from "convex/react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CalendarClock, Pencil, Trash2, Wrench } from "lucide-react";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/crud/confirm-dialog";
 import { CrudModal } from "@/components/crud/modal";
-import { getConvexUiErrorMessage } from "@/components/crud/error-messages";
+import { getApiErrorMessage } from "@/components/crud/error-messages";
 import { ServiceRecordAttachments } from "@/components/services/service-record-attachments";
 import { ServiceRecordForm } from "@/components/services/service-record-form";
 import type { ServiceRecord } from "@/components/services/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import type { Id } from "@/lib/convex-api";
-import { api } from "@/lib/convex-api";
+import { useCurrentUser } from "@/hooks/use-current-user";
+import {
+  deleteServiceRecord,
+  listAssetServiceRecords,
+} from "@/lib/api/service-records";
+import { getScheduleByAssetId } from "@/lib/api/service-schedules";
 import {
   formatDateFromIsoDateOnly,
   formatDateFromTimestamp,
@@ -31,41 +35,51 @@ function formatCost(value: number | null) {
   }).format(value);
 }
 
-export function ServiceHistory({ assetId }: { assetId: Id<"assets"> }) {
+export function ServiceHistory({ assetId }: { assetId: string }) {
   const dateFormat = useAppDateFormat();
-  const currentUser = useQuery(api.users.getCurrentUser, {});
-  const schedule = useQuery(api.serviceSchedules.getScheduleByAssetId, {
-    assetId,
+  const queryClient = useQueryClient();
+  const { data: currentUser } = useCurrentUser();
+
+  const scheduleQuery = useQuery({
+    queryKey: ["service-schedules", "by-asset", assetId],
+    queryFn: () => getScheduleByAssetId(assetId),
   });
-  const rows = useQuery(api.serviceRecords.listAssetRecords, { assetId });
-  const deleteRecord = useMutation(api.serviceRecords.deleteRecord);
+  const recordsQuery = useQuery({
+    queryKey: ["service-records", "by-asset", assetId],
+    queryFn: () => listAssetServiceRecords(assetId),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (recordId: string) => deleteServiceRecord(recordId),
+  });
 
   const [createOpen, setCreateOpen] = useState(false);
   const [editRecord, setEditRecord] = useState<ServiceRecord | null>(null);
-  const [deleteRecordId, setDeleteRecordId] =
-    useState<Id<"serviceRecords"> | null>(null);
-  const [deleting, setDeleting] = useState(false);
+  const [deleteRecordId, setDeleteRecordId] = useState<string | null>(null);
 
-  const records = useMemo(() => (rows ?? []) as ServiceRecord[], [rows]);
+  const records = useMemo(
+    () => (recordsQuery.data ?? []) as ServiceRecord[],
+    [recordsQuery.data],
+  );
 
   async function handleDeleteRecord() {
     if (!deleteRecordId) {
       return;
     }
 
-    setDeleting(true);
     try {
-      await deleteRecord({ recordId: deleteRecordId });
+      await deleteMutation.mutateAsync(deleteRecordId);
       toast.success("Service record deleted");
       setDeleteRecordId(null);
+      void queryClient.invalidateQueries({
+        queryKey: ["service-records", "by-asset", assetId],
+      });
     } catch (error) {
-      toast.error(
-        getConvexUiErrorMessage(error, "Unable to delete service record"),
-      );
-    } finally {
-      setDeleting(false);
+      toast.error(getApiErrorMessage(error, "Unable to delete service record"));
     }
   }
+
+  const schedule = scheduleQuery.data ?? null;
 
   return (
     <section className="rounded-xl border border-border/70 bg-background p-5 shadow-sm">
@@ -116,7 +130,7 @@ export function ServiceHistory({ assetId }: { assetId: Id<"assets"> }) {
       ) : null}
 
       <div className="mt-4 space-y-3">
-        {rows === undefined || currentUser === undefined ? (
+        {recordsQuery.isPending ? (
           <div className="rounded-lg border border-border/60 bg-background p-4 text-sm text-muted-foreground">
             Loading service history...
           </div>
@@ -128,11 +142,11 @@ export function ServiceHistory({ assetId }: { assetId: Id<"assets"> }) {
           records.map((record) => {
             const canMutate =
               currentUser?.role === "admin" ||
-              currentUser?._id === record.completedBy;
+              currentUser?.id === record.completedBy;
 
             return (
               <details
-                key={record._id}
+                key={record.id}
                 className="rounded-lg border border-border/60 bg-background p-4"
               >
                 <summary className="cursor-pointer list-none">
@@ -205,7 +219,7 @@ export function ServiceHistory({ assetId }: { assetId: Id<"assets"> }) {
                             className="cursor-pointer"
                             onClick={(event) => {
                               event.preventDefault();
-                              setDeleteRecordId(record._id);
+                              setDeleteRecordId(record.id);
                             }}
                           >
                             <Trash2 className="h-4 w-4" />
@@ -222,7 +236,7 @@ export function ServiceHistory({ assetId }: { assetId: Id<"assets"> }) {
                     <div className="grid gap-2 sm:grid-cols-2">
                       {record.valueEntries.map((entry) => (
                         <div
-                          key={`${record._id}-${entry.fieldId}`}
+                          key={`${record.id}-${entry.fieldId}`}
                           className="rounded-md border border-border/60 bg-muted/10 px-3 py-2"
                         >
                           <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
@@ -250,7 +264,7 @@ export function ServiceHistory({ assetId }: { assetId: Id<"assets"> }) {
                       Service reports and proof of work for this record.
                     </p>
                     <div className="mt-2">
-                      <ServiceRecordAttachments serviceRecordId={record._id} />
+                      <ServiceRecordAttachments serviceRecordId={record.id} />
                     </div>
                   </div>
                 </div>
@@ -283,7 +297,7 @@ export function ServiceHistory({ assetId }: { assetId: Id<"assets"> }) {
       >
         {editRecord ? (
           <ServiceRecordForm
-            key={`edit-${editRecord._id}`}
+            key={`edit-${editRecord.id}`}
             assetId={assetId}
             mode="edit"
             record={editRecord}
@@ -298,7 +312,7 @@ export function ServiceHistory({ assetId }: { assetId: Id<"assets"> }) {
         title="Delete service record"
         description="Delete this service record and all of its attachments?"
         confirmLabel="Delete record"
-        busy={deleting}
+        busy={deleteMutation.isPending}
         onConfirm={handleDeleteRecord}
         onClose={() => setDeleteRecordId(null)}
       />

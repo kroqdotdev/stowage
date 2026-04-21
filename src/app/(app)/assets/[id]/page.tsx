@@ -1,6 +1,5 @@
 import { AssetDetailPageClient } from "@/components/assets/asset-detail-page-client";
 import { PageHeader } from "@/components/layout/page-header";
-import type { Id } from "@/lib/convex-api";
 
 export default async function AssetDetailPage({
   params,
@@ -20,7 +19,7 @@ export default async function AssetDetailPage({
           { label: "Asset detail" },
         ]}
       />
-      <AssetDetailPageClient assetId={id as Id<"assets">} />
+      <AssetDetailPageClient assetId={id} />
     </div>
   );
 }

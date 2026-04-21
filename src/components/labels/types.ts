@@ -1,5 +1,3 @@
-import type { Id } from "@/lib/convex-api";
-
 export const LABEL_ELEMENT_TYPE_OPTIONS = [
   "assetName",
   "assetTag",
@@ -33,14 +31,13 @@ export type LabelTemplateElement = {
   fontSize?: number;
   fontWeight?: LabelFontWeight;
   textAlign?: LabelTextAlign;
-  fieldId?: Id<"customFieldDefinitions"> | null;
+  fieldId?: string | null;
   text?: string | null;
   uppercase?: boolean;
 };
 
 export type LabelTemplate = {
-  _id: Id<"labelTemplates">;
-  _creationTime: number;
+  id: string;
   name: string;
   widthMm: number;
   heightMm: number;
@@ -48,12 +45,12 @@ export type LabelTemplate = {
   isDefault: boolean;
   createdAt: number;
   updatedAt: number;
-  createdBy: Id<"users">;
-  updatedBy: Id<"users">;
+  createdBy: string;
+  updatedBy: string;
 };
 
 export type EditableLabelTemplate = {
-  _id: Id<"labelTemplates"> | null;
+  id: string | null;
   name: string;
   widthMm: number;
   heightMm: number;
@@ -62,7 +59,7 @@ export type EditableLabelTemplate = {
 };
 
 export type LabelPreviewAsset = {
-  _id: Id<"assets">;
+  id: string;
   name: string;
   assetTag: string;
   categoryName: string | null;

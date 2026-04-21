@@ -1,5 +1,10 @@
 import { expect, test } from "@playwright/test";
-import { fillRequiredFields, getLanding, signIn } from "./helpers";
+import {
+  ensureSchedulingEnabled,
+  fillRequiredFields,
+  getLanding,
+  signIn,
+} from "./helpers";
 
 function getUtcIsoDateWithOffset(daysFromNow: number) {
   const base = new Date();
@@ -27,6 +32,7 @@ test.describe.serial("phase 7.5 service groups and records", () => {
     );
 
     await signIn(page, email!, password!);
+    await ensureSchedulingEnabled(page);
 
     const stamp = Date.now();
     const groupName = `PW Service Group ${stamp}`;
@@ -123,7 +129,7 @@ test.describe.serial("phase 7.5 service groups and records", () => {
     await expect(page.getByText("service-report.pdf")).toBeVisible({
       timeout: 15_000,
     });
-    await plannerDialog.click({ position: { x: 8, y: 8 } });
+    await plannerDialog.getByRole("button", { name: "Close dialog" }).click();
     await expect(plannerDialog).toBeHidden();
 
     await page.goto(`/assets/${assetId}`);
@@ -160,7 +166,7 @@ test.describe.serial("phase 7.5 service groups and records", () => {
     await manualDialog.getByLabel(/Verified/i).check();
     await manualDialog.getByRole("button", { name: "Log service" }).click();
     await expect(page.getByText("Service record logged")).toBeVisible();
-    await manualDialog.click({ position: { x: 8, y: 8 } });
+    await manualDialog.getByRole("button", { name: "Close dialog" }).click();
     await expect(manualDialog).toBeHidden();
     await expect(
       serviceHistorySection.getByText("Completed from asset detail").first(),

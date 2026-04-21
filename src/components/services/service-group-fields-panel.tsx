@@ -2,10 +2,10 @@
 
 import { useMemo, useState } from "react";
 import { GripVertical, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
-import { useMutation, useQuery } from "convex/react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/crud/confirm-dialog";
-import { getConvexUiErrorMessage } from "@/components/crud/error-messages";
+import { getApiErrorMessage } from "@/components/crud/error-messages";
 import { CrudModal } from "@/components/crud/modal";
 import type {
   ServiceGroupField,
@@ -15,9 +15,14 @@ import { SERVICE_GROUP_FIELD_TYPE_OPTIONS } from "@/components/services/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { api } from "@/lib/convex-api";
-import { getConvexErrorCode } from "@/lib/convex-errors";
-import type { Id } from "@/lib/convex-api";
+import { ApiRequestError } from "@/lib/api-client";
+import {
+  createServiceGroupField,
+  deleteServiceGroupField,
+  listServiceGroupFields,
+  reorderServiceGroupFields,
+  updateServiceGroupField,
+} from "@/lib/api/service-groups";
 
 function moveId(ids: string[], fromId: string, toId: string) {
   const fromIndex = ids.indexOf(fromId);
@@ -34,17 +39,13 @@ function moveId(ids: string[], fromId: string, toId: string) {
 }
 
 function mapFieldError(error: unknown, fallback: string) {
-  const code = getConvexErrorCode(error);
-  if (code === "INVALID_FIELD_VALUE") {
-    return getConvexUiErrorMessage(
-      error,
-      "One or more field values are invalid.",
-    );
+  if (error instanceof ApiRequestError) {
+    if (error.status === 403) {
+      return "Only admins can manage service group fields.";
+    }
+    return error.message || fallback;
   }
-  if (code === "FORBIDDEN") {
-    return "Only admins can manage service group fields.";
-  }
-  return getConvexUiErrorMessage(error, fallback);
+  return getApiErrorMessage(error, fallback);
 }
 
 function ServiceGroupFieldEditor({
@@ -186,7 +187,7 @@ function ServiceGroupFieldEditor({
             <div className="space-y-2">
               {options.map((option, index) => (
                 <div
-                  key={option}
+                  key={`${option}-${index}`}
                   className="flex items-center gap-2"
                 >
                   <Input
@@ -249,28 +250,49 @@ export function ServiceGroupFieldsPanel({
   groupId,
   canManage,
 }: {
-  groupId: Id<"serviceGroups">;
+  groupId: string;
   canManage: boolean;
 }) {
-  const rows = useQuery(api.serviceGroupFields.listFields, { groupId });
-  const createField = useMutation(api.serviceGroupFields.createField);
-  const updateField = useMutation(api.serviceGroupFields.updateField);
-  const deleteField = useMutation(api.serviceGroupFields.deleteField);
-  const reorderFields = useMutation(api.serviceGroupFields.reorderFields);
+  const queryClient = useQueryClient();
+  const rowsQuery = useQuery({
+    queryKey: ["service-groups", groupId, "fields"],
+    queryFn: () => listServiceGroupFields(groupId),
+  });
 
-  const fields = useMemo(() => (rows ?? []) as ServiceGroupField[], [rows]);
+  const createMutation = useMutation({
+    mutationFn: (input: Parameters<typeof createServiceGroupField>[1]) =>
+      createServiceGroupField(groupId, input),
+  });
+  const updateMutation = useMutation({
+    mutationFn: ({
+      fieldId,
+      input,
+    }: {
+      fieldId: string;
+      input: Parameters<typeof updateServiceGroupField>[1];
+    }) => updateServiceGroupField(fieldId, input),
+  });
+  const deleteMutation = useMutation({
+    mutationFn: (fieldId: string) => deleteServiceGroupField(fieldId),
+  });
+  const reorderMutation = useMutation({
+    mutationFn: (fieldIds: string[]) =>
+      reorderServiceGroupFields(groupId, fieldIds),
+  });
+
+  const fields = useMemo(
+    () => (rowsQuery.data ?? []) as ServiceGroupField[],
+    [rowsQuery.data],
+  );
   const fieldsById = useMemo(
-    () => new Map(fields.map((field) => [field._id as string, field])),
+    () => new Map(fields.map((field) => [field.id, field])),
     [fields],
   );
 
   const [editorOpen, setEditorOpen] = useState(false);
   const [editorMode, setEditorMode] = useState<"create" | "edit">("create");
   const [activeFieldId, setActiveFieldId] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
   const [deleteFieldId, setDeleteFieldId] = useState<string | null>(null);
-  const [deleting, setDeleting] = useState(false);
-  const [reordering, setReordering] = useState(false);
   const [draggingId, setDraggingId] = useState<string | null>(null);
 
   const activeField =
@@ -284,11 +306,9 @@ export function ServiceGroupFieldsPanel({
     required: boolean;
     options: string[];
   }) {
-    setSubmitting(true);
     try {
       if (editorMode === "create") {
-        await createField({
-          groupId,
+        await createMutation.mutateAsync({
           label: values.label,
           fieldType: values.fieldType,
           required: values.required,
@@ -296,17 +316,22 @@ export function ServiceGroupFieldsPanel({
         });
         toast.success("Service field created");
       } else if (activeFieldId) {
-        await updateField({
-          fieldId: activeFieldId as Id<"serviceGroupFields">,
-          label: values.label,
-          fieldType: values.fieldType,
-          required: values.required,
-          options: values.options,
+        await updateMutation.mutateAsync({
+          fieldId: activeFieldId,
+          input: {
+            label: values.label,
+            fieldType: values.fieldType,
+            required: values.required,
+            options: values.options,
+          },
         });
         toast.success("Service field updated");
       }
       setEditorOpen(false);
       setActiveFieldId(null);
+      void queryClient.invalidateQueries({
+        queryKey: ["service-groups", groupId, "fields"],
+      });
     } catch (error) {
       toast.error(
         mapFieldError(
@@ -316,8 +341,6 @@ export function ServiceGroupFieldsPanel({
             : "Unable to update service field",
         ),
       );
-    } finally {
-      setSubmitting(false);
     }
   }
 
@@ -325,34 +348,33 @@ export function ServiceGroupFieldsPanel({
     if (!deleteFieldId) {
       return;
     }
-    setDeleting(true);
     try {
-      await deleteField({
-        fieldId: deleteFieldId as Id<"serviceGroupFields">,
-      });
+      await deleteMutation.mutateAsync(deleteFieldId);
       toast.success("Service field deleted");
       setDeleteFieldId(null);
+      void queryClient.invalidateQueries({
+        queryKey: ["service-groups", groupId, "fields"],
+      });
     } catch (error) {
       toast.error(mapFieldError(error, "Unable to delete service field"));
-    } finally {
-      setDeleting(false);
     }
   }
 
   async function handleReorder(nextFieldIds: string[]) {
-    setReordering(true);
     try {
-      await reorderFields({
-        groupId,
-        fieldIds: nextFieldIds as Id<"serviceGroupFields">[],
+      await reorderMutation.mutateAsync(nextFieldIds);
+      void queryClient.invalidateQueries({
+        queryKey: ["service-groups", groupId, "fields"],
       });
     } catch (error) {
       toast.error(mapFieldError(error, "Unable to reorder service fields"));
     } finally {
-      setReordering(false);
       setDraggingId(null);
     }
   }
+
+  const submitting = createMutation.isPending || updateMutation.isPending;
+  const reordering = reorderMutation.isPending;
 
   return (
     <>
@@ -395,7 +417,7 @@ export function ServiceGroupFieldsPanel({
               </tr>
             </thead>
             <tbody>
-              {rows === undefined ? (
+              {rowsQuery.isPending ? (
                 <tr>
                   <td
                     colSpan={5}
@@ -416,11 +438,11 @@ export function ServiceGroupFieldsPanel({
               ) : (
                 fields.map((field) => (
                   <tr
-                    key={field._id}
+                    key={field.id}
                     className="border-t border-border/50"
                     draggable={canManage && !reordering}
                     onDragStart={(event) => {
-                      setDraggingId(field._id as string);
+                      setDraggingId(field.id);
                       event.dataTransfer.effectAllowed = "move";
                     }}
                     onDragOver={(event) => {
@@ -435,9 +457,9 @@ export function ServiceGroupFieldsPanel({
                       }
 
                       const orderedIds = moveId(
-                        fields.map((row) => row._id as string),
+                        fields.map((row) => row.id),
                         draggingId,
-                        field._id as string,
+                        field.id,
                       );
                       void handleReorder(orderedIds);
                     }}
@@ -471,7 +493,7 @@ export function ServiceGroupFieldsPanel({
                             className="cursor-pointer"
                             onClick={() => {
                               setEditorMode("edit");
-                              setActiveFieldId(field._id as string);
+                              setActiveFieldId(field.id);
                               setEditorOpen(true);
                             }}
                             aria-label={`Edit field ${field.label}`}
@@ -483,9 +505,7 @@ export function ServiceGroupFieldsPanel({
                             variant="ghost"
                             size="icon-sm"
                             className="cursor-pointer text-destructive"
-                            onClick={() =>
-                              setDeleteFieldId(field._id as string)
-                            }
+                            onClick={() => setDeleteFieldId(field.id)}
                             aria-label={`Delete field ${field.label}`}
                           >
                             <Trash2 className="h-4 w-4" />
@@ -530,12 +550,12 @@ export function ServiceGroupFieldsPanel({
         title="Delete field"
         description={`Delete ${activeDeleteField?.label ?? "this field"}?`}
         confirmLabel="Delete field"
-        busy={deleting}
+        busy={deleteMutation.isPending}
         onConfirm={() => {
           void handleDelete();
         }}
         onClose={() => {
-          if (!deleting) {
+          if (!deleteMutation.isPending) {
             setDeleteFieldId(null);
           }
         }}

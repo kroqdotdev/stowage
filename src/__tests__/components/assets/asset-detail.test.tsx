@@ -24,28 +24,27 @@ vi.mock("@/components/services/asset-service-records-panel", () => ({
 }));
 
 const baseAsset: AssetDetailType = {
-  _id: "asset1" as never,
-  _creationTime: 1,
+  id: "asset1",
   name: "Core Router",
   assetTag: "IT-0042",
   status: "active",
-  categoryId: "cat1" as never,
-  locationId: "loc1" as never,
+  categoryId: "cat1",
+  locationId: "loc1",
   serviceGroupId: null,
   notes: "Main network router",
   customFieldValues: { field1: "SN-12345" },
-  createdBy: "user1" as never,
-  updatedBy: "user1" as never,
+  createdBy: "user1",
+  updatedBy: "user1",
   createdAt: 1700000000000,
   updatedAt: 1700000000000,
   category: {
-    _id: "cat1" as never,
+    id: "cat1",
     name: "Networking",
     prefix: "NET",
     color: "#3b82f6",
   },
   location: {
-    _id: "loc1" as never,
+    id: "loc1",
     name: "Server Room",
     parentId: null,
     path: "Building A / Server Room",
@@ -53,16 +52,14 @@ const baseAsset: AssetDetailType = {
   serviceGroup: null,
   tags: [
     {
-      _id: "tag1" as never,
-      _creationTime: 1,
+      id: "tag1",
       name: "Critical",
       color: "#ef4444",
       createdAt: 1,
       updatedAt: 1,
     },
     {
-      _id: "tag2" as never,
-      _creationTime: 2,
+      id: "tag2",
       name: "Production",
       color: "#22c55e",
       createdAt: 2,
@@ -73,8 +70,7 @@ const baseAsset: AssetDetailType = {
 
 const fieldDefinitions: FieldDefinition[] = [
   {
-    _id: "field1" as never,
-    _creationTime: 1,
+    id: "field1",
     name: "Serial Number",
     fieldType: "text",
     options: [],
@@ -107,9 +103,7 @@ describe("AssetDetail", () => {
     expect(screen.getByText("Core Router")).toBeInTheDocument();
     expect(screen.getByText("IT-0042")).toBeInTheDocument();
     expect(screen.getByText("Networking")).toBeInTheDocument();
-    expect(
-      screen.getByText("Building A / Server Room"),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Building A / Server Room")).toBeInTheDocument();
   });
 
   it("renders tags when present", () => {
@@ -127,10 +121,7 @@ describe("AssetDetail", () => {
 
   it("shows 'No notes' when notes are null", () => {
     renderWithProviders(
-      <AssetDetail
-        {...defaultProps}
-        asset={{ ...baseAsset, notes: null }}
-      />,
+      <AssetDetail {...defaultProps} asset={{ ...baseAsset, notes: null }} />,
     );
 
     expect(screen.getByText("No notes")).toBeInTheDocument();

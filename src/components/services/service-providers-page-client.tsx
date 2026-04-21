@@ -1,19 +1,24 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useMutation, useQuery } from "convex/react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/crud/confirm-dialog";
-import { getConvexUiErrorMessage } from "@/components/crud/error-messages";
+import { getApiErrorMessage } from "@/components/crud/error-messages";
 import { CrudModal } from "@/components/crud/modal";
 import { ServicesNavTabs } from "@/components/services/services-nav-tabs";
 import type { ServiceProvider } from "@/components/services/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import type { Id } from "@/lib/convex-api";
-import { api } from "@/lib/convex-api";
+import { useCurrentUser } from "@/hooks/use-current-user";
+import {
+  createServiceProvider,
+  deleteServiceProvider,
+  listServiceProviders,
+  updateServiceProvider,
+} from "@/lib/api/service-providers";
 
 type ProviderFormState = {
   name: string;
@@ -34,25 +39,34 @@ function createInitialForm(
 }
 
 export function ServiceProvidersPageClient() {
-  const currentUser = useQuery(api.users.getCurrentUser, {});
-  const providersQuery = useQuery(api.serviceProviders.listProviders, {});
+  const queryClient = useQueryClient();
+  const { data: currentUser, isPending: currentUserPending } = useCurrentUser();
+  const providersQuery = useQuery({
+    queryKey: ["service-providers"],
+    queryFn: listServiceProviders,
+  });
 
-  const createProvider = useMutation(api.serviceProviders.createProvider);
-  const updateProvider = useMutation(api.serviceProviders.updateProvider);
-  const deleteProvider = useMutation(api.serviceProviders.deleteProvider);
+  const createMutation = useMutation({ mutationFn: createServiceProvider });
+  const updateMutation = useMutation({
+    mutationFn: ({
+      providerId,
+      input,
+    }: {
+      providerId: string;
+      input: Parameters<typeof updateServiceProvider>[1];
+    }) => updateServiceProvider(providerId, input),
+  });
+  const deleteMutation = useMutation({ mutationFn: deleteServiceProvider });
 
   const [editingProvider, setEditingProvider] =
     useState<ServiceProvider | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
-  const [deleteProviderId, setDeleteProviderId] =
-    useState<Id<"serviceProviders"> | null>(null);
-  const [submitting, setSubmitting] = useState(false);
-  const [deleting, setDeleting] = useState(false);
+  const [deleteProviderId, setDeleteProviderId] = useState<string | null>(null);
   const [form, setForm] = useState<ProviderFormState>(createInitialForm());
 
   const providers = useMemo(
-    () => (providersQuery ?? []) as ServiceProvider[],
-    [providersQuery],
+    () => (providersQuery.data ?? []) as ServiceProvider[],
+    [providersQuery.data],
   );
   const canManage = currentUser?.role === "admin";
 
@@ -70,27 +84,23 @@ export function ServiceProvidersPageClient() {
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setSubmitting(true);
     try {
       if (editingProvider) {
-        await updateProvider({
-          providerId: editingProvider._id,
-          ...form,
+        await updateMutation.mutateAsync({
+          providerId: editingProvider.id,
+          input: form,
         });
         toast.success("Service provider updated");
       } else {
-        await createProvider(form);
+        await createMutation.mutateAsync(form);
         toast.success("Service provider created");
       }
       setModalOpen(false);
       setEditingProvider(null);
       setForm(createInitialForm());
+      void queryClient.invalidateQueries({ queryKey: ["service-providers"] });
     } catch (error) {
-      toast.error(
-        getConvexUiErrorMessage(error, "Unable to save service provider"),
-      );
-    } finally {
-      setSubmitting(false);
+      toast.error(getApiErrorMessage(error, "Unable to save service provider"));
     }
   }
 
@@ -99,21 +109,21 @@ export function ServiceProvidersPageClient() {
       return;
     }
 
-    setDeleting(true);
     try {
-      await deleteProvider({ providerId: deleteProviderId });
+      await deleteMutation.mutateAsync(deleteProviderId);
       toast.success("Service provider deleted");
       setDeleteProviderId(null);
+      void queryClient.invalidateQueries({ queryKey: ["service-providers"] });
     } catch (error) {
       toast.error(
-        getConvexUiErrorMessage(error, "Unable to delete service provider"),
+        getApiErrorMessage(error, "Unable to delete service provider"),
       );
-    } finally {
-      setDeleting(false);
     }
   }
 
-  if (currentUser === undefined || providersQuery === undefined) {
+  const submitting = createMutation.isPending || updateMutation.isPending;
+
+  if (currentUserPending || providersQuery.isPending) {
     return (
       <div className="space-y-4">
         <ServicesNavTabs />
@@ -144,7 +154,7 @@ export function ServiceProvidersPageClient() {
         <div className="grid gap-3 lg:grid-cols-2">
           {providers.map((provider) => (
             <article
-              key={provider._id}
+              key={provider.id}
               className="rounded-xl border border-border/70 bg-background p-4 shadow-sm"
             >
               <div className="flex items-start justify-between gap-3">
@@ -181,7 +191,7 @@ export function ServiceProvidersPageClient() {
                       variant="outline"
                       size="sm"
                       className="cursor-pointer"
-                      onClick={() => setDeleteProviderId(provider._id)}
+                      onClick={() => setDeleteProviderId(provider.id)}
                     >
                       <Trash2 className="h-4 w-4" />
                       Delete
@@ -297,7 +307,7 @@ export function ServiceProvidersPageClient() {
         title="Delete provider"
         description="Delete this service provider?"
         confirmLabel="Delete provider"
-        busy={deleting}
+        busy={deleteMutation.isPending}
         onConfirm={handleDelete}
         onClose={() => setDeleteProviderId(null)}
       />

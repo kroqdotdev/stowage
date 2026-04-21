@@ -1,11 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useMutation } from "convex/react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/crud/confirm-dialog";
-import { getConvexUiErrorMessage } from "@/components/crud/error-messages";
+import { getApiErrorMessage } from "@/components/crud/error-messages";
 import type { FieldDefinition } from "@/components/fields/types";
 import { ElementProperties } from "@/components/labels/element-properties";
 import { ElementToolbar } from "@/components/labels/element-toolbar";
@@ -28,7 +28,11 @@ import type {
   LabelTemplateElement,
 } from "@/components/labels/types";
 import { Button } from "@/components/ui/button";
-import { api } from "@/lib/convex-api";
+import {
+  createLabelTemplate,
+  deleteLabelTemplate,
+  updateLabelTemplate,
+} from "@/lib/api/label-templates";
 import { cn } from "@/lib/utils";
 
 function sanitizeElement(
@@ -100,25 +104,46 @@ export function TemplateDesigner({
   fieldDefinitions: FieldDefinition[];
 }) {
   const canManage = currentUserRole === "admin";
-  const createTemplate = useMutation(api.labelTemplates.createTemplate);
-  const updateTemplate = useMutation(api.labelTemplates.updateTemplate);
-  const deleteTemplate = useMutation(api.labelTemplates.deleteTemplate);
+  const queryClient = useQueryClient();
+
+  const createMutation = useMutation({
+    mutationFn: (input: {
+      name: string;
+      widthMm: number;
+      heightMm: number;
+      elements: LabelTemplateElement[];
+      isDefault: boolean;
+    }) => createLabelTemplate(input),
+  });
+  const updateMutation = useMutation({
+    mutationFn: ({
+      templateId,
+      input,
+    }: {
+      templateId: string;
+      input: {
+        name: string;
+        widthMm: number;
+        heightMm: number;
+        elements: LabelTemplateElement[];
+        isDefault: boolean;
+      };
+    }) => updateLabelTemplate(templateId, input),
+  });
+  const deleteMutation = useMutation({
+    mutationFn: (templateId: string) => deleteLabelTemplate(templateId),
+  });
 
   const [selectedTemplateId, setSelectedTemplateId] = useState<
-    LabelTemplate["_id"] | "new" | null
+    string | "new" | null
   >(null);
   const [draft, setDraft] = useState<EditableLabelTemplate | null>(null);
   const [baseline, setBaseline] = useState<EditableLabelTemplate | null>(null);
   const [selectedElementId, setSelectedElementId] = useState<string | null>(
     null,
   );
-  const [saving, setSaving] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [deleting, setDeleting] = useState(false);
 
-  // Intentional sync effect for the template editing workflow: keeps draft,
-  // baseline, and selectedElementId in sync when the reactive `templates`
-  // array changes (e.g. after save/delete) or when no template is selected.
   useEffect(() => {
     if (selectedTemplateId === "new") {
       return;
@@ -126,6 +151,7 @@ export function TemplateDesigner({
 
     if (templates.length === 0) {
       if (draft === null) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setDraft(createEmptyLabelTemplate());
       }
       return;
@@ -133,7 +159,7 @@ export function TemplateDesigner({
 
     if (selectedTemplateId === null) {
       const next = loadTemplateDraft(templates[0]!);
-      setSelectedTemplateId(templates[0]!._id);
+      setSelectedTemplateId(templates[0]!.id);
       setDraft(next.draft);
       setBaseline(next.baseline);
       setSelectedElementId(next.selectedElementId);
@@ -141,18 +167,18 @@ export function TemplateDesigner({
     }
 
     const selected = templates.find(
-      (template) => template._id === selectedTemplateId,
+      (template) => template.id === selectedTemplateId,
     );
     if (!selected) {
       const fallback = loadTemplateDraft(templates[0]!);
-      setSelectedTemplateId(templates[0]!._id);
+      setSelectedTemplateId(templates[0]!.id);
       setDraft(fallback.draft);
       setBaseline(fallback.baseline);
       setSelectedElementId(fallback.selectedElementId);
       return;
     }
 
-    if (draft === null || draft._id !== selected._id) {
+    if (draft === null || draft.id !== selected.id) {
       const next = loadTemplateDraft(selected);
       setDraft(next.draft);
       setBaseline(next.baseline);
@@ -176,7 +202,7 @@ export function TemplateDesigner({
 
   function updateSelectedTemplate(template: LabelTemplate) {
     const next = loadTemplateDraft(template);
-    setSelectedTemplateId(template._id);
+    setSelectedTemplateId(template.id);
     setDraft(next.draft);
     setBaseline(next.baseline);
     setSelectedElementId(next.selectedElementId);
@@ -222,7 +248,7 @@ export function TemplateDesigner({
       type,
       index: draft.elements.length,
       template: draft,
-      fieldId: fieldDefinitions[0]?._id ?? null,
+      fieldId: fieldDefinitions[0]?.id ?? null,
     });
 
     applyDraft({
@@ -278,64 +304,61 @@ export function TemplateDesigner({
       return;
     }
 
-    setSaving(true);
     try {
-      if (draft._id) {
-        await updateTemplate({
-          templateId: draft._id,
-          name: draft.name,
-          widthMm: draft.widthMm,
-          heightMm: draft.heightMm,
-          elements: draft.elements,
-          isDefault: draft.isDefault,
+      if (draft.id) {
+        await updateMutation.mutateAsync({
+          templateId: draft.id,
+          input: {
+            name: draft.name,
+            widthMm: draft.widthMm,
+            heightMm: draft.heightMm,
+            elements: draft.elements,
+            isDefault: draft.isDefault,
+          },
         });
         setBaseline(cloneEditableLabelTemplate(draft));
         toast.success("Label template updated");
       } else {
-        const result = await createTemplate({
+        const created = await createMutation.mutateAsync({
           name: draft.name,
           widthMm: draft.widthMm,
           heightMm: draft.heightMm,
           elements: draft.elements,
           isDefault: draft.isDefault,
         });
-        const saved = { ...draft, _id: result.templateId };
-        setSelectedTemplateId(result.templateId);
+        const saved = { ...draft, id: created.id };
+        setSelectedTemplateId(created.id);
         setDraft(saved);
         setBaseline(cloneEditableLabelTemplate(saved));
         toast.success("Label template created");
       }
+      void queryClient.invalidateQueries({ queryKey: ["label-templates"] });
     } catch (error) {
-      toast.error(
-        getConvexUiErrorMessage(error, "Unable to save label template"),
-      );
-    } finally {
-      setSaving(false);
+      toast.error(getApiErrorMessage(error, "Unable to save label template"));
     }
   }
 
   async function handleDeleteTemplate() {
-    if (!canManage || !draft?._id) {
+    if (!canManage || !draft?.id) {
       return;
     }
 
-    setDeleting(true);
     try {
-      await deleteTemplate({ templateId: draft._id });
+      await deleteMutation.mutateAsync(draft.id);
       toast.success("Label template deleted");
       setDeleteOpen(false);
       setSelectedTemplateId(null);
       setDraft(null);
       setBaseline(null);
       setSelectedElementId(null);
+      void queryClient.invalidateQueries({ queryKey: ["label-templates"] });
     } catch (error) {
-      toast.error(
-        getConvexUiErrorMessage(error, "Unable to delete label template"),
-      );
-    } finally {
-      setDeleting(false);
+      toast.error(getApiErrorMessage(error, "Unable to delete label template"));
     }
   }
+
+  const saving = createMutation.isPending || updateMutation.isPending;
+  const deleting = deleteMutation.isPending;
 
   return (
     <>
@@ -371,10 +394,10 @@ export function TemplateDesigner({
             ) : (
               <div className="space-y-2">
                 {templates.map((template) => {
-                  const active = activeTemplate._id === template._id;
+                  const active = activeTemplate.id === template.id;
                   return (
                     <button
-                      key={template._id}
+                      key={template.id}
                       type="button"
                       className={cn(
                         "flex w-full cursor-pointer items-start justify-between gap-3 rounded-xl border px-3 py-3 text-left transition-colors",

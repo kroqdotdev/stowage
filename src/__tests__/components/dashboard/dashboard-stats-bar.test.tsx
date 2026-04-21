@@ -12,9 +12,7 @@ const statusCounts = {
 
 describe("DashboardStatsBar", () => {
   it("renders all 6 stat cards with correct labels and values", () => {
-    render(
-      <DashboardStatsBar totalAssets={21} statusCounts={statusCounts} />,
-    );
+    render(<DashboardStatsBar totalAssets={21} statusCounts={statusCounts} />);
 
     expect(screen.getByText("Total Assets")).toBeVisible();
     expect(screen.getByText("21")).toBeVisible();
@@ -44,18 +42,14 @@ describe("DashboardStatsBar", () => {
       disposed: 0,
     };
 
-    render(
-      <DashboardStatsBar totalAssets={0} statusCounts={zeroCounts} />,
-    );
+    render(<DashboardStatsBar totalAssets={0} statusCounts={zeroCounts} />);
 
     const zeros = screen.getAllByText("0");
     expect(zeros).toHaveLength(6);
   });
 
   it("renders data-dashboard-stat attributes for each card", () => {
-    render(
-      <DashboardStatsBar totalAssets={21} statusCounts={statusCounts} />,
-    );
+    render(<DashboardStatsBar totalAssets={21} statusCounts={statusCounts} />);
 
     const keys = [
       "total",

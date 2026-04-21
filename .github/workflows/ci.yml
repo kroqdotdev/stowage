@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  push:
+    branches: [main, pocketbase-migration]
+  pull_request:
+    branches: [main, pocketbase-migration]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    name: Lint + typecheck + tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: pnpm/action-setup@v5
+        with:
+          run_install: false
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Vitest (jsdom components)
+        run: pnpm test
+
+      - name: Download PocketBase binary
+        run: pnpm pb:setup
+
+      - name: Vitest (PocketBase domain)
+        run: pnpm test:pb

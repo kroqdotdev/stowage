@@ -15,8 +15,8 @@ vi.mock("next/link", () => ({
 }));
 
 const items = [
-  { _id: "loc1", name: "Warehouse A", count: 20 },
-  { _id: "loc2", name: "Office B", count: 5 },
+  { id: "loc1", name: "Warehouse A", count: 20 },
+  { id: "loc2", name: "Office B", count: 5 },
 ];
 
 describe("LocationBreakdown", () => {
@@ -33,19 +33,19 @@ describe("LocationBreakdown", () => {
   it("links each location to filtered assets page", () => {
     render(<LocationBreakdown items={items} />);
 
-    expect(
-      screen.getByText("Warehouse A").closest("a"),
-    ).toHaveAttribute("href", "/assets?location=loc1");
-    expect(
-      screen.getByText("Office B").closest("a"),
-    ).toHaveAttribute("href", "/assets?location=loc2");
+    expect(screen.getByText("Warehouse A").closest("a")).toHaveAttribute(
+      "href",
+      "/assets?location=loc1",
+    );
+    expect(screen.getByText("Office B").closest("a")).toHaveAttribute(
+      "href",
+      "/assets?location=loc2",
+    );
   });
 
   it("shows empty state when no locations", () => {
     render(<LocationBreakdown items={[]} />);
 
-    expect(
-      screen.getByText("No locations with assets yet."),
-    ).toBeVisible();
+    expect(screen.getByText("No locations with assets yet.")).toBeVisible();
   });
 });

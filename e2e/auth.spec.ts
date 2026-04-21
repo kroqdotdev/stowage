@@ -112,7 +112,18 @@ test.describe.serial("auth flow", () => {
     });
 
     await page.getByLabel("Open user menu").click();
+    const logoutResponse = page.waitForResponse(
+      (res) =>
+        res.url().endsWith("/api/auth/logout") &&
+        res.request().method() === "POST",
+      { timeout: 10_000 },
+    );
     await page.getByRole("menuitem", { name: "Log out" }).click();
+    await logoutResponse;
+    await page.waitForURL(
+      (url) => getLeafPathSegment(url.toString()) === "login",
+      { timeout: 10_000 },
+    );
 
     await page.goto("/dashboard");
     await expect

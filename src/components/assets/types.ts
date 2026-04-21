@@ -1,5 +1,3 @@
-import type { Id } from "@/lib/convex-api";
-
 export const ASSET_STATUS_OPTIONS = [
   "active",
   "in_storage",
@@ -29,58 +27,55 @@ export const ASSET_STATUS_LABELS: Record<AssetStatus, string> = {
 };
 
 export type AssetListItem = {
-  _id: Id<"assets">;
-  _creationTime: number;
+  id: string;
   name: string;
   assetTag: string;
   status: AssetStatus;
-  categoryId: Id<"categories"> | null;
+  categoryId: string | null;
   categoryName: string | null;
   categoryColor: string | null;
-  locationId: Id<"locations"> | null;
+  locationId: string | null;
   locationPath: string | null;
-  serviceGroupId: Id<"serviceGroups"> | null;
+  serviceGroupId: string | null;
   notes: string | null;
-  tagIds: Id<"tags">[];
+  tagIds: string[];
   tagNames: string[];
   createdAt: number;
   updatedAt: number;
 };
 
 export type AssetDetail = {
-  _id: Id<"assets">;
-  _creationTime: number;
+  id: string;
   name: string;
   assetTag: string;
   status: AssetStatus;
-  categoryId: Id<"categories"> | null;
-  locationId: Id<"locations"> | null;
-  serviceGroupId: Id<"serviceGroups"> | null;
+  categoryId: string | null;
+  locationId: string | null;
+  serviceGroupId: string | null;
   notes: string | null;
   customFieldValues: Record<string, string | number | boolean | null>;
-  createdBy: Id<"users">;
-  updatedBy: Id<"users">;
+  createdBy: string;
+  updatedBy: string;
   createdAt: number;
   updatedAt: number;
   category: {
-    _id: Id<"categories">;
+    id: string;
     name: string;
     prefix: string | null;
     color: string;
   } | null;
   location: {
-    _id: Id<"locations">;
+    id: string;
     name: string;
-    parentId: Id<"locations"> | null;
+    parentId: string | null;
     path: string;
   } | null;
   serviceGroup: {
-    _id: Id<"serviceGroups">;
+    id: string;
     name: string;
   } | null;
   tags: {
-    _id: Id<"tags">;
-    _creationTime: number;
+    id: string;
     name: string;
     color: string;
     createdAt: number;
@@ -90,40 +85,39 @@ export type AssetDetail = {
 
 export type AssetFilterOptions = {
   categories: {
-    _id: Id<"categories">;
+    id: string;
     name: string;
     prefix: string | null;
     color: string;
   }[];
   locations: {
-    _id: Id<"locations">;
+    id: string;
     name: string;
-    parentId: Id<"locations"> | null;
+    parentId: string | null;
     path: string;
   }[];
   tags: {
-    _id: Id<"tags">;
-    _creationTime: number;
+    id: string;
     name: string;
     color: string;
     createdAt: number;
     updatedAt: number;
   }[];
   serviceGroups: {
-    _id: Id<"serviceGroups">;
+    id: string;
     name: string;
   }[];
 };
 
 export type AssetFormValues = {
   name: string;
-  categoryId: Id<"categories"> | null;
-  locationId: Id<"locations"> | null;
-  serviceGroupId: Id<"serviceGroups"> | null;
+  categoryId: string | null;
+  locationId: string | null;
+  serviceGroupId: string | null;
   status: AssetStatus;
   notes: string;
   customFieldValues: Record<string, string | number | boolean | null>;
-  tagIds: Id<"tags">[];
+  tagIds: string[];
 };
 
 export type ServiceScheduleDraft = {

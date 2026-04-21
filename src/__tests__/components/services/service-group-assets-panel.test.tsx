@@ -1,59 +1,67 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
-import { ServiceGroupAssetsPanel } from "@/components/services/service-group-assets-panel";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { render, screen, waitFor } from "@testing-library/react";
 
-const mockUseQuery = vi.fn();
+const listServiceGroupAssetsMock = vi.fn();
 
-vi.mock("convex/react", () => ({
-  useQuery: (...args: unknown[]) => mockUseQuery(...args),
+vi.mock("@/lib/api/service-groups", () => ({
+  listServiceGroupAssets: (groupId: string) =>
+    listServiceGroupAssetsMock(groupId),
 }));
 
 vi.mock("@/components/assets/status-badge", () => ({
   StatusBadge: ({ status }: { status: string }) => <span>{status}</span>,
 }));
 
+import { ServiceGroupAssetsPanel } from "@/components/services/service-group-assets-panel";
+
+function renderWithClient(ui: React.ReactElement) {
+  const qc = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  return render(<QueryClientProvider client={qc}>{ui}</QueryClientProvider>);
+}
+
 describe("ServiceGroupAssetsPanel", () => {
   beforeEach(() => {
-    mockUseQuery.mockReset();
+    listServiceGroupAssetsMock.mockReset();
   });
 
-  it("shows loading state when assets data is undefined", () => {
-    mockUseQuery.mockReturnValue(undefined);
+  it("shows loading state when assets data is pending", () => {
+    listServiceGroupAssetsMock.mockImplementation(() => new Promise(() => {}));
 
-    render(
-      <ServiceGroupAssetsPanel groupId={"group1" as never} />,
-    );
+    renderWithClient(<ServiceGroupAssetsPanel groupId="group1" />);
 
     expect(screen.getByText("Loading assets...")).toBeInTheDocument();
   });
 
-  it("shows empty state when no assets are assigned", () => {
-    mockUseQuery.mockReturnValue([]);
+  it("shows empty state when no assets are assigned", async () => {
+    listServiceGroupAssetsMock.mockResolvedValue([]);
 
-    render(
-      <ServiceGroupAssetsPanel groupId={"group1" as never} />,
-    );
+    renderWithClient(<ServiceGroupAssetsPanel groupId="group1" />);
 
-    expect(
-      screen.getByText("No assets are currently assigned to this group."),
-    ).toBeInTheDocument();
+    await waitFor(() => {
+      expect(
+        screen.getByText("No assets are currently assigned to this group."),
+      ).toBeInTheDocument();
+    });
   });
 
-  it("renders asset list with links", () => {
-    mockUseQuery.mockReturnValue([
+  it("renders asset list with links", async () => {
+    listServiceGroupAssetsMock.mockResolvedValue([
       {
-        _id: "asset1" as never,
+        id: "asset1",
         name: "Generator",
         assetTag: "AST-0001",
         status: "active",
       },
     ]);
 
-    render(
-      <ServiceGroupAssetsPanel groupId={"group1" as never} />,
-    );
+    renderWithClient(<ServiceGroupAssetsPanel groupId="group1" />);
 
-    expect(screen.getByText("Generator")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText("Generator")).toBeInTheDocument();
+    });
     expect(screen.getByText("AST-0001")).toBeInTheDocument();
     expect(screen.getByText("active")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Open asset" })).toHaveAttribute(

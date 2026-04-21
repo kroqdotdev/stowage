@@ -47,7 +47,7 @@ function renderLabelElement({
 
   if (element.type === "barcode" || element.type === "dataMatrix") {
     const codeValue = asset
-      ? buildLabelAssetUrl(asset._id, origin)
+      ? buildLabelAssetUrl(asset.id, origin)
       : buildLabelAssetUrl("preview" as never, origin);
 
     return (

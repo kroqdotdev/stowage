@@ -2,12 +2,12 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { useQuery } from "convex/react";
+import { useQuery } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { LogServiceDialog } from "@/components/services/log-service-dialog";
 import type { ScheduledServiceItem } from "@/components/services/types";
-import { api } from "@/lib/convex-api";
+import { listScheduledAssets } from "@/lib/api/service-schedules";
 import { formatDateFromIsoDateOnly } from "@/lib/date-format";
 import { useAppDateFormat } from "@/lib/use-app-date-format";
 import { useTodayIsoDate } from "@/lib/use-today-iso-date";
@@ -74,13 +74,19 @@ const URGENCY_STRIPE: Record<ReturnType<typeof getScheduleStatus>, string> = {
 
 export function ServicesScheduledList() {
   const dateFormat = useAppDateFormat();
-  const rows = useQuery(api.serviceSchedules.listScheduledAssets, {});
+  const rowsQuery = useQuery({
+    queryKey: ["service-schedules", "scheduled"],
+    queryFn: listScheduledAssets,
+  });
   const [activeTarget, setActiveTarget] = useState<ActiveTarget | null>(null);
 
   const today = useTodayIsoDate();
-  const items = useMemo(() => (rows ?? []) as ScheduledServiceItem[], [rows]);
+  const items = useMemo(
+    () => (rowsQuery.data ?? []) as ScheduledServiceItem[],
+    [rowsQuery.data],
+  );
 
-  if (rows === undefined) {
+  if (rowsQuery.isPending) {
     return (
       <div className="rounded-xl border border-border/70 bg-background p-5 text-sm text-muted-foreground">
         Loading schedules...

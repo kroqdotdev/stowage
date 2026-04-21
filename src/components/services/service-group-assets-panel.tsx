@@ -2,19 +2,20 @@
 
 import Link from "next/link";
 import { useMemo } from "react";
-import { useQuery } from "convex/react";
-import type { Id } from "@/lib/convex-api";
-import { api } from "@/lib/convex-api";
+import { useQuery } from "@tanstack/react-query";
 import type { ServiceGroupAsset } from "@/components/services/types";
 import { StatusBadge } from "@/components/assets/status-badge";
+import { listServiceGroupAssets } from "@/lib/api/service-groups";
 
-export function ServiceGroupAssetsPanel({
-  groupId,
-}: {
-  groupId: Id<"serviceGroups">;
-}) {
-  const rows = useQuery(api.serviceGroups.listGroupAssets, { groupId });
-  const assets = useMemo(() => (rows ?? []) as ServiceGroupAsset[], [rows]);
+export function ServiceGroupAssetsPanel({ groupId }: { groupId: string }) {
+  const rowsQuery = useQuery({
+    queryKey: ["service-groups", groupId, "assets"],
+    queryFn: () => listServiceGroupAssets(groupId),
+  });
+  const assets = useMemo(
+    () => (rowsQuery.data ?? []) as ServiceGroupAsset[],
+    [rowsQuery.data],
+  );
 
   return (
     <section className="rounded-xl border border-border/70 bg-background p-5 shadow-sm">
@@ -39,7 +40,7 @@ export function ServiceGroupAssetsPanel({
             </tr>
           </thead>
           <tbody>
-            {rows === undefined ? (
+            {rowsQuery.isPending ? (
               <tr>
                 <td
                   colSpan={4}
@@ -59,7 +60,7 @@ export function ServiceGroupAssetsPanel({
               </tr>
             ) : (
               assets.map((asset) => (
-                <tr key={asset._id} className="border-t border-border/50">
+                <tr key={asset.id} className="border-t border-border/50">
                   <td className="px-3 py-2 font-medium">{asset.name}</td>
                   <td className="px-3 py-2 font-mono text-xs">
                     {asset.assetTag}
@@ -69,7 +70,7 @@ export function ServiceGroupAssetsPanel({
                   </td>
                   <td className="px-3 py-2 text-right">
                     <Link
-                      href={`/assets/${asset._id}`}
+                      href={`/assets/${asset.id}`}
                       className="text-primary underline-offset-2 hover:underline"
                     >
                       Open asset

@@ -22,14 +22,14 @@ vi.mock("@/components/assets/status-badge", () => ({
 
 const items = [
   {
-    _id: "asset1" as never,
+    id: "asset1",
     name: "Forklift A",
     assetTag: "FK-001",
     status: "active" as const,
     updatedAt: 1709251200000,
   },
   {
-    _id: "asset2" as never,
+    id: "asset2",
     name: "Generator B",
     assetTag: "GN-002",
     status: "in_storage" as const,
@@ -51,9 +51,7 @@ describe("RecentAssetsCard", () => {
   it("shows empty state when items is empty", () => {
     render(<RecentAssetsCard items={[]} dateFormat="DD-MM-YYYY" />);
 
-    expect(
-      screen.getByText("No assets have been added yet."),
-    ).toBeVisible();
+    expect(screen.getByText("No assets have been added yet.")).toBeVisible();
   });
 
   it("renders 'View all' link pointing to /assets", () => {
@@ -69,9 +67,6 @@ describe("RecentAssetsCard", () => {
 
     const viewLinks = screen.getAllByText("View");
     expect(viewLinks).toHaveLength(2);
-    expect(viewLinks[0].closest("a")).toHaveAttribute(
-      "href",
-      "/assets/asset1",
-    );
+    expect(viewLinks[0].closest("a")).toHaveAttribute("href", "/assets/asset1");
   });
 });

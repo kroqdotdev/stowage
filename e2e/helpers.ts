@@ -1,6 +1,18 @@
-import type { Page } from "@playwright/test";
+import { expect, type Page } from "@playwright/test";
 
 export type Landing = "login" | "setup";
+
+export async function ensureSchedulingEnabled(page: Page) {
+  await page.goto("/settings");
+  const schedulingSwitch = page.getByRole("switch", {
+    name: "Toggle service scheduling",
+  });
+  await expect(schedulingSwitch).toBeVisible();
+  if ((await schedulingSwitch.getAttribute("aria-checked")) === "false") {
+    await schedulingSwitch.click();
+    await expect(page.getByText("Service scheduling enabled")).toBeVisible();
+  }
+}
 
 export function getLeafPathSegment(urlString: string) {
   const segments = new URL(urlString).pathname.split("/").filter(Boolean);

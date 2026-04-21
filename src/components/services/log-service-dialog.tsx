@@ -2,7 +2,6 @@
 
 import { CrudModal } from "@/components/crud/modal";
 import { ServiceRecordForm } from "@/components/services/service-record-form";
-import type { Id } from "@/lib/convex-api";
 
 export function LogServiceDialog({
   open,
@@ -12,9 +11,9 @@ export function LogServiceDialog({
   onClose,
 }: {
   open: boolean;
-  assetId: Id<"assets"> | null;
+  assetId: string | null;
   assetName: string | null;
-  scheduleId: Id<"serviceSchedules"> | null;
+  scheduleId: string | null;
   onClose: () => void;
 }) {
   return (

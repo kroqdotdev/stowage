@@ -8,7 +8,7 @@ import {
   useState,
 } from "react";
 import { useRouter } from "next/navigation";
-import { useQuery } from "convex/react";
+import { useQuery } from "@tanstack/react-query";
 import { CornerDownLeft, Loader2, Search } from "lucide-react";
 import { StatusBadge } from "@/components/assets/status-badge";
 import type { AssetStatus } from "@/components/assets/types";
@@ -20,10 +20,10 @@ import {
   CommandList,
   CommandShortcut,
 } from "@/components/ui/command";
-import { api } from "@/lib/convex-api";
+import { searchAssets } from "@/lib/api/search";
 
 type SearchResult = {
-  _id: string;
+  id: string;
   name: string;
   assetTag: string;
   status: AssetStatus;
@@ -56,20 +56,22 @@ export function GlobalSearch() {
     };
   }, [deferredSearchValue]);
 
-  const hasSearchTerm =
-    debouncedSearchTerm.length >= MIN_SEARCH_TERM_LENGTH;
-  const resultsQuery = useQuery(
-    api.search.searchAssets,
-    hasSearchTerm ? { term: debouncedSearchTerm, limit: 10 } : "skip",
-  );
+  const hasSearchTerm = debouncedSearchTerm.length >= MIN_SEARCH_TERM_LENGTH;
+  const resultsQuery = useQuery({
+    queryKey: ["search", "assets", debouncedSearchTerm],
+    queryFn: () => searchAssets(debouncedSearchTerm),
+    enabled: hasSearchTerm,
+  });
 
   const results = useMemo(
-    () => (resultsQuery ?? []) as SearchResult[],
-    [resultsQuery],
+    () => (resultsQuery.data ?? []) as SearchResult[],
+    [resultsQuery.data],
   );
 
   const handleOpenShortcut = useEffectEvent((event: KeyboardEvent) => {
-    if (!((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k")) {
+    if (
+      !((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k")
+    ) {
       return;
     }
 
@@ -88,7 +90,7 @@ export function GlobalSearch() {
     };
   }, []);
 
-  const isLoading = hasSearchTerm && resultsQuery === undefined;
+  const isLoading = hasSearchTerm && resultsQuery.isPending;
 
   function handleOpenChange(nextOpen: boolean) {
     setOpen(nextOpen);
@@ -155,21 +157,28 @@ export function GlobalSearch() {
             <CommandGroup heading="Assets">
               {results.map((result) => (
                 <CommandItem
-                  key={result._id}
+                  key={result.id}
                   value={`${result.assetTag} ${result.name}`}
-                  onSelect={() => handleSelect(result._id)}
+                  onSelect={() => handleSelect(result.id)}
                   className="cursor-pointer rounded-lg px-3 py-3"
-                  data-search-result={result._id}
+                  data-search-result={result.id}
                 >
                   <div className="min-w-0 flex-1">
                     <div className="flex min-w-0 items-center gap-2">
-                      <span className="truncate font-medium">{result.name}</span>
-                      <StatusBadge status={result.status} className="shrink-0" />
+                      <span className="truncate font-medium">
+                        {result.name}
+                      </span>
+                      <StatusBadge
+                        status={result.status}
+                        className="shrink-0"
+                      />
                     </div>
                     <div className="mt-1 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
                       <span className="font-mono">{result.assetTag}</span>
                       <span className="text-border">/</span>
-                      <span className="truncate">{getSecondaryMeta(result)}</span>
+                      <span className="truncate">
+                        {getSecondaryMeta(result)}
+                      </span>
                     </div>
                   </div>
                   <CommandShortcut className="flex items-center gap-1 normal-case tracking-normal">

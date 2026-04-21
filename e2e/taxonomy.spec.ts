@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { getLeafPathSegment, getLanding, signIn } from "./helpers";
+import { getLanding, signIn } from "./helpers";
 
 test.describe.serial("taxonomy page", () => {
   test("protected taxonomy page redirects when unauthenticated", async ({
@@ -29,9 +29,7 @@ test.describe.serial("taxonomy page", () => {
     await signIn(page, email!, password!);
 
     await page.goto("/taxonomy");
-    await expect(
-      page.getByRole("heading", { name: "Taxonomy" }),
-    ).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Taxonomy" })).toBeVisible();
 
     // Default tab is categories
     await expect(page.getByRole("tab", { name: "Categories" })).toBeVisible();
@@ -84,21 +82,25 @@ test.describe.serial("taxonomy page", () => {
       page.getByRole("heading", { name: "Field definitions" }),
     ).toBeVisible();
 
-    // Create field
-    await page.getByRole("button", { name: "Add field" }).click();
+    // Create field — the page renders an "Add field" button in the header
+    // and another in the empty state; click the first one.
+    await page.getByRole("button", { name: "Add field" }).first().click();
     const dialog = page.getByRole("dialog");
     await dialog.getByLabel("Name").fill(fieldName);
     await dialog.getByRole("button", { name: /Create/i }).click();
-    await expect(page.getByText(fieldName)).toBeVisible({ timeout: 10_000 });
+    const fieldRow = page.getByRole("cell", { name: fieldName, exact: true });
+    await expect(fieldRow).toBeVisible({ timeout: 10_000 });
 
     // Delete field via actions menu
     await page
       .getByRole("button", { name: `Actions for ${fieldName}` })
       .click();
     await page.getByRole("menuitem", { name: "Delete" }).click();
-    const confirmDialog = page.getByRole("alertdialog").or(page.getByRole("dialog").filter({ hasText: "Delete" }));
+    const confirmDialog = page
+      .getByRole("alertdialog")
+      .or(page.getByRole("dialog").filter({ hasText: "Delete" }));
     await confirmDialog.getByRole("button", { name: /Delete/i }).click();
-    await expect(page.getByText(fieldName)).not.toBeVisible({ timeout: 10_000 });
+    await expect(fieldRow).not.toBeVisible({ timeout: 10_000 });
   });
 
   test("/fields redirects to /taxonomy?tab=fields", async ({ page }) => {

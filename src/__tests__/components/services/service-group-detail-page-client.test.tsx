@@ -1,20 +1,17 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
-import { getFunctionName } from "convex/server";
-import { ServiceGroupDetailPageClient } from "@/components/services/service-group-detail-page-client";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { render, screen, waitFor } from "@testing-library/react";
 
-const mockUseQuery = vi.fn();
-const updateGroupMock = vi.fn().mockResolvedValue(null);
+const getServiceGroupMock = vi.fn();
+const getCurrentUserMock = vi.fn();
 
-vi.mock("convex/react", () => ({
-  useQuery: (...args: unknown[]) => mockUseQuery(...args),
-  useMutation: (reference: unknown) => {
-    const functionName = getFunctionName(reference as never);
-    if (functionName === "serviceGroups:updateGroup") {
-      return updateGroupMock;
-    }
-    return vi.fn();
-  },
+vi.mock("@/lib/api/service-groups", () => ({
+  getServiceGroup: (groupId: string) => getServiceGroupMock(groupId),
+  updateServiceGroup: vi.fn().mockResolvedValue(null),
+}));
+
+vi.mock("@/lib/api/auth", () => ({
+  getCurrentUser: () => getCurrentUserMock(),
 }));
 
 vi.mock("@/components/services/services-nav-tabs", () => ({
@@ -33,65 +30,61 @@ vi.mock("@/components/services/service-group-editor", () => ({
   ServiceGroupEditor: () => <div>GroupEditor</div>,
 }));
 
+import { ServiceGroupDetailPageClient } from "@/components/services/service-group-detail-page-client";
+
+function renderWithClient(ui: React.ReactElement) {
+  const qc = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  return render(<QueryClientProvider client={qc}>{ui}</QueryClientProvider>);
+}
+
 describe("ServiceGroupDetailPageClient", () => {
   beforeEach(() => {
-    mockUseQuery.mockReset();
-    updateGroupMock.mockClear();
+    getServiceGroupMock.mockReset();
+    getCurrentUserMock.mockReset();
+    getCurrentUserMock.mockResolvedValue({
+      id: "user1",
+      email: "a@x.com",
+      name: "Admin",
+      role: "admin",
+    });
   });
 
-  it("shows loading state when data is undefined", () => {
-    mockUseQuery.mockReturnValue(undefined);
+  it("shows loading state when data is pending", () => {
+    getServiceGroupMock.mockImplementation(() => new Promise(() => {}));
+    getCurrentUserMock.mockImplementation(() => new Promise(() => {}));
 
-    render(
-      <ServiceGroupDetailPageClient groupId={"group1" as never} />,
-    );
+    renderWithClient(<ServiceGroupDetailPageClient groupId="group1" />);
 
     expect(screen.getByText("Loading group...")).toBeInTheDocument();
   });
 
-  it("shows not-found state when group is null", () => {
-    mockUseQuery.mockImplementation((reference: unknown) => {
-      const functionName = getFunctionName(reference as never);
-      if (functionName === "users:getCurrentUser") {
-        return { _id: "user1", role: "admin" };
-      }
-      if (functionName === "serviceGroups:getGroup") {
-        return null;
-      }
-      return undefined;
+  it("shows not-found state when group is null", async () => {
+    getServiceGroupMock.mockResolvedValue(null);
+
+    renderWithClient(<ServiceGroupDetailPageClient groupId="group1" />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Group not found")).toBeInTheDocument();
     });
-
-    render(
-      <ServiceGroupDetailPageClient groupId={"group1" as never} />,
-    );
-
-    expect(screen.getByText("Group not found")).toBeInTheDocument();
     expect(
       screen.getByRole("link", { name: "Back to groups" }),
     ).toHaveAttribute("href", "/services/groups");
   });
 
-  it("renders group details with sub-panels for admin users", () => {
-    mockUseQuery.mockImplementation((reference: unknown) => {
-      const functionName = getFunctionName(reference as never);
-      if (functionName === "users:getCurrentUser") {
-        return { _id: "user1", role: "admin" };
-      }
-      if (functionName === "serviceGroups:getGroup") {
-        return {
-          _id: "group1",
-          name: "Engine checks",
-          description: "Quarterly maintenance",
-        };
-      }
-      return undefined;
+  it("renders group details with sub-panels for admin users", async () => {
+    getServiceGroupMock.mockResolvedValue({
+      id: "group1",
+      name: "Engine checks",
+      description: "Quarterly maintenance",
     });
 
-    render(
-      <ServiceGroupDetailPageClient groupId={"group1" as never} />,
-    );
+    renderWithClient(<ServiceGroupDetailPageClient groupId="group1" />);
 
-    expect(screen.getByText("Engine checks")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText("Engine checks")).toBeInTheDocument();
+    });
     expect(screen.getByText("Quarterly maintenance")).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "Edit group" }),

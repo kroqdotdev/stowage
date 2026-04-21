@@ -23,9 +23,9 @@ describe("LogServiceDialog", () => {
     render(
       <LogServiceDialog
         open
-        assetId={"asset1" as never}
+        assetId={"asset1"}
         assetName="Main Engine"
-        scheduleId={"schedule1" as never}
+        scheduleId={"schedule1"}
         onClose={vi.fn()}
       />,
     );
@@ -40,9 +40,9 @@ describe("LogServiceDialog", () => {
     render(
       <LogServiceDialog
         open={false}
-        assetId={"asset1" as never}
+        assetId={"asset1"}
         assetName="Main Engine"
-        scheduleId={"schedule1" as never}
+        scheduleId={"schedule1"}
         onClose={vi.fn()}
       />,
     );

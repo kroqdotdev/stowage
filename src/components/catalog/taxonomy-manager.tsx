@@ -6,7 +6,7 @@ import { Loader2, MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { ColorField } from "@/components/crud/color-field";
 import { ConfirmDialog } from "@/components/crud/confirm-dialog";
-import { getConvexUiErrorMessage } from "@/components/crud/error-messages";
+import { getApiErrorMessage } from "@/components/crud/error-messages";
 import { CrudModal } from "@/components/crud/modal";
 import { Button } from "@/components/ui/button";
 import {
@@ -26,7 +26,7 @@ export type TaxonomyFormValues = {
 };
 
 type TaxonomyRowBase = {
-  _id: string;
+  id: string;
   name: string;
   color: string;
   createdAt: number;
@@ -96,7 +96,7 @@ export function TaxonomyManager({
   const [deleting, setDeleting] = useState(false);
 
   const rowsById = useMemo(
-    () => new Map(rows.map((row) => [row._id, row])),
+    () => new Map(rows.map((row) => [row.id, row])),
     [rows],
   );
   const activeDeleteRow = deleteId ? (rowsById.get(deleteId) ?? null) : null;
@@ -149,7 +149,7 @@ export function TaxonomyManager({
       setForm(createInitialForm(variant));
     } catch (error) {
       const fallback = `Unable to ${editorMode === "create" ? "create" : "update"} ${singular}`;
-      toast.error(getConvexUiErrorMessage(error, fallback));
+      toast.error(getApiErrorMessage(error, fallback));
     } finally {
       setSubmitting(false);
     }
@@ -166,9 +166,7 @@ export function TaxonomyManager({
       toast.success(`${singularTitle} deleted`);
       setDeleteId(null);
     } catch (error) {
-      toast.error(
-        getConvexUiErrorMessage(error, `Unable to delete ${singular}`),
-      );
+      toast.error(getApiErrorMessage(error, `Unable to delete ${singular}`));
     } finally {
       setDeleting(false);
     }
@@ -220,12 +218,12 @@ export function TaxonomyManager({
               const catRow = row as CategoryRow;
               return (
                 <div
-                  key={row._id}
+                  key={row.id}
                   className="rounded-lg border border-border/60 bg-card p-4 shadow-sm transition hover:border-primary/30"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <Link
-                      href={`/assets?category=${row._id}`}
+                      href={`/assets?category=${row.id}`}
                       className="flex items-center gap-2 hover:text-primary"
                     >
                       <span
@@ -248,13 +246,13 @@ export function TaxonomyManager({
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => openEdit(row._id)}>
+                          <DropdownMenuItem onClick={() => openEdit(row.id)}>
                             <Pencil className="h-4 w-4" />
                             Edit
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             variant="destructive"
-                            onClick={() => setDeleteId(row._id)}
+                            onClick={() => setDeleteId(row.id)}
                           >
                             <Trash2 className="h-4 w-4" />
                             Delete
@@ -281,11 +279,11 @@ export function TaxonomyManager({
           <div className="flex flex-wrap gap-2">
             {rows.map((row) => (
               <div
-                key={row._id}
+                key={row.id}
                 className="group inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-card px-3 py-1.5 text-sm shadow-sm transition hover:border-primary/30"
               >
                 <Link
-                  href={`/assets?tag=${row._id}`}
+                  href={`/assets?tag=${row.id}`}
                   className="inline-flex items-center gap-1.5 hover:text-primary"
                 >
                   <span
@@ -299,7 +297,7 @@ export function TaxonomyManager({
                     <button
                       type="button"
                       className="cursor-pointer rounded p-0.5 hover:bg-muted"
-                      onClick={() => openEdit(row._id)}
+                      onClick={() => openEdit(row.id)}
                       aria-label={`Edit ${row.name}`}
                     >
                       <Pencil className="h-3 w-3 text-muted-foreground" />
@@ -307,7 +305,7 @@ export function TaxonomyManager({
                     <button
                       type="button"
                       className="cursor-pointer rounded p-0.5 hover:bg-destructive/10"
-                      onClick={() => setDeleteId(row._id)}
+                      onClick={() => setDeleteId(row.id)}
                       aria-label={`Delete ${row.name}`}
                     >
                       <Trash2 className="h-3 w-3 text-destructive" />

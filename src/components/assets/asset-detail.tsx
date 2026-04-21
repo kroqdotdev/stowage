@@ -119,7 +119,7 @@ export function AssetDetail({
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button asChild variant="outline" className="cursor-pointer">
-                  <Link href={`/assets/${asset._id}/edit`}>
+                  <Link href={`/assets/${asset.id}/edit`}>
                     <Pencil className="h-4 w-4" />
                     Edit
                   </Link>
@@ -129,7 +129,7 @@ export function AssetDetail({
             </Tooltip>
 
             <Button asChild variant="outline" className="cursor-pointer">
-              <Link href={`/labels/print?assetId=${asset._id}`}>
+              <Link href={`/labels/print?assetId=${asset.id}`}>
                 <Printer className="h-4 w-4" />
                 Print label
               </Link>
@@ -156,7 +156,7 @@ export function AssetDetail({
         </div>
       </section>
 
-      <AssetServiceRecordsPanel assetId={asset._id} />
+      <AssetServiceRecordsPanel assetId={asset.id} />
 
       {/* Tabbed content */}
       <section className="rounded-xl border border-border/70 bg-background p-5 shadow-sm">
@@ -177,7 +177,7 @@ export function AssetDetail({
                   <div className="flex flex-wrap gap-1.5">
                     {asset.tags.map((tag) => (
                       <Badge
-                        key={tag._id}
+                        key={tag.id}
                         className="border border-border/70 bg-muted/20 text-xs"
                       >
                         <span
@@ -210,7 +210,7 @@ export function AssetDetail({
                   <div className="grid gap-3 md:grid-cols-2">
                     {orderedFieldDefinitions.map((definition) => (
                       <div
-                        key={definition._id}
+                        key={definition.id}
                         className="rounded-lg border border-border/60 p-3"
                       >
                         <p className="text-xs uppercase tracking-wide text-muted-foreground">
@@ -221,7 +221,7 @@ export function AssetDetail({
                             definition={definition}
                             value={
                               asset.customFieldValues[
-                                definition._id as string
+                                definition.id as string
                               ] ?? null
                             }
                             dateFormat={dateFormat}
@@ -236,7 +236,7 @@ export function AssetDetail({
           </TabsContent>
 
           <TabsContent value="attachments">
-            <AttachmentsPanel assetId={asset._id} />
+            <AttachmentsPanel assetId={asset.id} />
           </TabsContent>
         </Tabs>
       </section>

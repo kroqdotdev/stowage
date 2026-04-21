@@ -1,15 +1,27 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
-import { getFunctionName } from "convex/server";
-import { AssetDetailPageClient } from "@/components/assets/asset-detail-page-client";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { render, screen, waitFor } from "@testing-library/react";
 
-const mockUseQuery = vi.fn();
-const mockUseMutation = vi.fn(() => vi.fn());
+const getAssetMock = vi.fn();
+const updateAssetStatusMock = vi.fn();
+const deleteAssetMock = vi.fn();
+const listCustomFieldsMock = vi.fn();
+const getCurrentUserMock = vi.fn();
 const mockPush = vi.fn();
 
-vi.mock("convex/react", () => ({
-  useQuery: (...args: unknown[]) => mockUseQuery(...args),
-  useMutation: (...args: unknown[]) => mockUseMutation(...args),
+vi.mock("@/lib/api/assets", () => ({
+  getAsset: (id: string) => getAssetMock(id),
+  updateAssetStatus: (id: string, status: string) =>
+    updateAssetStatusMock(id, status),
+  deleteAsset: (id: string) => deleteAssetMock(id),
+}));
+
+vi.mock("@/lib/api/custom-fields", () => ({
+  listCustomFields: () => listCustomFieldsMock(),
+}));
+
+vi.mock("@/lib/api/auth", () => ({
+  getCurrentUser: () => getCurrentUserMock(),
 }));
 
 vi.mock("next/navigation", () => ({
@@ -35,9 +47,10 @@ vi.mock("@/components/assets/error-messages", () => ({
   getAssetUiErrorMessage: (_e: unknown, fallback: string) => fallback,
 }));
 
+import { AssetDetailPageClient } from "@/components/assets/asset-detail-page-client";
+
 const assetData = {
-  _id: "asset1" as never,
-  _creationTime: 1,
+  id: "asset1",
   name: "Test Router",
   assetTag: "IT-0001",
   status: "active" as const,
@@ -46,8 +59,8 @@ const assetData = {
   serviceGroupId: null,
   notes: null,
   customFieldValues: {},
-  createdBy: "user1" as never,
-  updatedBy: "user1" as never,
+  createdBy: "user1",
+  updatedBy: "user1",
   createdAt: 1,
   updatedAt: 1,
   category: null,
@@ -56,80 +69,99 @@ const assetData = {
   tags: [],
 };
 
+function renderWithClient(ui: React.ReactElement) {
+  const qc = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  return render(<QueryClientProvider client={qc}>{ui}</QueryClientProvider>);
+}
+
 describe("AssetDetailPageClient", () => {
   beforeEach(() => {
-    mockUseQuery.mockReset();
-    mockUseMutation.mockReset();
-    mockUseMutation.mockReturnValue(vi.fn());
+    getAssetMock.mockReset();
+    updateAssetStatusMock.mockReset();
+    deleteAssetMock.mockReset();
+    listCustomFieldsMock.mockReset();
+    getCurrentUserMock.mockReset();
     mockPush.mockReset();
+
+    listCustomFieldsMock.mockResolvedValue([]);
   });
 
   it("shows loading state when queries are pending", () => {
-    mockUseQuery.mockReturnValue(undefined);
+    getAssetMock.mockImplementation(() => new Promise(() => {}));
+    getCurrentUserMock.mockImplementation(() => new Promise(() => {}));
 
-    render(<AssetDetailPageClient assetId={"asset1" as never} />);
+    renderWithClient(<AssetDetailPageClient assetId="asset1" />);
 
     expect(screen.getByText("Loading asset...")).toBeInTheDocument();
   });
 
-  it("shows not-found state when asset is null", () => {
-    mockUseQuery.mockImplementation((reference: unknown) => {
-      const functionName = getFunctionName(reference as never);
-      if (functionName === "assets:getAsset") return null;
-      if (functionName === "users:getCurrentUser")
-        return { _id: "user1", role: "admin" };
-      if (functionName === "customFields:listFieldDefinitions") return [];
-      return undefined;
+  it("shows not-found state when asset is null", async () => {
+    getAssetMock.mockResolvedValue(null);
+    getCurrentUserMock.mockResolvedValue({
+      id: "user1",
+      email: "admin@x.com",
+      name: "Admin",
+      role: "admin",
     });
 
-    render(<AssetDetailPageClient assetId={"asset1" as never} />);
+    renderWithClient(<AssetDetailPageClient assetId="asset1" />);
 
-    expect(screen.getByText("Asset not found")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText("Asset not found")).toBeInTheDocument();
+    });
     expect(screen.getByText("Back to assets")).toBeInTheDocument();
   });
 
-  it("renders AssetDetail when data is loaded", () => {
-    mockUseQuery.mockImplementation((reference: unknown) => {
-      const functionName = getFunctionName(reference as never);
-      if (functionName === "assets:getAsset") return assetData;
-      if (functionName === "users:getCurrentUser")
-        return { _id: "user1", role: "admin" };
-      if (functionName === "customFields:listFieldDefinitions") return [];
-      return undefined;
+  it("renders AssetDetail when data is loaded", async () => {
+    getAssetMock.mockResolvedValue(assetData);
+    getCurrentUserMock.mockResolvedValue({
+      id: "user1",
+      email: "admin@x.com",
+      name: "Admin",
+      role: "admin",
     });
 
-    render(<AssetDetailPageClient assetId={"asset1" as never} />);
+    renderWithClient(<AssetDetailPageClient assetId="asset1" />);
 
-    expect(screen.getByText("detail:Test Router")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText("detail:Test Router")).toBeInTheDocument();
+    });
   });
 
-  it("passes canDelete=true for admin users", () => {
-    mockUseQuery.mockImplementation((reference: unknown) => {
-      const functionName = getFunctionName(reference as never);
-      if (functionName === "assets:getAsset") return assetData;
-      if (functionName === "users:getCurrentUser")
-        return { _id: "user1", role: "admin" };
-      if (functionName === "customFields:listFieldDefinitions") return [];
-      return undefined;
+  it("passes canDelete=true for admin users", async () => {
+    getAssetMock.mockResolvedValue(assetData);
+    getCurrentUserMock.mockResolvedValue({
+      id: "user1",
+      email: "admin@x.com",
+      name: "Admin",
+      role: "admin",
     });
 
-    render(<AssetDetailPageClient assetId={"asset1" as never} />);
+    renderWithClient(<AssetDetailPageClient assetId="asset1" />);
 
-    expect(screen.getByRole("button", { name: "Delete" })).toBeInTheDocument();
+    await waitFor(() => {
+      expect(
+        screen.getByRole("button", { name: "Delete" }),
+      ).toBeInTheDocument();
+    });
   });
 
-  it("passes canDelete=false for non-admin users", () => {
-    mockUseQuery.mockImplementation((reference: unknown) => {
-      const functionName = getFunctionName(reference as never);
-      if (functionName === "assets:getAsset") return assetData;
-      if (functionName === "users:getCurrentUser")
-        return { _id: "user1", role: "member" };
-      if (functionName === "customFields:listFieldDefinitions") return [];
-      return undefined;
+  it("passes canDelete=false for non-admin users", async () => {
+    getAssetMock.mockResolvedValue(assetData);
+    getCurrentUserMock.mockResolvedValue({
+      id: "user1",
+      email: "member@x.com",
+      name: "Member",
+      role: "user",
     });
 
-    render(<AssetDetailPageClient assetId={"asset1" as never} />);
+    renderWithClient(<AssetDetailPageClient assetId="asset1" />);
 
+    await waitFor(() => {
+      expect(screen.getByText("detail:Test Router")).toBeInTheDocument();
+    });
     expect(
       screen.queryByRole("button", { name: "Delete" }),
     ).not.toBeInTheDocument();

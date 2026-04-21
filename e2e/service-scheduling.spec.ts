@@ -140,9 +140,7 @@ test.describe.serial("phase 7 service scheduling", () => {
       page.locator('a[href="/services/calendar"]').first(),
     ).toBeVisible();
     const targetMonthLabel = getMonthLabelForIsoDate(dueDate);
-    const monthHeading = page.locator(
-      "[data-testid='calendar-month-heading']",
-    );
+    const monthHeading = page.locator("[data-testid='calendar-month-heading']");
     for (let attempt = 0; attempt < 12; attempt += 1) {
       const currentMonth =
         (await monthHeading.first().textContent())?.trim() ?? "";

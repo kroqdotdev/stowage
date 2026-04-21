@@ -2,6 +2,8 @@
 
 # dependencies
 /node_modules
+/bin
+/pb_data
 /.pnp
 .pnp.*
 .yarn/*
@@ -43,9 +45,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 import-meta.d.ts
-
-# convex generated
-convex/_generated/
 
 # dev artifacts
 mprocs.log

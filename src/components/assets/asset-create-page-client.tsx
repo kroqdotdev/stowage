@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useMutation, useQuery } from "convex/react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { AttachmentsPanel } from "@/components/attachments/attachments-panel";
 import {
@@ -18,8 +18,10 @@ import type {
 } from "@/components/assets/types";
 import type { FieldDefinition } from "@/components/fields/types";
 import { Button } from "@/components/ui/button";
-import type { Id } from "@/lib/convex-api";
-import { api } from "@/lib/convex-api";
+import { getAppSettings } from "@/lib/api/app-settings";
+import { createAsset, getAssetFilterOptions } from "@/lib/api/assets";
+import { listCustomFields } from "@/lib/api/custom-fields";
+import { upsertSchedule } from "@/lib/api/service-schedules";
 
 const INITIAL_VALUES: AssetFormValues = {
   name: "",
@@ -34,39 +36,45 @@ const INITIAL_VALUES: AssetFormValues = {
 
 export function AssetCreatePageClient() {
   const router = useRouter();
-  const createAsset = useMutation(api.assets.createAsset);
-  const upsertSchedule = useMutation(api.serviceSchedules.upsertSchedule);
+  const queryClient = useQueryClient();
 
-  const filterOptions = useQuery(api.assets.getAssetFilterOptions, {});
-  const fieldDefinitions = useQuery(api.customFields.listFieldDefinitions, {});
-  const appSettings = useQuery(api.appSettings.getAppSettings, {});
+  const filterOptionsQuery = useQuery({
+    queryKey: ["assets", "filter-options"],
+    queryFn: getAssetFilterOptions,
+  });
+  const fieldsQuery = useQuery({
+    queryKey: ["custom-fields", "list"],
+    queryFn: listCustomFields,
+  });
+  const appSettingsQuery = useQuery({
+    queryKey: ["app-settings"],
+    queryFn: getAppSettings,
+  });
 
   const [submitting, setSubmitting] = useState(false);
   const [serviceScheduleDraft, setServiceScheduleDraft] =
     useState<ServiceScheduleDraft>(getDefaultServiceScheduleDraft);
-  const [createdAssetId, setCreatedAssetId] = useState<Id<"assets"> | null>(
-    null,
-  );
+  const [createdAssetId, setCreatedAssetId] = useState<string | null>(null);
   const [createdAssetName, setCreatedAssetName] = useState("");
 
-  const options = (filterOptions ?? {
+  const options: AssetFilterOptions = filterOptionsQuery.data ?? {
     categories: [],
     locations: [],
     tags: [],
     serviceGroups: [],
-  }) as AssetFilterOptions;
+  };
 
   const customFieldDefinitions = useMemo(
-    () => (fieldDefinitions ?? []) as unknown as FieldDefinition[],
-    [fieldDefinitions],
+    () => (fieldsQuery.data ?? []) as unknown as FieldDefinition[],
+    [fieldsQuery.data],
   );
 
   const loading =
-    filterOptions === undefined ||
-    fieldDefinitions === undefined ||
-    appSettings === undefined;
+    filterOptionsQuery.isPending ||
+    fieldsQuery.isPending ||
+    appSettingsQuery.isPending;
   const serviceSchedulingEnabled =
-    appSettings?.serviceSchedulingEnabled ?? true;
+    appSettingsQuery.data?.serviceSchedulingEnabled ?? true;
 
   async function handleSubmit(values: AssetFormValues) {
     if (serviceSchedulingEnabled) {
@@ -104,6 +112,10 @@ export function AssetCreatePageClient() {
           reminderLeadUnit: parsedSchedule.value.reminderLeadUnit,
         });
       }
+
+      void queryClient.invalidateQueries({ queryKey: ["assets", "list"] });
+      void queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      void queryClient.invalidateQueries({ queryKey: ["service-schedules"] });
 
       setCreatedAssetId(result.assetId);
       setCreatedAssetName(values.name);

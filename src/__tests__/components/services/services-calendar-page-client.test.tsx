@@ -1,12 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
-import { getFunctionName } from "convex/server";
-import { ServicesCalendarPageClient } from "@/components/services/services-calendar-page-client";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { render, screen, waitFor } from "@testing-library/react";
 
-const mockUseQuery = vi.fn();
+const getAppSettingsMock = vi.fn();
 
-vi.mock("convex/react", () => ({
-  useQuery: (...args: unknown[]) => mockUseQuery(...args),
+vi.mock("@/lib/api/app-settings", () => ({
+  getAppSettings: () => getAppSettingsMock(),
 }));
 
 vi.mock("@/components/services/services-nav-tabs", () => ({
@@ -17,47 +16,56 @@ vi.mock("@/components/services/services-calendar-month", () => ({
   ServicesCalendarMonth: () => <div>CalendarMonth</div>,
 }));
 
+import { ServicesCalendarPageClient } from "@/components/services/services-calendar-page-client";
+
+function renderWithClient(ui: React.ReactElement) {
+  const qc = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  return render(<QueryClientProvider client={qc}>{ui}</QueryClientProvider>);
+}
+
 describe("ServicesCalendarPageClient", () => {
   beforeEach(() => {
-    mockUseQuery.mockReset();
+    getAppSettingsMock.mockReset();
   });
 
-  it("shows loading state when appSettings is undefined", () => {
-    mockUseQuery.mockReturnValue(undefined);
+  it("shows loading state when appSettings is pending", () => {
+    getAppSettingsMock.mockImplementation(() => new Promise(() => {}));
 
-    render(<ServicesCalendarPageClient />);
+    renderWithClient(<ServicesCalendarPageClient />);
 
     expect(screen.getByText("Loading service calendar...")).toBeInTheDocument();
   });
 
-  it("renders calendar view when service scheduling is enabled", () => {
-    mockUseQuery.mockImplementation((reference: unknown) => {
-      const functionName = getFunctionName(reference as never);
-      if (functionName === "appSettings:getAppSettings") {
-        return { serviceSchedulingEnabled: true };
-      }
-      return undefined;
+  it("renders calendar view when service scheduling is enabled", async () => {
+    getAppSettingsMock.mockResolvedValue({
+      dateFormat: "DD-MM-YYYY",
+      serviceSchedulingEnabled: true,
+      updatedAt: null,
     });
 
-    render(<ServicesCalendarPageClient />);
+    renderWithClient(<ServicesCalendarPageClient />);
 
+    await waitFor(() => {
+      expect(screen.getByText("CalendarMonth")).toBeInTheDocument();
+    });
     expect(screen.getByText("NavTabs")).toBeInTheDocument();
-    expect(screen.getByText("CalendarMonth")).toBeInTheDocument();
   });
 
-  it("shows disabled message when service scheduling is off", () => {
-    mockUseQuery.mockImplementation((reference: unknown) => {
-      const functionName = getFunctionName(reference as never);
-      if (functionName === "appSettings:getAppSettings") {
-        return { serviceSchedulingEnabled: false };
-      }
-      return undefined;
+  it("shows disabled message when service scheduling is off", async () => {
+    getAppSettingsMock.mockResolvedValue({
+      dateFormat: "DD-MM-YYYY",
+      serviceSchedulingEnabled: false,
+      updatedAt: null,
     });
 
-    render(<ServicesCalendarPageClient />);
+    renderWithClient(<ServicesCalendarPageClient />);
 
-    expect(
-      screen.getByText(/Service scheduling is disabled/),
-    ).toBeInTheDocument();
+    await waitFor(() => {
+      expect(
+        screen.getByText(/Service scheduling is disabled/),
+      ).toBeInTheDocument();
+    });
   });
 });

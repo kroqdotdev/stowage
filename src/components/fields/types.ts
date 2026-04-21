@@ -1,5 +1,3 @@
-import type { Id } from "@/lib/convex-api";
-
 export const FIELD_TYPE_OPTIONS = [
   "text",
   "number",
@@ -13,8 +11,7 @@ export const FIELD_TYPE_OPTIONS = [
 export type FieldType = (typeof FIELD_TYPE_OPTIONS)[number];
 
 export type FieldDefinition = {
-  _id: Id<"customFieldDefinitions">;
-  _creationTime: number;
+  id: string;
   name: string;
   fieldType: FieldType;
   options: string[];

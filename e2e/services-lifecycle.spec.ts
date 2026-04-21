@@ -153,7 +153,7 @@ async function completeScheduledService({
   }
   await dialog.getByRole("button", { name: "Complete service" }).click();
   await expect(page.getByText("Service completed")).toBeVisible();
-  await dialog.click({ position: { x: 8, y: 8 } });
+  await dialog.getByRole("button", { name: "Close dialog" }).click();
   await expect(dialog).toBeHidden();
 }
 
@@ -190,7 +190,7 @@ async function logManualService({
   }
   await dialog.getByRole("button", { name: "Log service" }).click();
   await expect(page.getByText("Service record logged")).toBeVisible();
-  await dialog.click({ position: { x: 8, y: 8 } });
+  await dialog.getByRole("button", { name: "Close dialog" }).click();
   await expect(dialog).toBeHidden();
 
   await expect(serviceHistorySection.getByText(description)).toBeVisible();

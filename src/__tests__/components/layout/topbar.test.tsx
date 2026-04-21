@@ -1,33 +1,30 @@
 import { describe, it, expect, vi } from "vitest";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen } from "@testing-library/react";
 
-// Mock next/navigation
 vi.mock("next/navigation", () => ({
   usePathname: () => "/dashboard",
   useRouter: () => ({ replace: vi.fn() }),
 }));
 
-// Mock next-themes
 vi.mock("next-themes", () => ({
   useTheme: () => ({ theme: "light", setTheme: vi.fn() }),
   ThemeProvider: ({ children }: { children: React.ReactNode }) => children,
 }));
 
-// Mock use-mobile hook
 vi.mock("@/hooks/use-mobile", () => ({
   useIsMobile: () => false,
 }));
 
-vi.mock("convex/react", () => ({
-  useConvexAuth: () => ({ isAuthenticated: true, isLoading: false }),
-  useQuery: () => ({
-    name: "Alex Admin",
-    email: "alex@example.com",
-  }),
-}));
-
-vi.mock("@convex-dev/auth/react", () => ({
-  useAuthActions: () => ({ signOut: vi.fn(), signIn: vi.fn() }),
+vi.mock("@/lib/api/auth", () => ({
+  getCurrentUser: () =>
+    Promise.resolve({
+      id: "u1",
+      email: "alex@example.com",
+      name: "Alex Admin",
+      role: "admin",
+    }),
+  logout: vi.fn(),
 }));
 
 vi.mock("@/components/search/global-search", () => ({
@@ -42,10 +39,15 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import { Topbar } from "@/components/layout/topbar";
 
 function renderWithProviders() {
+  const qc = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
   return render(
-    <SidebarProvider>
-      <Topbar />
-    </SidebarProvider>,
+    <QueryClientProvider client={qc}>
+      <SidebarProvider>
+        <Topbar />
+      </SidebarProvider>
+    </QueryClientProvider>,
   );
 }
 

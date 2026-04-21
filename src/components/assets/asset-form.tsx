@@ -2,8 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { Loader2 } from "lucide-react";
-import { useQuery } from "convex/react";
-import type { Id } from "@/lib/convex-api";
+import { useQuery } from "@tanstack/react-query";
 import { DynamicField } from "@/components/fields/dynamic-field";
 import type { FieldDefinition, FieldValue } from "@/components/fields/types";
 import {
@@ -29,17 +28,17 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { api } from "@/lib/convex-api";
+import { previewAssetTag } from "@/lib/api/assets";
 
 type CategoryOption = {
-  _id: Id<"categories">;
+  id: string;
   name: string;
   prefix: string | null;
   color: string;
 };
 
 type ServiceGroupOption = {
-  _id: Id<"serviceGroups">;
+  id: string;
   name: string;
 };
 
@@ -91,22 +90,23 @@ export function AssetForm({
   const [values, setValues] = useState<AssetFormValues>(initialValues);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const preview = useQuery(
-    api.assets.generateAssetTag,
-    mode === "create" ? { categoryId: values.categoryId } : "skip",
-  );
+  const previewQuery = useQuery({
+    queryKey: ["assets", "preview-tag", values.categoryId ?? null],
+    queryFn: () => previewAssetTag(values.categoryId ?? null),
+    enabled: mode === "create",
+  });
 
   const activeAssetTag =
     mode === "create"
-      ? (preview?.assetTag ?? "Generating...")
+      ? (previewQuery.data?.assetTag ?? "Generating...")
       : (assetTag ?? "—");
-  const showTagLoading = mode === "create" && preview === undefined;
+  const showTagLoading = mode === "create" && previewQuery.isPending;
 
   const fieldDefinitionsById = useMemo(
     () =>
       new Map(
         fieldDefinitions.map((definition) => [
-          definition._id as string,
+          definition.id as string,
           definition,
         ]),
       ),
@@ -164,7 +164,7 @@ export function AssetForm({
         continue;
       }
 
-      const fieldId = definition._id as string;
+      const fieldId = definition.id as string;
       const value = values.customFieldValues[fieldId];
 
       if (definition.fieldType === "checkbox") {
@@ -237,10 +237,7 @@ export function AssetForm({
           <Select
             value={values.categoryId ?? "__none__"}
             onValueChange={(value) =>
-              setFieldValue(
-                "categoryId",
-                value === "__none__" ? null : (value as Id<"categories">),
-              )
+              setFieldValue("categoryId", value === "__none__" ? null : value)
             }
             disabled={submitting}
           >
@@ -250,7 +247,7 @@ export function AssetForm({
             <SelectContent>
               <SelectItem value="__none__">No category</SelectItem>
               {categories.map((category) => (
-                <SelectItem key={category._id} value={category._id}>
+                <SelectItem key={category.id} value={category.id}>
                   {category.name}
                 </SelectItem>
               ))}
@@ -318,7 +315,7 @@ export function AssetForm({
             onValueChange={(value) =>
               setFieldValue(
                 "serviceGroupId",
-                value === "__none__" ? null : (value as Id<"serviceGroups">),
+                value === "__none__" ? null : value,
               )
             }
             disabled={submitting}
@@ -329,7 +326,7 @@ export function AssetForm({
             <SelectContent>
               <SelectItem value="__none__">No service group</SelectItem>
               {serviceGroups.map((group) => (
-                <SelectItem key={group._id} value={group._id}>
+                <SelectItem key={group.id} value={group.id}>
                   {group.name}
                 </SelectItem>
               ))}
@@ -379,10 +376,10 @@ export function AssetForm({
         ) : (
           <div className="grid gap-4 lg:grid-cols-2">
             {fieldDefinitions.map((definition) => {
-              const fieldId = definition._id as string;
+              const fieldId = definition.id as string;
 
               return (
-                <div key={definition._id} className="space-y-1">
+                <div key={definition.id} className="space-y-1">
                   <DynamicField
                     definition={definition}
                     value={values.customFieldValues[fieldId] ?? null}

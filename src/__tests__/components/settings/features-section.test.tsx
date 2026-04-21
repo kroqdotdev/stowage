@@ -1,68 +1,72 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { render, screen, waitFor } from "@testing-library/react";
 
-const mockUseQuery = vi.fn();
-const mockUseMutation = vi.fn();
+const getAppSettingsMock = vi.fn();
 
-vi.mock("convex/react", () => ({
-  useQuery: (...args: unknown[]) => mockUseQuery(...args),
-  useMutation: (...args: unknown[]) => mockUseMutation(...args),
+vi.mock("@/lib/api/app-settings", () => ({
+  getAppSettings: () => getAppSettingsMock(),
+  setServiceSchedulingEnabled: vi.fn(),
 }));
 
 vi.mock("sonner", () => ({
-  toast: {
-    error: vi.fn(),
-    success: vi.fn(),
-  },
+  toast: { error: vi.fn(), success: vi.fn() },
 }));
 
 import { FeaturesSection } from "@/components/settings/features-section";
 
+function renderWithClient(ui: React.ReactElement) {
+  const qc = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  return render(<QueryClientProvider client={qc}>{ui}</QueryClientProvider>);
+}
+
 describe("FeaturesSection", () => {
   beforeEach(() => {
-    mockUseQuery.mockReset();
-    mockUseMutation.mockReset();
-    mockUseMutation.mockReturnValue(vi.fn());
+    getAppSettingsMock.mockReset();
   });
 
-  it("renders heading and toggle when settings are loaded", () => {
-    mockUseQuery.mockReturnValue({
+  it("renders heading and toggle when settings are loaded", async () => {
+    getAppSettingsMock.mockResolvedValue({
       serviceSchedulingEnabled: true,
       dateFormat: "DD-MM-YYYY",
       updatedAt: null,
     });
 
-    render(<FeaturesSection />);
+    renderWithClient(<FeaturesSection />);
 
     expect(
       screen.getByRole("heading", { name: "Features" }),
     ).toBeInTheDocument();
-    expect(
-      screen.getByText("Preventive service scheduling"),
-    ).toBeInTheDocument();
+    await waitFor(() => {
+      expect(
+        screen.getByText("Preventive service scheduling"),
+      ).toBeInTheDocument();
+    });
     expect(
       screen.getByRole("switch", { name: "Toggle service scheduling" }),
     ).toBeInTheDocument();
   });
 
-  it("shows loading state when settings are undefined", () => {
-    mockUseQuery.mockReturnValue(undefined);
+  it("shows loading state when settings are pending", () => {
+    getAppSettingsMock.mockImplementation(() => new Promise(() => {}));
 
-    render(<FeaturesSection />);
+    renderWithClient(<FeaturesSection />);
 
     expect(screen.getByText("Loading...")).toBeInTheDocument();
   });
 
-  it("renders switch in checked state when scheduling is enabled", () => {
-    mockUseQuery.mockReturnValue({
+  it("renders switch in checked state when scheduling is enabled", async () => {
+    getAppSettingsMock.mockResolvedValue({
       serviceSchedulingEnabled: true,
       dateFormat: "DD-MM-YYYY",
       updatedAt: null,
     });
 
-    render(<FeaturesSection />);
+    renderWithClient(<FeaturesSection />);
 
-    const toggle = screen.getByRole("switch", {
+    const toggle = await screen.findByRole("switch", {
       name: "Toggle service scheduling",
     });
     expect(toggle).toHaveAttribute("data-state", "checked");

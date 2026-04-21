@@ -2,14 +2,13 @@
 
 import Link from "next/link";
 import { AlertTriangle } from "lucide-react";
-import type { Id } from "@/lib/convex-api";
 import type { AppDateFormat } from "@/lib/date-format";
 import { formatDateFromIsoDateOnly, getDaysUntil } from "@/lib/date-format";
 import { useTodayIsoDate } from "@/lib/use-today-iso-date";
 
 type UpcomingServiceItem = {
-  scheduleId: Id<"serviceSchedules">;
-  assetId: Id<"assets">;
+  scheduleId: string;
+  assetId: string;
   assetName: string;
   assetTag: string;
   nextServiceDate: string;
