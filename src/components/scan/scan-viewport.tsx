@@ -5,10 +5,13 @@ import { ScanDetectedOverlay } from "@/components/scan/scan-detected-overlay";
 import type { ScanResultPoint } from "@/hooks/use-barcode-scanner";
 import { cn } from "@/lib/utils";
 
+export type DetectedPhase = "detecting" | "confirmed";
+
 export type DetectedFrame = {
   points: ScanResultPoint[];
   videoWidth: number;
   videoHeight: number;
+  phase: DetectedPhase;
 };
 
 export function ScanViewport({
@@ -47,6 +50,7 @@ export function ScanViewport({
       data-testid="scan-viewport"
       data-active={active}
       data-detected={Boolean(detected)}
+      data-phase={detected?.phase ?? "idle"}
     >
       <video
         ref={videoRef}
@@ -56,9 +60,10 @@ export function ScanViewport({
         autoPlay
         aria-hidden="true"
       />
-      <ScanReticle detected={Boolean(detected)} />
+      {detected ? null : <ScanReticle />}
       {detected ? (
         <ScanDetectedOverlay
+          phase={detected.phase}
           points={detected.points}
           videoWidth={detected.videoWidth}
           videoHeight={detected.videoHeight}
@@ -70,13 +75,12 @@ export function ScanViewport({
   );
 }
 
-function ScanReticle({ detected }: { detected: boolean }) {
-  const color = detected ? "#10b981" : "var(--scan)";
+function ScanReticle() {
+  const color = "var(--scan)";
   return (
     <div
       aria-hidden="true"
       className="pointer-events-none absolute inset-0 flex items-center justify-center"
-      data-detected={detected}
     >
       <div className="relative h-[68%] w-[68%]">
         <Corner className="left-0 top-0" rotate="0deg" color={color} />

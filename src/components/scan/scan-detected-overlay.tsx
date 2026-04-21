@@ -1,8 +1,10 @@
 "use client";
 
+import type { DetectedPhase } from "@/components/scan/scan-viewport";
 import type { ScanResultPoint } from "@/hooks/use-barcode-scanner";
 
 type Props = {
+  phase: DetectedPhase;
   points: ScanResultPoint[];
   videoWidth: number;
   videoHeight: number;
@@ -10,7 +12,22 @@ type Props = {
   viewportHeight: number;
 };
 
+const PHASE_STYLE: Record<
+  DetectedPhase,
+  { border: string; glow: string }
+> = {
+  detecting: {
+    border: "var(--scan)",
+    glow: "rgba(194, 65, 12, 0.55)",
+  },
+  confirmed: {
+    border: "#10b981",
+    glow: "rgba(16, 185, 129, 0.55)",
+  },
+};
+
 export function ScanDetectedOverlay({
+  phase,
   points,
   videoWidth,
   videoHeight,
@@ -37,14 +54,24 @@ export function ScanDetectedOverlay({
     rect.maxY - rect.minY + padding * 2,
   );
 
+  const style = PHASE_STYLE[phase];
+
   return (
     <div
       className="pointer-events-none absolute inset-0"
       data-testid="scan-detected-overlay"
+      data-phase={phase}
     >
       <div
-        className="absolute rounded-md border-2 border-emerald-400 shadow-[0_0_18px_rgba(16,185,129,0.55)] animate-scan-detected"
-        style={{ left: x, top: y, width, height }}
+        className="absolute rounded-md border-2 animate-scan-detected transition-[border-color,box-shadow] duration-500"
+        style={{
+          left: x,
+          top: y,
+          width,
+          height,
+          borderColor: style.border,
+          boxShadow: `0 0 18px ${style.glow}`,
+        }}
         aria-hidden="true"
       />
     </div>

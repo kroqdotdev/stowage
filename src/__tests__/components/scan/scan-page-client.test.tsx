@@ -254,7 +254,7 @@ describe("ScanPageClient", () => {
     );
   });
 
-  it("shows the detected overlay during the ~1s dwell before opening the sheet", async () => {
+  it("shows the detected overlay in detecting → confirmed phases before opening the sheet", async () => {
     const asset = makeAsset({ id: "b2" });
     resolverMock.mockResolvedValue({ status: "asset", asset });
 
@@ -273,21 +273,31 @@ describe("ScanPageClient", () => {
       });
     });
 
-    // Viewport flips into detected state
+    // Phase 1: detecting — viewport reflects the orange/detecting phase
     await waitFor(() =>
       expect(screen.getByTestId("scan-viewport")).toHaveAttribute(
-        "data-detected",
-        "true",
+        "data-phase",
+        "detecting",
       ),
     );
 
-    // Sheet does not appear before the dwell finishes
+    // Phase 2: confirmed — viewport flips to green/confirmed after ~1s
+    await waitFor(
+      () =>
+        expect(screen.getByTestId("scan-viewport")).toHaveAttribute(
+          "data-phase",
+          "confirmed",
+        ),
+      { timeout: 2_500 },
+    );
+
+    // Then the result sheet opens and the phase resets to idle
     await screen.findByTestId("scan-result-asset", undefined, {
       timeout: 3_000,
     });
     expect(screen.getByTestId("scan-viewport")).toHaveAttribute(
-      "data-detected",
-      "false",
+      "data-phase",
+      "idle",
     );
   });
 });

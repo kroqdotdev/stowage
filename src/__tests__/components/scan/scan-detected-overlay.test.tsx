@@ -96,6 +96,7 @@ describe("<ScanDetectedOverlay />", () => {
   it("renders nothing when there are no usable points", () => {
     render(
       <ScanDetectedOverlay
+        phase="detecting"
         points={[]}
         videoWidth={0}
         videoHeight={0}
@@ -109,6 +110,7 @@ describe("<ScanDetectedOverlay />", () => {
   it("renders the bounding rectangle aligned in the viewport when points are valid", () => {
     render(
       <ScanDetectedOverlay
+        phase="detecting"
         points={[
           { x: 250, y: 125 },
           { x: 750, y: 125 },
@@ -122,9 +124,31 @@ describe("<ScanDetectedOverlay />", () => {
       />,
     );
     const overlay = screen.getByTestId("scan-detected-overlay");
+    expect(overlay).toHaveAttribute("data-phase", "detecting");
     const box = overlay.querySelector("div") as HTMLDivElement;
     expect(box).not.toBeNull();
     expect(box.style.width).not.toBe("");
     expect(box.style.height).not.toBe("");
+    expect(box.style.borderColor).toBe("var(--scan)");
+  });
+
+  it("paints the box green once the phase flips to confirmed", () => {
+    render(
+      <ScanDetectedOverlay
+        phase="confirmed"
+        points={[
+          { x: 250, y: 125 },
+          { x: 750, y: 375 },
+        ]}
+        videoWidth={1000}
+        videoHeight={500}
+        viewportWidth={500}
+        viewportHeight={500}
+      />,
+    );
+    const overlay = screen.getByTestId("scan-detected-overlay");
+    expect(overlay).toHaveAttribute("data-phase", "confirmed");
+    const box = overlay.querySelector("div") as HTMLDivElement;
+    expect(box.style.borderColor).toBe("rgb(16, 185, 129)");
   });
 });

@@ -59,13 +59,18 @@ export function ScanPageClient() {
         points: result.points,
         videoWidth: result.videoWidth,
         videoHeight: result.videoHeight,
+        phase: "detecting",
       });
       setResolving(true);
       try {
         const [resolved] = await Promise.all([
           resolveScanTarget(result.text, appOrigin()),
-          new Promise((resolve) => setTimeout(resolve, 900)),
+          new Promise((resolve) => setTimeout(resolve, 1100)),
         ]);
+        setDetected((current) =>
+          current ? { ...current, phase: "confirmed" } : current,
+        );
+        await new Promise((resolve) => setTimeout(resolve, 300));
         handleResolved(resolved);
       } finally {
         setResolving(false);
@@ -222,7 +227,11 @@ function ScannerBody({
         detected={detected}
       />
       <p className="text-sm text-muted-foreground">
-        {detected ? "Got it — opening…" : "Point at a Stowage label"}
+        {detected?.phase === "confirmed"
+          ? "Got it — opening…"
+          : detected?.phase === "detecting"
+            ? "Barcode detected — reading…"
+            : "Point at a Stowage label"}
       </p>
     </>
   );
