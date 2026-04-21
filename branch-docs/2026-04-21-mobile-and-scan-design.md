@@ -352,6 +352,14 @@ Before merging, manually verify on real hardware (checked off in the PR descript
 
 These are manual steps noted on the PR, not automated — they're the things that genuinely don't survive in a CI headless browser.
 
+### Serving HTTPS for phone testing
+
+`getUserMedia` only works in a secure context. Localhost is already a secure origin on desktop, but a LAN IP (e.g. `http://192.168.x.x:3000` on a phone) is not — iOS Safari will silently refuse camera access. Three options:
+
+1. **`pnpm dev:https`** — boots Next with `--experimental-https` on `0.0.0.0`, auto-generates a self-signed cert, and runs PocketBase alongside. Set `NEXT_PUBLIC_POCKETBASE_URL=/pb` in `.env.local` so the browser talks to PB through the Next origin (the rewrite in `next.config.ts` proxies `/pb/*` → `http://127.0.0.1:8090`). On the phone, open `https://<your-laptop-ip>:3000` and accept the cert warning. iOS needs `Settings → General → About → Certificate Trust Settings` to fully trust self-signed certs for camera features.
+2. **Public tunnel** — `cloudflared tunnel --url https://localhost:3000` or `ngrok http 3000` gives a real HTTPS URL that works on any phone without cert fiddling. Set `NEXT_PUBLIC_POCKETBASE_URL=/pb` first.
+3. **Existing TLS Docker profile** — `docker compose --profile tls up --build` (already in the repo) proxies everything through Caddy with Let's Encrypt on a public domain. This is the production path; also works for a staging phone test if you have a domain pointed at your dev machine.
+
 ## Implementation order
 
 Each step includes its own tests before it's "done". No blanket "tests at the end" phase.

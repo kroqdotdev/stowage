@@ -1,0 +1,5 @@
+procs:
+  next:
+    cmd: ["pnpm", "run", "dev:next:https"]
+  pocketbase:
+    cmd: ["pnpm", "run", "pb:dev"]

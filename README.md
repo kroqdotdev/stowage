@@ -23,6 +23,16 @@ Then open <http://localhost:3000/setup> and create the first admin account.
 
 `pnpm pb:bootstrap` upserts a PocketBase superuser from the env vars — run it once after editing credentials, or whenever you rotate them.
 
+### Phone testing (HTTPS)
+
+iOS Safari will not hand out camera access over plain HTTP on a LAN IP — `getUserMedia` needs a secure context. For the scan feature:
+
+```bash
+pnpm dev:https                    # next + pocketbase, Next over HTTPS on 0.0.0.0
+```
+
+Set `NEXT_PUBLIC_POCKETBASE_URL=/pb` in `.env.local` so the browser hits PocketBase through Next's origin (a rewrite in `next.config.ts` proxies `/pb/*` → the real PB instance). Open `https://<your-laptop-ip>:3000` on the phone and accept the self-signed cert. `pnpm pb:seed` populates the database with demo assets, locations, and service schedules for the walkthrough.
+
 ## Run with Docker
 
 ```bash
