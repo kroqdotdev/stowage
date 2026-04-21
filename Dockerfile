@@ -17,14 +17,16 @@ RUN pnpm build
 
 # Stage 3 — runtime
 FROM node:22-alpine AS runner
+ARG APP_PORT=3000
 WORKDIR /app
-ENV NODE_ENV=production
+ENV NODE_ENV=production \
+    HOSTNAME=0.0.0.0 \
+    PORT=${APP_PORT}
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
 USER nextjs
-EXPOSE 3000
-ENV HOSTNAME=0.0.0.0 PORT=3000
+EXPOSE ${APP_PORT}
 CMD ["node", "server.js"]

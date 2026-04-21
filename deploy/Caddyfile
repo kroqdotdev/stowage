@@ -1,0 +1,15 @@
+{$APP_DOMAIN:localhost} {
+	encode zstd gzip
+
+	handle /pb {
+		redir * /pb/ 308
+	}
+
+	handle_path /pb/* {
+		reverse_proxy pocketbase:8090
+	}
+
+	handle {
+		reverse_proxy app:{$APP_PORT:3000}
+	}
+}
