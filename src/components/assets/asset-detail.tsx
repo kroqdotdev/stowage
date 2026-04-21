@@ -2,7 +2,13 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { MapPin, Pencil, Printer, Trash2 } from "lucide-react";
+import {
+  MapPin,
+  MoreHorizontal,
+  Pencil,
+  Printer,
+  Trash2,
+} from "lucide-react";
 import type { FieldDefinition } from "@/components/fields/types";
 import { DynamicFieldDisplay } from "@/components/fields/dynamic-field-display";
 import { ConfirmDialog } from "@/components/crud/confirm-dialog";
@@ -17,6 +23,13 @@ import {
 } from "@/components/assets/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Select,
   SelectContent,
@@ -62,7 +75,7 @@ export function AssetDetail({
     <div className="space-y-4">
       {/* Hero profile card */}
       <section className="rounded-xl border border-border/70 bg-gradient-to-r from-orange-50/60 to-background shadow-sm dark:from-stone-900/40 dark:to-card">
-        <div className="flex flex-col gap-4 p-5 lg:flex-row lg:items-start lg:justify-between">
+        <div className="flex flex-col gap-4 p-4 sm:p-5 lg:flex-row lg:items-start lg:justify-between">
           <div className="space-y-2">
             <h2 className="text-2xl font-semibold tracking-tight">
               {asset.name}
@@ -104,7 +117,10 @@ export function AssetDetail({
               onValueChange={(value) => onStatusChange(value as AssetStatus)}
               disabled={updatingStatus}
             >
-              <SelectTrigger className="min-w-44" aria-label="Change status">
+              <SelectTrigger
+                className="min-w-44 flex-1 lg:flex-none"
+                aria-label="Change status"
+              >
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -116,42 +132,94 @@ export function AssetDetail({
               </SelectContent>
             </Select>
 
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button asChild variant="outline" className="cursor-pointer">
+            {/* Desktop: inline buttons */}
+            <div className="hidden flex-wrap items-center gap-2 lg:flex">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button asChild variant="outline" className="cursor-pointer">
+                    <Link href={`/assets/${asset.id}/edit`}>
+                      <Pencil className="h-4 w-4" />
+                      Edit
+                    </Link>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Edit asset details</TooltipContent>
+              </Tooltip>
+
+              <Button asChild variant="outline" className="cursor-pointer">
+                <Link href={`/labels/print?assetId=${asset.id}`}>
+                  <Printer className="h-4 w-4" />
+                  Print label
+                </Link>
+              </Button>
+
+              {canDelete ? (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      className="cursor-pointer"
+                      onClick={() => setConfirmDeleteOpen(true)}
+                      disabled={deleting}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      Delete
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    Permanently delete this asset
+                  </TooltipContent>
+                </Tooltip>
+              ) : null}
+            </div>
+
+            {/* Mobile: kebab menu */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  aria-label="Asset actions"
+                  data-testid="asset-detail-kebab"
+                  className="cursor-pointer lg:hidden"
+                >
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem asChild>
                   <Link href={`/assets/${asset.id}/edit`}>
                     <Pencil className="h-4 w-4" />
                     Edit
                   </Link>
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Edit asset details</TooltipContent>
-            </Tooltip>
-
-            <Button asChild variant="outline" className="cursor-pointer">
-              <Link href={`/labels/print?assetId=${asset.id}`}>
-                <Printer className="h-4 w-4" />
-                Print label
-              </Link>
-            </Button>
-
-            {canDelete ? (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    className="cursor-pointer"
-                    onClick={() => setConfirmDeleteOpen(true)}
-                    disabled={deleting}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                    Delete
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Permanently delete this asset</TooltipContent>
-              </Tooltip>
-            ) : null}
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href={`/labels/print?assetId=${asset.id}`}>
+                    <Printer className="h-4 w-4" />
+                    Print label
+                  </Link>
+                </DropdownMenuItem>
+                {canDelete ? (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      className="text-destructive focus:text-destructive"
+                      data-testid="asset-detail-delete"
+                      disabled={deleting}
+                      onSelect={(event) => {
+                        event.preventDefault();
+                        setConfirmDeleteOpen(true);
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      Delete
+                    </DropdownMenuItem>
+                  </>
+                ) : null}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </section>
@@ -159,9 +227,12 @@ export function AssetDetail({
       <AssetServiceRecordsPanel assetId={asset.id} />
 
       {/* Tabbed content */}
-      <section className="rounded-xl border border-border/70 bg-background p-5 shadow-sm">
+      <section className="rounded-xl border border-border/70 bg-background p-4 shadow-sm sm:p-5">
         <Tabs defaultValue="info">
-          <TabsList className="mb-4">
+          <TabsList
+            className="sticky top-14 z-10 mb-4 w-full justify-start overflow-x-auto bg-background/95 backdrop-blur lg:static lg:top-auto lg:w-auto"
+            data-testid="asset-detail-tabs"
+          >
             <TabsTrigger value="info">Details</TabsTrigger>
             <TabsTrigger value="attachments">Attachments</TabsTrigger>
           </TabsList>
