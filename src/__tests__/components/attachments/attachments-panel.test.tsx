@@ -21,9 +21,7 @@ vi.mock("@/lib/use-app-date-format", () => ({
 }));
 
 vi.mock("@/components/attachments/file-upload-zone", () => ({
-  FileUploadZone: () => (
-    <div data-testid="file-upload-zone">Upload zone</div>
-  ),
+  FileUploadZone: () => <div data-testid="file-upload-zone">Upload zone</div>,
 }));
 
 import { AttachmentsPanel } from "@/components/attachments/attachments-panel";

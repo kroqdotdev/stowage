@@ -65,9 +65,7 @@ async function assertAllTagsExist(ctx: Ctx, tagIds: string[]) {
       await ctx.pb.collection("tags").getOne(tagId);
     } catch (error) {
       if (error instanceof ClientResponseError && error.status === 404) {
-        throw new ValidationError(
-          "One or more selected tags were not found",
-        );
+        throw new ValidationError("One or more selected tags were not found");
       }
       throw error;
     }
@@ -130,9 +128,7 @@ export async function listTagsForAsset(
   const tags: TagRecord[] = [];
   for (const tagId of tagIds) {
     try {
-      tags.push(
-        await ctx.pb.collection("tags").getOne<TagRecord>(tagId),
-      );
+      tags.push(await ctx.pb.collection("tags").getOne<TagRecord>(tagId));
     } catch (error) {
       if (error instanceof ClientResponseError && error.status === 404) {
         continue;

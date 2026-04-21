@@ -135,7 +135,9 @@ describe("TemplateDesigner", () => {
     expect(screen.getByTestId("mock-element-toolbar")).toBeInTheDocument();
     expect(screen.getByTestId("mock-label-preview")).toBeInTheDocument();
 
-    expect(screen.getAllByText("Thermal 57x32 mm").length).toBeGreaterThanOrEqual(1);
+    expect(
+      screen.getAllByText("Thermal 57x32 mm").length,
+    ).toBeGreaterThanOrEqual(1);
     expect(screen.getByText("57 x 32 mm")).toBeInTheDocument();
   });
 

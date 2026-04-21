@@ -33,19 +33,19 @@ describe("LocationBreakdown", () => {
   it("links each location to filtered assets page", () => {
     render(<LocationBreakdown items={items} />);
 
-    expect(
-      screen.getByText("Warehouse A").closest("a"),
-    ).toHaveAttribute("href", "/assets?location=loc1");
-    expect(
-      screen.getByText("Office B").closest("a"),
-    ).toHaveAttribute("href", "/assets?location=loc2");
+    expect(screen.getByText("Warehouse A").closest("a")).toHaveAttribute(
+      "href",
+      "/assets?location=loc1",
+    );
+    expect(screen.getByText("Office B").closest("a")).toHaveAttribute(
+      "href",
+      "/assets?location=loc2",
+    );
   });
 
   it("shows empty state when no locations", () => {
     render(<LocationBreakdown items={[]} />);
 
-    expect(
-      screen.getByText("No locations with assets yet."),
-    ).toBeVisible();
+    expect(screen.getByText("No locations with assets yet.")).toBeVisible();
   });
 });

@@ -5,13 +5,13 @@ import { ColorField, PRESET_COLORS } from "@/components/crud/color-field";
 
 describe("ColorField", () => {
   it("renders label, input with initial value, and preset swatches", () => {
-    render(
-      <ColorField id="test-color" value="#EA580C" onChange={vi.fn()} />,
-    );
+    render(<ColorField id="test-color" value="#EA580C" onChange={vi.fn()} />);
 
     expect(screen.getByLabelText("Color")).toBeInTheDocument();
     expect(screen.getByDisplayValue("#EA580C")).toBeInTheDocument();
-    expect(screen.getByRole("list", { name: "Preset colors" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("list", { name: "Preset colors" }),
+    ).toBeInTheDocument();
 
     const swatches = screen.getAllByRole("listitem");
     expect(swatches).toHaveLength(PRESET_COLORS.length);
@@ -21,9 +21,7 @@ describe("ColorField", () => {
     const user = userEvent.setup();
     const onChange = vi.fn();
 
-    render(
-      <ColorField id="test-color" value="#EA580C" onChange={onChange} />,
-    );
+    render(<ColorField id="test-color" value="#EA580C" onChange={onChange} />);
 
     await user.click(
       screen.getByRole("listitem", { name: `Select ${PRESET_COLORS[3]}` }),

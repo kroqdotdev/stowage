@@ -15,10 +15,7 @@ import { createFieldDefinition } from "@/server/domain/customFields";
 import { createLocation } from "@/server/domain/locations";
 import { createTag } from "@/server/domain/tags";
 import type { Ctx } from "@/server/pb/context";
-import {
-  NotFoundError,
-  ValidationError,
-} from "@/server/pb/errors";
+import { NotFoundError, ValidationError } from "@/server/pb/errors";
 import { usePbHarness } from "@/test/pb-harness";
 
 async function seedAdmin(pb: Ctx["pb"]) {
@@ -337,10 +334,7 @@ describe("assets domain — CRUD", () => {
     });
 
     const byCategory = await listAssets(ctx(), { categoryId: it.id });
-    expect(byCategory.map((a) => a.name).sort()).toEqual([
-      "Laptop",
-      "Monitor",
-    ]);
+    expect(byCategory.map((a) => a.name).sort()).toEqual(["Laptop", "Monitor"]);
 
     const byLocation = await listAssets(ctx(), {
       locationId: location.id,

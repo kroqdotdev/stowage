@@ -15,12 +15,14 @@ async function createAssetForSearch(page: Page, name: string, notes: string) {
   await page.getByRole("button", { name: "View asset" }).click();
   await page.waitForURL(/\/assets\/(?!new$)[^/]+$/, { timeout: 20_000 });
 
-  const assetTag = (await page
-    .locator("section")
-    .first()
-    .locator(".font-mono")
-    .first()
-    .textContent())?.trim();
+  const assetTag = (
+    await page
+      .locator("section")
+      .first()
+      .locator(".font-mono")
+      .first()
+      .textContent()
+  )?.trim();
   expect(assetTag).toMatch(/[A-Z]{2,4}-\d{4}/);
 
   return {
@@ -42,7 +44,10 @@ test.describe.serial("phase 10 global search", () => {
     );
 
     const landing = await getLanding(page);
-    test.skip(landing !== "login", "Global search e2e requires setup to be complete");
+    test.skip(
+      landing !== "login",
+      "Global search e2e requires setup to be complete",
+    );
 
     await signIn(page, email!, password!);
 

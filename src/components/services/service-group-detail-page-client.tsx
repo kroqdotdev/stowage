@@ -12,10 +12,7 @@ import { Button } from "@/components/ui/button";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { getApiErrorMessage } from "@/components/crud/error-messages";
 import { ApiRequestError } from "@/lib/api-client";
-import {
-  getServiceGroup,
-  updateServiceGroup,
-} from "@/lib/api/service-groups";
+import { getServiceGroup, updateServiceGroup } from "@/lib/api/service-groups";
 
 function mapGroupError(error: unknown, fallback: string) {
   if (error instanceof ApiRequestError) {
@@ -27,11 +24,7 @@ function mapGroupError(error: unknown, fallback: string) {
   return getApiErrorMessage(error, fallback);
 }
 
-export function ServiceGroupDetailPageClient({
-  groupId,
-}: {
-  groupId: string;
-}) {
+export function ServiceGroupDetailPageClient({ groupId }: { groupId: string }) {
   const queryClient = useQueryClient();
   const { data: currentUser, isPending: currentUserPending } = useCurrentUser();
   const groupQuery = useQuery({

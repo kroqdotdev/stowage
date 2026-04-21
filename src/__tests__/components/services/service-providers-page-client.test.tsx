@@ -58,9 +58,7 @@ describe("ServiceProvidersPageClient", () => {
     renderWithClient(<ServiceProvidersPageClient />);
 
     await waitFor(() => {
-      expect(
-        screen.getByText("No service providers yet."),
-      ).toBeInTheDocument();
+      expect(screen.getByText("No service providers yet.")).toBeInTheDocument();
     });
     expect(
       screen.getByRole("button", { name: /Add provider/ }),
@@ -92,8 +90,6 @@ describe("ServiceProvidersPageClient", () => {
     expect(screen.getByText("dock@example.com")).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: /Add provider/ }));
-    expect(
-      screen.getByRole("heading", { name: "Add provider" }),
-    ).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Add provider" })).toBeVisible();
   });
 });

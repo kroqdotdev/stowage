@@ -67,9 +67,7 @@ export async function updateLabelTemplate(
   return template;
 }
 
-export async function deleteLabelTemplate(
-  templateId: string,
-): Promise<void> {
+export async function deleteLabelTemplate(templateId: string): Promise<void> {
   await apiFetch(`/api/label-templates/${templateId}`, { method: "DELETE" });
 }
 
@@ -84,10 +82,9 @@ export async function setDefaultLabelTemplate(
 export async function ensureDefaultLabelTemplates(): Promise<{
   seeded: boolean;
 }> {
-  return apiFetch<{ seeded: boolean }>(
-    "/api/label-templates/ensure-defaults",
-    { method: "POST" },
-  );
+  return apiFetch<{ seeded: boolean }>("/api/label-templates/ensure-defaults", {
+    method: "POST",
+  });
 }
 
 export async function getLabelUrlBase(): Promise<string | null> {

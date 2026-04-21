@@ -103,9 +103,7 @@ describe("AssetDetail", () => {
     expect(screen.getByText("Core Router")).toBeInTheDocument();
     expect(screen.getByText("IT-0042")).toBeInTheDocument();
     expect(screen.getByText("Networking")).toBeInTheDocument();
-    expect(
-      screen.getByText("Building A / Server Room"),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Building A / Server Room")).toBeInTheDocument();
   });
 
   it("renders tags when present", () => {
@@ -123,10 +121,7 @@ describe("AssetDetail", () => {
 
   it("shows 'No notes' when notes are null", () => {
     renderWithProviders(
-      <AssetDetail
-        {...defaultProps}
-        asset={{ ...baseAsset, notes: null }}
-      />,
+      <AssetDetail {...defaultProps} asset={{ ...baseAsset, notes: null }} />,
     );
 
     expect(screen.getByText("No notes")).toBeInTheDocument();

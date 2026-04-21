@@ -9,10 +9,7 @@ import {
   requireCatalogName,
 } from "@/server/pb/catalog";
 import type { Ctx } from "@/server/pb/context";
-import {
-  ConflictError,
-  NotFoundError,
-} from "@/server/pb/errors";
+import { ConflictError, NotFoundError } from "@/server/pb/errors";
 
 export const CreateCategoryInput = z.object({
   name: z.string(),

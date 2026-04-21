@@ -19,15 +19,14 @@ function installMatchMedia(initialWidth: number) {
     },
     dispatchChange: (width: number) => {
       (window as unknown as { innerWidth: number }).innerWidth = width;
-      listeners.slice().forEach((cb) =>
-        cb({ matches: width < 768 } as MediaQueryListEvent),
-      );
+      listeners
+        .slice()
+        .forEach((cb) => cb({ matches: width < 768 } as MediaQueryListEvent));
     },
   };
   (window as unknown as { innerWidth: number }).innerWidth = initialWidth;
-  (window as unknown as { matchMedia: typeof window.matchMedia }).matchMedia = vi
-    .fn()
-    .mockReturnValue(mql as unknown as MediaQueryList);
+  (window as unknown as { matchMedia: typeof window.matchMedia }).matchMedia =
+    vi.fn().mockReturnValue(mql as unknown as MediaQueryList);
   return mql;
 }
 
@@ -43,7 +42,8 @@ describe("useIsMobile", () => {
   afterEach(() => {
     (window as unknown as { matchMedia: typeof window.matchMedia }).matchMedia =
       originalMatchMedia;
-    (window as unknown as { innerWidth: number }).innerWidth = originalInnerWidth;
+    (window as unknown as { innerWidth: number }).innerWidth =
+      originalInnerWidth;
   });
 
   it("is true at 500px wide", () => {

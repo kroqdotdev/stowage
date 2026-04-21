@@ -1,9 +1,5 @@
 import { withAdmin, parseJsonBody } from "@/server/auth/route";
-import {
-  UpdateTagInput,
-  deleteTag,
-  updateTag,
-} from "@/server/domain/tags";
+import { UpdateTagInput, deleteTag, updateTag } from "@/server/domain/tags";
 
 const ClientUpdateTag = UpdateTagInput.omit({ tagId: true });
 

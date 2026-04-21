@@ -112,9 +112,7 @@ export function ServiceRecordAttachments({
         queryKey: ["service-record-attachments", serviceRecordId],
       });
     } catch (error) {
-      toast.error(
-        getApiErrorMessage(error, "Unable to upload attachment"),
-      );
+      toast.error(getApiErrorMessage(error, "Unable to upload attachment"));
     } finally {
       setUploading(false);
     }

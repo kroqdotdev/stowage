@@ -83,8 +83,7 @@ export function FieldsPageClient() {
     queryFn: listCustomFields,
   });
 
-  const invalidate = () =>
-    qc.invalidateQueries({ queryKey: FIELDS_QUERY_KEY });
+  const invalidate = () => qc.invalidateQueries({ queryKey: FIELDS_QUERY_KEY });
 
   const createM = useMutation({
     mutationFn: createCustomField,
@@ -126,9 +125,9 @@ export function FieldsPageClient() {
   const [reordering, setReordering] = useState(false);
   const [draggingId, setDraggingId] = useState<string | null>(null);
 
-  const activeDefinition = activeId ? rowsById.get(activeId) ?? null : null;
+  const activeDefinition = activeId ? (rowsById.get(activeId) ?? null) : null;
   const activeDeleteDefinition = deleteId
-    ? rowsById.get(deleteId) ?? null
+    ? (rowsById.get(deleteId) ?? null)
     : null;
 
   function openCreate() {

@@ -26,9 +26,7 @@ export function normalizeServiceNameKey(value: string) {
   return normalizeServiceName(value).toLocaleLowerCase();
 }
 
-export function normalizeOptionalServiceText(
-  value: string | null | undefined,
-) {
+export function normalizeOptionalServiceText(value: string | null | undefined) {
   const normalized = value?.trim();
   return normalized ? normalized : null;
 }
@@ -138,9 +136,7 @@ export function normalizeServiceRecordValues({
 
     if (field.fieldType === "select") {
       if (!field.options.includes(trimmed)) {
-        throw new ValidationError(
-          `${field.label} contains an invalid option`,
-        );
+        throw new ValidationError(`${field.label} contains an invalid option`);
       }
       out[field._id] = trimmed;
       continue;
@@ -172,9 +168,7 @@ export function normalizeServiceFieldInput({
 
   const normalizedOptions = normalizeServiceFieldOptions(options);
   if (normalizedOptions.length === 0) {
-    throw new ValidationError(
-      "Select fields must include at least one option",
-    );
+    throw new ValidationError("Select fields must include at least one option");
   }
 
   return {

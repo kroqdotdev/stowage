@@ -100,9 +100,7 @@ export function ServiceProvidersPageClient() {
       setForm(createInitialForm());
       void queryClient.invalidateQueries({ queryKey: ["service-providers"] });
     } catch (error) {
-      toast.error(
-        getApiErrorMessage(error, "Unable to save service provider"),
-      );
+      toast.error(getApiErrorMessage(error, "Unable to save service provider"));
     }
   }
 

@@ -1,11 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { parseJsonBody, withAdmin, withUser } from "@/server/auth/route";
-import {
-  CreateTagInput,
-  createTag,
-  listTags,
-} from "@/server/domain/tags";
+import { CreateTagInput, createTag, listTags } from "@/server/domain/tags";
 
 export const GET = withUser("api/tags", async (_req, session) => ({
   tags: await listTags(session.ctx),

@@ -1,10 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { withUser } from "@/server/auth/route";
-import {
-  createAttachment,
-  listAttachments,
-} from "@/server/domain/attachments";
+import { createAttachment, listAttachments } from "@/server/domain/attachments";
 import { processAttachmentOptimization } from "@/server/domain/attachmentsProcessing";
 import { ValidationError } from "@/server/pb/errors";
 

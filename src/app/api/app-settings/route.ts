@@ -15,25 +15,30 @@ const ClientServiceScheduling = UpdateServiceSchedulingEnabledInput.omit({
 });
 const PatchBody = z.union([
   z.object({ kind: z.literal("dateFormat") }).and(ClientDateFormat),
-  z.object({ kind: z.literal("serviceScheduling") }).and(ClientServiceScheduling),
+  z
+    .object({ kind: z.literal("serviceScheduling") })
+    .and(ClientServiceScheduling),
 ]);
 
 export const GET = withUser("api/app-settings", async (_req, session) => ({
   settings: await getAppSettings(session.ctx),
 }));
 
-export const PATCH = withAdmin("api/app-settings", async (req, session, user) => {
-  const body = PatchBody.parse(await parseJsonBody(req));
-  if (body.kind === "dateFormat") {
-    const settings = await updateDateFormat(session.ctx, {
-      dateFormat: body.dateFormat,
+export const PATCH = withAdmin(
+  "api/app-settings",
+  async (req, session, user) => {
+    const body = PatchBody.parse(await parseJsonBody(req));
+    if (body.kind === "dateFormat") {
+      const settings = await updateDateFormat(session.ctx, {
+        dateFormat: body.dateFormat,
+        actorId: user.id,
+      });
+      return { settings };
+    }
+    const settings = await updateServiceSchedulingEnabled(session.ctx, {
+      enabled: body.enabled,
       actorId: user.id,
     });
     return { settings };
-  }
-  const settings = await updateServiceSchedulingEnabled(session.ctx, {
-    enabled: body.enabled,
-    actorId: user.id,
-  });
-  return { settings };
-});
+  },
+);

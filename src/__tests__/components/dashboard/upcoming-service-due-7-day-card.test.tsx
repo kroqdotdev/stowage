@@ -65,9 +65,7 @@ describe("UpcomingServiceDue7DayCard", () => {
     renderWithClient(<UpcomingServiceDue7DayCard />);
 
     await waitFor(() => {
-      expect(
-        screen.getByText("Service scheduling is disabled."),
-      ).toBeVisible();
+      expect(screen.getByText("Service scheduling is disabled.")).toBeVisible();
     });
   });
 

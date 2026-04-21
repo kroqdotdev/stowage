@@ -30,6 +30,6 @@ Both are checked on every upload. The incoming file's size is added to the curre
 
 ## Frontend behavior
 
-When a limit is configured, the asset attachment upload zone displays a usage bar. The bar turns red when storage is full, and uploads are blocked client-side as well as server-side. Users who hit the limit see: *"Storage limit reached. Delete files to free up space."*
+When a limit is configured, the asset attachment upload zone displays a usage bar. The bar turns red when storage is full, and uploads are blocked client-side as well as server-side. Users who hit the limit see: _"Storage limit reached. Delete files to free up space."_
 
 When no limit is set, the usage bar is hidden.

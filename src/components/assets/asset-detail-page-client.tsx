@@ -14,11 +14,7 @@ import type {
 import type { FieldDefinition } from "@/components/fields/types";
 import { Button } from "@/components/ui/button";
 import { useCurrentUser } from "@/hooks/use-current-user";
-import {
-  deleteAsset,
-  getAsset,
-  updateAssetStatus,
-} from "@/lib/api/assets";
+import { deleteAsset, getAsset, updateAssetStatus } from "@/lib/api/assets";
 import { listCustomFields } from "@/lib/api/custom-fields";
 
 export function AssetDetailPageClient({ assetId }: { assetId: string }) {

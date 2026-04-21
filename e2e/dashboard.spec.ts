@@ -60,7 +60,10 @@ test.describe.serial("phase 10 dashboard", () => {
 
     const landing = await getLanding(page, "/");
     expect(["login", "setup"]).toContain(landing);
-    test.skip(landing !== "login", "Dashboard e2e requires setup to be complete");
+    test.skip(
+      landing !== "login",
+      "Dashboard e2e requires setup to be complete",
+    );
 
     await signIn(page, email!, password!);
     await page.goto("/");
@@ -83,7 +86,10 @@ test.describe.serial("phase 10 dashboard", () => {
     );
 
     const landing = await getLanding(page, "/dashboard");
-    test.skip(landing !== "login", "Dashboard e2e requires setup to be complete");
+    test.skip(
+      landing !== "login",
+      "Dashboard e2e requires setup to be complete",
+    );
 
     await signIn(page, email!, password!);
     await ensureSchedulingEnabled(page);
@@ -108,17 +114,23 @@ test.describe.serial("phase 10 dashboard", () => {
       page.locator('[data-dashboard-stat="total"] [data-dashboard-stat-value]'),
     ).toHaveText(/\d+/);
     await expect(
-      page.locator('[data-dashboard-stat="active"] [data-dashboard-stat-value]'),
+      page.locator(
+        '[data-dashboard-stat="active"] [data-dashboard-stat-value]',
+      ),
     ).toHaveText(/\d+/);
     await expect(
-      page.locator('[data-dashboard-stat="retired"] [data-dashboard-stat-value]'),
+      page.locator(
+        '[data-dashboard-stat="retired"] [data-dashboard-stat-value]',
+      ),
     ).toHaveText(/\d+/);
 
     const recentAssetsSection = page
       .locator("section")
       .filter({ hasText: "Recent assets" })
       .first();
-    await expect(recentAssetsSection.getByText(scheduledAssetName)).toBeVisible();
+    await expect(
+      recentAssetsSection.getByText(scheduledAssetName),
+    ).toBeVisible();
     await expect(recentAssetsSection.getByText(retiredAssetName)).toBeVisible();
 
     const serviceQueueSection = page
@@ -126,6 +138,8 @@ test.describe.serial("phase 10 dashboard", () => {
       .filter({ hasText: "Service queue" })
       .first();
     await expect(serviceQueueSection).toBeVisible();
-    await expect(serviceQueueSection.getByText(scheduledAssetName)).toBeVisible();
+    await expect(
+      serviceQueueSection.getByText(scheduledAssetName),
+    ).toBeVisible();
   });
 });

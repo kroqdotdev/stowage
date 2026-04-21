@@ -18,9 +18,7 @@ describe("CrudModal", () => {
     );
 
     expect(screen.getByText("Edit Item")).toBeInTheDocument();
-    expect(
-      screen.getByText("Update the details below."),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Update the details below.")).toBeInTheDocument();
     expect(screen.getByText("Modal body content")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Save" })).toBeInTheDocument();
     expect(screen.getByRole("dialog")).toBeInTheDocument();

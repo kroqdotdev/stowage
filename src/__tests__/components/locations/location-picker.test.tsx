@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { describe, expect, it } from "vitest";
 import userEvent from "@testing-library/user-event";
-import { render, screen } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
 import {
   LocationPicker,
   type LocationPickerOption,
@@ -52,13 +52,17 @@ describe("LocationPicker", () => {
       name: "Warehouse",
     });
 
-    warehouseTrigger.focus();
+    act(() => {
+      warehouseTrigger.focus();
+    });
     await user.keyboard("{ArrowRight}");
 
     const shelfTrigger = await screen.findByRole("menuitem", {
       name: "Shelf 1",
     });
-    shelfTrigger.focus();
+    act(() => {
+      shelfTrigger.focus();
+    });
     await user.keyboard("{ArrowRight}");
 
     await user.click(await screen.findByRole("menuitem", { name: "Bin A" }));
@@ -79,7 +83,9 @@ describe("LocationPicker", () => {
     const warehouseTrigger = await screen.findByRole("menuitem", {
       name: "Warehouse",
     });
-    warehouseTrigger.focus();
+    act(() => {
+      warehouseTrigger.focus();
+    });
     await user.keyboard("{ArrowRight}");
     await user.click(
       await screen.findByRole("menuitem", { name: "Select Warehouse" }),

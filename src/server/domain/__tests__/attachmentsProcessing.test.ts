@@ -1,10 +1,7 @@
 import { beforeAll, describe, expect, it } from "vitest";
 
 import { createAsset } from "@/server/domain/assets";
-import {
-  createAttachment,
-  listAttachments,
-} from "@/server/domain/attachments";
+import { createAttachment, listAttachments } from "@/server/domain/attachments";
 import { processAttachmentOptimization } from "@/server/domain/attachmentsProcessing";
 import type { Ctx } from "@/server/pb/context";
 import { usePbHarness } from "@/test/pb-harness";

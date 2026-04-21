@@ -10,7 +10,10 @@ import { AuthPanel } from "@/components/auth/auth-panel";
 import { getLoginErrorMessage } from "@/components/auth/auth-error-messages";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { CURRENT_USER_QUERY_KEY, useCurrentUser } from "@/hooks/use-current-user";
+import {
+  CURRENT_USER_QUERY_KEY,
+  useCurrentUser,
+} from "@/hooks/use-current-user";
 import { checkFirstRun, login } from "@/lib/api/auth";
 import { useQuery } from "@tanstack/react-query";
 

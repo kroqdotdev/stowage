@@ -4,9 +4,9 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const replaceMock = vi.fn();
-const getCurrentUserMock = vi.fn();
 const loginMock = vi.fn();
 const checkFirstRunMock = vi.fn();
+const useCurrentUserHookMock = vi.fn();
 
 vi.mock("next/link", () => ({
   default: ({
@@ -24,8 +24,12 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ replace: replaceMock }),
 }));
 
+vi.mock("@/hooks/use-current-user", () => ({
+  CURRENT_USER_QUERY_KEY: ["auth", "me"],
+  useCurrentUser: () => useCurrentUserHookMock(),
+}));
+
 vi.mock("@/lib/api/auth", () => ({
-  getCurrentUser: () => getCurrentUserMock(),
   login: (input: unknown) => loginMock(input),
   checkFirstRun: () => checkFirstRunMock(),
 }));
@@ -49,10 +53,13 @@ function renderWithClient() {
 describe("LoginForm", () => {
   beforeEach(() => {
     replaceMock.mockReset();
-    getCurrentUserMock.mockReset();
     loginMock.mockReset();
     checkFirstRunMock.mockReset();
-    getCurrentUserMock.mockResolvedValue(null);
+    useCurrentUserHookMock.mockReset();
+    useCurrentUserHookMock.mockReturnValue({
+      data: null,
+      isLoading: false,
+    });
     checkFirstRunMock.mockResolvedValue(false);
   });
 
@@ -103,11 +110,14 @@ describe("LoginForm", () => {
   });
 
   it("redirects to /dashboard when already signed in", async () => {
-    getCurrentUserMock.mockResolvedValue({
-      id: "u1",
-      email: "admin@example.com",
-      name: "Admin",
-      role: "admin",
+    useCurrentUserHookMock.mockReturnValue({
+      data: {
+        id: "u1",
+        email: "admin@example.com",
+        name: "Admin",
+        role: "admin",
+      },
+      isLoading: false,
     });
     renderWithClient();
     await vi.waitFor(() => {

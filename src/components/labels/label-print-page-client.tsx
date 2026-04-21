@@ -203,12 +203,7 @@ export function LabelPrintPageClient() {
     if (nextTemplateId !== selectedTemplateId) {
       setSelectedTemplateId(nextTemplateId);
     }
-  }, [
-    defaultTemplate?.id,
-    requestedTemplateId,
-    selectedTemplateId,
-    templates,
-  ]);
+  }, [defaultTemplate?.id, requestedTemplateId, selectedTemplateId, templates]);
 
   useEffect(() => {
     if (!selectedTemplate) {

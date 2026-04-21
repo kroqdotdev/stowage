@@ -92,9 +92,7 @@ async function assertUniqueName(
     });
   const duplicate = matches.items.find((row) => row.id !== excludeId);
   if (duplicate) {
-    throw new ConflictError(
-      "A service provider with this name already exists",
-    );
+    throw new ConflictError("A service provider with this name already exists");
   }
 }
 
@@ -121,9 +119,7 @@ export async function listProviders(ctx: Ctx): Promise<ProviderView[]> {
   return sortByName(records).map(toView);
 }
 
-export async function listProviderOptions(
-  ctx: Ctx,
-): Promise<ProviderOption[]> {
+export async function listProviderOptions(ctx: Ctx): Promise<ProviderOption[]> {
   const records = await ctx.pb
     .collection("serviceProviders")
     .getFullList<ProviderRecord>();

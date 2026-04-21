@@ -2,10 +2,7 @@ import { ClientResponseError } from "pocketbase";
 import { z } from "zod";
 
 import type { Ctx } from "@/server/pb/context";
-import {
-  NotFoundError,
-  ValidationError,
-} from "@/server/pb/errors";
+import { NotFoundError, ValidationError } from "@/server/pb/errors";
 import {
   normalizeServiceRecordValues,
   type ServiceGroupFieldType,
@@ -250,10 +247,7 @@ async function requireSchedule(
   }
 }
 
-async function requireProvider(
-  ctx: Ctx,
-  providerId: string,
-): Promise<void> {
+async function requireProvider(ctx: Ctx, providerId: string): Promise<void> {
   try {
     await ctx.pb.collection("serviceProviders").getOne(providerId);
   } catch (error) {
@@ -311,9 +305,7 @@ async function listFieldsForGroup(
     });
 }
 
-function toFieldDefinition(
-  field: ServiceGroupFieldRow,
-): RecordFieldDefinition {
+function toFieldDefinition(field: ServiceGroupFieldRow): RecordFieldDefinition {
   return {
     id: field.id,
     label: field.label,
@@ -480,7 +472,9 @@ export async function listAssetRecords(
     ...new Set(records.map((r) => r.serviceGroupId).filter((id) => !!id)),
   ];
   const providerIds = [
-    ...new Set(records.map((r) => r.providerId).filter((id): id is string => !!id)),
+    ...new Set(
+      records.map((r) => r.providerId).filter((id): id is string => !!id),
+    ),
   ];
   const userIds = [...new Set(records.map((r) => r.completedBy))];
 
@@ -530,8 +524,7 @@ export async function listAssetRecords(
 
   return records
     .sort((left, right) => {
-      const leftDate =
-        left.serviceDate || timestampToIsoDate(left.completedAt);
+      const leftDate = left.serviceDate || timestampToIsoDate(left.completedAt);
       const rightDate =
         right.serviceDate || timestampToIsoDate(right.completedAt);
       if (leftDate === rightDate) {
@@ -550,9 +543,9 @@ export async function listAssetRecords(
       const fields =
         record.fieldSnapshots && record.fieldSnapshots.length > 0
           ? snapshotsToDefinitions(record.fieldSnapshots)
-          : (record.serviceGroupId
-              ? (fieldsByGroupId.get(record.serviceGroupId) ?? [])
-              : []);
+          : record.serviceGroupId
+            ? (fieldsByGroupId.get(record.serviceGroupId) ?? [])
+            : [];
       const completedBy = userById.get(record.completedBy);
       return {
         id: record.id,
@@ -634,23 +627,25 @@ export async function createRecord(
   });
 
   const now = Date.now();
-  const record = await ctx.pb.collection("serviceRecords").create<ServiceRecordRow>({
-    assetId: asset.id,
-    serviceGroupId: groupContext.group?.id ?? "",
-    serviceGroupNameSnapshot: groupContext.group?.name ?? "",
-    values,
-    fieldSnapshots: definitionsToSnapshots(groupContext.fields),
-    scheduleId: "",
-    scheduledForDate: "",
-    serviceDate,
-    description,
-    cost,
-    providerId: parsed.providerId ?? undefined,
-    completedAt: now,
-    completedBy: parsed.actorId,
-    createdAt: now,
-    updatedAt: now,
-  });
+  const record = await ctx.pb
+    .collection("serviceRecords")
+    .create<ServiceRecordRow>({
+      assetId: asset.id,
+      serviceGroupId: groupContext.group?.id ?? "",
+      serviceGroupNameSnapshot: groupContext.group?.name ?? "",
+      values,
+      fieldSnapshots: definitionsToSnapshots(groupContext.fields),
+      scheduleId: "",
+      scheduledForDate: "",
+      serviceDate,
+      description,
+      cost,
+      providerId: parsed.providerId ?? undefined,
+      completedAt: now,
+      completedBy: parsed.actorId,
+      createdAt: now,
+      updatedAt: now,
+    });
 
   if (!schedule) {
     return { recordId: record.id, nextServiceDate: null };
@@ -758,23 +753,25 @@ export async function completeScheduledService(
     serviceDate,
   });
 
-  const record = await ctx.pb.collection("serviceRecords").create<ServiceRecordRow>({
-    assetId: asset.id,
-    serviceGroupId: groupContext.group?.id ?? "",
-    serviceGroupNameSnapshot: groupContext.group?.name ?? "",
-    values,
-    fieldSnapshots: definitionsToSnapshots(groupContext.fields),
-    scheduleId: schedule.id,
-    scheduledForDate: schedule.nextServiceDate,
-    serviceDate,
-    description,
-    cost,
-    providerId: parsed.providerId ?? undefined,
-    completedAt: now,
-    completedBy: parsed.actorId,
-    createdAt: now,
-    updatedAt: now,
-  });
+  const record = await ctx.pb
+    .collection("serviceRecords")
+    .create<ServiceRecordRow>({
+      assetId: asset.id,
+      serviceGroupId: groupContext.group?.id ?? "",
+      serviceGroupNameSnapshot: groupContext.group?.name ?? "",
+      values,
+      fieldSnapshots: definitionsToSnapshots(groupContext.fields),
+      scheduleId: schedule.id,
+      scheduledForDate: schedule.nextServiceDate,
+      serviceDate,
+      description,
+      cost,
+      providerId: parsed.providerId ?? undefined,
+      completedAt: now,
+      completedBy: parsed.actorId,
+      createdAt: now,
+      updatedAt: now,
+    });
 
   await ctx.pb.collection("serviceSchedules").update(schedule.id, {
     nextServiceDate,

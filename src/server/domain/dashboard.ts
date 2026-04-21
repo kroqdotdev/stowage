@@ -102,9 +102,9 @@ async function readSettings(ctx: Ctx) {
     const row = await ctx.pb
       .collection("appSettings")
       .getFirstListItem<AppSettingsRow>('key = "global"');
-    const dateFormat = (
-      APP_DATE_FORMATS as readonly string[]
-    ).includes(row.dateFormat ?? "")
+    const dateFormat = (APP_DATE_FORMATS as readonly string[]).includes(
+      row.dateFormat ?? "",
+    )
       ? (row.dateFormat as AppDateFormat)
       : DEFAULT_DATE_FORMAT;
     return {

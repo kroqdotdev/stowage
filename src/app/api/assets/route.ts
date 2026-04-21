@@ -22,7 +22,11 @@ export const GET = withUser("api/assets", async (req, session) => {
     sortDirection: url.searchParams.get("sortDirection") ?? undefined,
   };
   const parsed = ListAssetsInput.parse(
-    Object.fromEntries(Object.entries(raw).filter(([, v]) => v !== undefined && !(Array.isArray(v) && v.length === 0))),
+    Object.fromEntries(
+      Object.entries(raw).filter(
+        ([, v]) => v !== undefined && !(Array.isArray(v) && v.length === 0),
+      ),
+    ),
   );
   const assets = await listAssets(session.ctx, parsed);
   return { assets };

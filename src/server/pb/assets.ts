@@ -20,9 +20,7 @@ export function requireAssetName(name: string) {
   const normalized = name.trim().replace(/\s+/g, " ");
   if (!normalized) throw new ValidationError("Asset name is required");
   if (normalized.length > 500) {
-    throw new ValidationError(
-      "Asset name must be 500 characters or fewer",
-    );
+    throw new ValidationError("Asset name must be 500 characters or fewer");
   }
   return normalized;
 }
@@ -38,9 +36,7 @@ export function normalizeAssetNotes(
   const normalized = notes.trim();
   if (!normalized) return null;
   if (normalized.length > 5000) {
-    throw new ValidationError(
-      "Asset notes must be 5000 characters or fewer",
-    );
+    throw new ValidationError("Asset notes must be 5000 characters or fewer");
   }
   return normalized;
 }
@@ -66,9 +62,7 @@ function escapeRegExp(value: string) {
 
 export function buildAssetTag(prefix: string, number: number) {
   if (!Number.isInteger(number) || number < 1) {
-    throw new ValidationError(
-      "Asset tag sequence must be a positive integer",
-    );
+    throw new ValidationError("Asset tag sequence must be a positive integer");
   }
   return `${prefix}-${String(number).padStart(ASSET_TAG_WIDTH, "0")}`;
 }
@@ -131,9 +125,7 @@ export function normalizeCustomFieldValues(
   return normalized;
 }
 
-export function getUsedFieldIds(
-  values: Record<string, AssetCustomFieldValue>,
-) {
+export function getUsedFieldIds(values: Record<string, AssetCustomFieldValue>) {
   const used = new Set<string>();
   for (const [fieldId, value] of Object.entries(values)) {
     if (isCustomFieldValueSet(value)) used.add(fieldId);

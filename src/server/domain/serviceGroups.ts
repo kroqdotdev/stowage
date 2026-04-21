@@ -92,9 +92,7 @@ async function assertUniqueGroupName(
     });
   const duplicate = matches.items.find((row) => row.id !== excludeId);
   if (duplicate) {
-    throw new ConflictError(
-      "A service group with this name already exists",
-    );
+    throw new ConflictError("A service group with this name already exists");
   }
 }
 
@@ -115,9 +113,7 @@ function normalizeGroupDescription(value: string | null | undefined) {
   const trimmed = value?.trim() ?? "";
   if (!trimmed) return "";
   if (trimmed.length > 2000) {
-    throw new ValidationError(
-      "Description must be 2000 characters or fewer",
-    );
+    throw new ValidationError("Description must be 2000 characters or fewer");
   }
   return trimmed;
 }
@@ -192,17 +188,15 @@ export async function createGroup(
   const description = normalizeGroupDescription(parsed.description);
 
   const now = Date.now();
-  const record = await ctx.pb
-    .collection("serviceGroups")
-    .create<GroupRecord>({
-      name,
-      normalizedName,
-      description,
-      createdAt: now,
-      updatedAt: now,
-      createdBy: parsed.actorId,
-      updatedBy: parsed.actorId,
-    });
+  const record = await ctx.pb.collection("serviceGroups").create<GroupRecord>({
+    name,
+    normalizedName,
+    description,
+    createdAt: now,
+    updatedAt: now,
+    createdBy: parsed.actorId,
+    updatedBy: parsed.actorId,
+  });
   return toGroupView(record);
 }
 
@@ -265,14 +259,12 @@ export async function listGroupAssets(
   groupId: string,
 ): Promise<GroupAsset[]> {
   await loadGroup(ctx, groupId);
-  const assets = await ctx.pb
-    .collection("assets")
-    .getFullList<{
-      id: string;
-      name: string;
-      assetTag: string;
-      status: string;
-    }>({ filter: `serviceGroupId = "${groupId}"` });
+  const assets = await ctx.pb.collection("assets").getFullList<{
+    id: string;
+    name: string;
+    assetTag: string;
+    status: string;
+  }>({ filter: `serviceGroupId = "${groupId}"` });
   return sortByName(assets).map((asset) => ({
     id: asset.id,
     name: asset.name,

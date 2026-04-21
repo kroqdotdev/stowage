@@ -81,14 +81,13 @@ describe("auth routes", () => {
       expect(res.status).toBe(200);
       const body = await readJson<{ user: { email: string } }>(res);
       expect(body.user.email).toBe(user.email);
+      expect(res.headers.get("set-cookie")).toMatch(/pb_auth=/);
     });
 
     it("returns {user: null} without a cookie", async () => {
       const { GET } = await import("@/app/api/auth/me/route");
 
-      const res = await GET(
-        makeRequest("http://localhost/api/auth/me"),
-      );
+      const res = await GET(makeRequest("http://localhost/api/auth/me"));
 
       expect(res.status).toBe(200);
       const body = await readJson<{ user: unknown }>(res);
@@ -130,7 +129,16 @@ describe("auth routes", () => {
       expect(body.firstRun).toBe(true);
     });
 
-    it("returns firstRun=false after a user exists", async () => {
+    it("returns firstRun=true when only non-admin users exist", async () => {
+      await seedUser(getHarness(), "user");
+      const { GET } = await import("@/app/api/auth/first-run/route");
+      const res = await GET();
+      expect(res.status).toBe(200);
+      const body = await readJson<{ firstRun: boolean }>(res);
+      expect(body.firstRun).toBe(true);
+    });
+
+    it("returns firstRun=false after an admin exists", async () => {
       await seedUser(getHarness(), "admin");
       const { GET } = await import("@/app/api/auth/first-run/route");
       const res = await GET();
@@ -173,6 +181,24 @@ describe("auth routes", () => {
         }),
       );
       expect([400, 409]).toContain(res.status);
+    });
+
+    it("still creates the first admin when only non-admin users exist", async () => {
+      await seedUser(getHarness(), "user");
+      const { POST } = await import("@/app/api/auth/first-admin/route");
+      const res = await POST(
+        makeRequest("http://localhost/api/auth/first-admin", {
+          method: "POST",
+          json: {
+            email: "admin@stowage.local",
+            name: "Bootstrap Admin",
+            password: "bootstrap-pass",
+          },
+        }),
+      );
+      expect(res.status).toBe(200);
+      const body = await readJson<{ user: { role: string } }>(res);
+      expect(body.user.role).toBe("admin");
     });
 
     it("rejects short passwords with 400", async () => {

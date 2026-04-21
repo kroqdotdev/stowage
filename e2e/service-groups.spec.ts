@@ -129,9 +129,7 @@ test.describe.serial("phase 7.5 service groups and records", () => {
     await expect(page.getByText("service-report.pdf")).toBeVisible({
       timeout: 15_000,
     });
-    await plannerDialog
-      .getByRole("button", { name: "Close dialog" })
-      .click();
+    await plannerDialog.getByRole("button", { name: "Close dialog" }).click();
     await expect(plannerDialog).toBeHidden();
 
     await page.goto(`/assets/${assetId}`);
@@ -168,9 +166,7 @@ test.describe.serial("phase 7.5 service groups and records", () => {
     await manualDialog.getByLabel(/Verified/i).check();
     await manualDialog.getByRole("button", { name: "Log service" }).click();
     await expect(page.getByText("Service record logged")).toBeVisible();
-    await manualDialog
-      .getByRole("button", { name: "Close dialog" })
-      .click();
+    await manualDialog.getByRole("button", { name: "Close dialog" }).click();
     await expect(manualDialog).toBeHidden();
     await expect(
       serviceHistorySection.getByText("Completed from asset detail").first(),

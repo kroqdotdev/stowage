@@ -58,8 +58,6 @@ export async function updateServiceProvider(
   return provider;
 }
 
-export async function deleteServiceProvider(
-  providerId: string,
-): Promise<void> {
+export async function deleteServiceProvider(providerId: string): Promise<void> {
   await apiFetch(`/api/service-providers/${providerId}`, { method: "DELETE" });
 }

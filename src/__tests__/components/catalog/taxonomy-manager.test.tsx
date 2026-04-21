@@ -25,7 +25,7 @@ import { TaxonomyManager } from "@/components/catalog/taxonomy-manager";
 
 const categoryRows = [
   {
-    _id: "cat1",
+    id: "cat1",
     name: "Laptops",
     color: "#EA580C",
     prefix: "LAP",
@@ -34,7 +34,7 @@ const categoryRows = [
     updatedAt: Date.now(),
   },
   {
-    _id: "cat2",
+    id: "cat2",
     name: "Monitors",
     color: "#2563EB",
     prefix: "MON",
@@ -46,14 +46,14 @@ const categoryRows = [
 
 const tagRows = [
   {
-    _id: "tag1",
+    id: "tag1",
     name: "Fragile",
     color: "#DC2626",
     createdAt: Date.now(),
     updatedAt: Date.now(),
   },
   {
-    _id: "tag2",
+    id: "tag2",
     name: "Heavy",
     color: "#0891B2",
     createdAt: Date.now(),

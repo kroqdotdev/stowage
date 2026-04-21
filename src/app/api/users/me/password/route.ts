@@ -1,8 +1,5 @@
 import { parseJsonBody, withUser } from "@/server/auth/route";
-import {
-  ChangePasswordInput,
-  changePassword,
-} from "@/server/domain/users";
+import { ChangePasswordInput, changePassword } from "@/server/domain/users";
 
 const ClientChangePassword = ChangePasswordInput.omit({ userId: true });
 

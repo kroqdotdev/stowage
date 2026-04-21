@@ -2,7 +2,7 @@ import { ClientResponseError } from "pocketbase";
 import { z } from "zod";
 
 import type { Ctx } from "@/server/pb/context";
-import { getPbPublicUrl } from "@/server/pb/client";
+import { getPbUrl } from "@/server/pb/client";
 import {
   MAX_ATTACHMENT_UPLOAD_BYTES,
   classifyAttachment,
@@ -42,6 +42,10 @@ export type ServiceRecordAttachmentView = {
   url: string | null;
 };
 
+export type ServiceRecordAttachmentDownloadSource = {
+  url: string;
+};
+
 export const CreateServiceRecordAttachmentInput = z.object({
   serviceRecordId: z.string(),
   fileName: z.string(),
@@ -55,9 +59,9 @@ export type CreateServiceRecordAttachmentInput = z.infer<
   typeof CreateServiceRecordAttachmentInput
 >;
 
-function fileUrl(record: ServiceRecordAttachmentRecord): string | null {
+function fileStorageUrl(record: ServiceRecordAttachmentRecord): string | null {
   if (!record.storageFile) return null;
-  return `${getPbPublicUrl()}/api/files/serviceRecordAttachments/${record.id}/${encodeURIComponent(
+  return `${getPbUrl()}/api/files/serviceRecordAttachments/${record.id}/${encodeURIComponent(
     record.storageFile,
   )}`;
 }
@@ -76,7 +80,9 @@ function toView(
     uploadedBy: record.uploadedBy,
     uploadedAt: record.uploadedAt,
     updatedAt: record.updatedAt,
-    url: fileUrl(record),
+    url: record.storageFile
+      ? `/api/service-record-attachments/${record.id}/download`
+      : null,
   };
 }
 
@@ -193,4 +199,16 @@ export async function deleteServiceRecordAttachment(
   const record = await requireServiceRecord(ctx, attachment.serviceRecordId);
   ensureMutationAccess(record, actor);
   await ctx.pb.collection("serviceRecordAttachments").delete(attachment.id);
+}
+
+export async function getServiceRecordAttachmentDownloadSource(
+  ctx: Ctx,
+  attachmentId: string,
+): Promise<ServiceRecordAttachmentDownloadSource | null> {
+  const record = await requireAttachment(ctx, attachmentId);
+  const url = fileStorageUrl(record);
+  if (!url) {
+    return null;
+  }
+  return { url };
 }

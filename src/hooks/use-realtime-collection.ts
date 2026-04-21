@@ -25,10 +25,7 @@ export function useRealtimeCollection<T>({
 }: UseRealtimeCollectionOptions<T>) {
   const pb = usePocketBase();
   const qc = useQueryClient();
-  const key = useMemo(
-    () => queryKey ?? [collection],
-    [queryKey, collection],
-  );
+  const key = useMemo(() => queryKey ?? [collection], [queryKey, collection]);
 
   const query = useQuery({ queryKey: key, queryFn: fetcher, enabled });
 

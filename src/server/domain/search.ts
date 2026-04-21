@@ -62,9 +62,7 @@ export async function searchAssets(
   if (needle.length < 2) return [];
   const cappedLimit = Math.max(1, Math.min(limit, 10));
 
-  const assets = await ctx.pb
-    .collection("assets")
-    .getFullList<AssetRow>();
+  const assets = await ctx.pb.collection("assets").getFullList<AssetRow>();
 
   type Match = { asset: AssetRow; score: number };
   const matches: Match[] = assets

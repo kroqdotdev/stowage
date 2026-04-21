@@ -9,7 +9,8 @@ services:
     volumes:
       - ./pb_data:/pb_data
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:8090/api/health"]
+      test:
+        ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:8090/api/health"]
       interval: 5s
       timeout: 3s
       retries: 20

@@ -16,6 +16,8 @@ export type RequestSession = {
   ctx: Ctx;
   user: SessionUser | null;
   token: string | null;
+  activeToken: string | null;
+  staleToken: boolean;
 };
 
 class UnauthorizedError extends DomainError {
@@ -34,9 +36,14 @@ class ForbiddenError extends DomainError {
 
 export { UnauthorizedError, ForbiddenError };
 
-export async function resolveSession(
+type ActiveSession = {
+  user: SessionUser;
+  token: string;
+};
+
+async function refreshSession(
   token: string | null | undefined,
-): Promise<SessionUser | null> {
+): Promise<ActiveSession | null> {
   if (!token) return null;
 
   const client = new PocketBase(getPbUrl());
@@ -44,12 +51,15 @@ export async function resolveSession(
   client.authStore.save(token, null);
 
   try {
-    const { record } = await client.collection("users").authRefresh();
+    const auth = await client.collection("users").authRefresh();
     return {
-      id: record.id,
-      email: record.email,
-      name: record.name,
-      role: record.role as UserRole,
+      token: auth.token,
+      user: {
+        id: auth.record.id,
+        email: auth.record.email,
+        name: auth.record.name,
+        role: auth.record.role as UserRole,
+      },
     };
   } catch (error) {
     if (error instanceof ClientResponseError) {
@@ -59,14 +69,28 @@ export async function resolveSession(
   }
 }
 
+export async function resolveSession(
+  token: string | null | undefined,
+): Promise<SessionUser | null> {
+  const session = await refreshSession(token);
+  return session?.user ?? null;
+}
+
 export async function createRequestSession(
   token: string | null | undefined,
 ): Promise<RequestSession> {
-  const [ctx, user] = await Promise.all([
+  const incomingToken = token ?? null;
+  const [ctx, session] = await Promise.all([
     createAdminCtx(),
-    resolveSession(token),
+    refreshSession(incomingToken),
   ]);
-  return { ctx, user, token: token ?? null };
+  return {
+    ctx,
+    user: session?.user ?? null,
+    token: incomingToken,
+    activeToken: session?.token ?? null,
+    staleToken: incomingToken !== null && session === null,
+  };
 }
 
 export function requireUser(session: RequestSession): SessionUser {

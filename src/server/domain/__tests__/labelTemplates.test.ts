@@ -29,7 +29,10 @@ async function seedAdmin(pb: Ctx["pb"]) {
   });
 }
 
-function baseTemplate(actorId: string, overrides: Record<string, unknown> = {}) {
+function baseTemplate(
+  actorId: string,
+  overrides: Record<string, unknown> = {},
+) {
   return {
     name: "Thermal 57x32",
     widthMm: 57,
@@ -251,9 +254,7 @@ describe("labelTemplates domain", () => {
   });
 
   it("getTemplate returns null for missing id", async () => {
-    await expect(
-      getTemplate(ctx(), "nonexistent0000"),
-    ).resolves.toBeNull();
+    await expect(getTemplate(ctx(), "nonexistent0000")).resolves.toBeNull();
   });
 
   it("ensureDefaultTemplates seeds built-ins when empty and does nothing when present", async () => {

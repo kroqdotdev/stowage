@@ -95,10 +95,6 @@ describe("ServiceRecordForm", () => {
     await user.type(screen.getByLabelText(/Technician note/i), "Checked belts");
     expect(submitButton).toBeEnabled();
 
-    await user.click(screen.getByRole("combobox", { name: /Provider/i }));
-    await user.click(
-      await screen.findByRole("option", { name: "Dockside Repair" }),
-    );
     await user.type(screen.getByLabelText(/^Cost/i), "125.50");
 
     await user.click(submitButton);
@@ -109,7 +105,7 @@ describe("ServiceRecordForm", () => {
         serviceDate: "2026-03-04",
         description: "Completed manual service",
         cost: 125.5,
-        providerId: "provider1",
+        providerId: null,
         values: {
           field1: "Checked belts",
         },

@@ -38,7 +38,10 @@ vi.mock("next/navigation", () => ({
 vi.mock("@/components/labels/label-print", () => ({
   LabelPrint: () => (
     <div data-testid="mock-label-print">
-      <div data-barcode-type="datamatrix" data-barcode-state={mockBarcodeState} />
+      <div
+        data-barcode-type="datamatrix"
+        data-barcode-state={mockBarcodeState}
+      />
     </div>
   ),
 }));

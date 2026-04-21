@@ -113,9 +113,7 @@ export async function createFieldDefinition(
   const latest = await ctx.pb
     .collection("customFieldDefinitions")
     .getList<FieldDefinitionRecord>(1, 1, { sort: "-sortOrder" });
-  const nextSortOrder = latest.items[0]
-    ? latest.items[0].sortOrder + 1
-    : 0;
+  const nextSortOrder = latest.items[0] ? latest.items[0].sortOrder + 1 : 0;
 
   const record = await ctx.pb
     .collection("customFieldDefinitions")

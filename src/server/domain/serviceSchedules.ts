@@ -367,10 +367,7 @@ export async function upsertSchedule(
   return toScheduleView(created);
 }
 
-export async function deleteSchedule(
-  ctx: Ctx,
-  assetId: string,
-): Promise<void> {
+export async function deleteSchedule(ctx: Ctx, assetId: string): Promise<void> {
   await assertAssetExists(ctx, assetId);
   if (!(await isServiceSchedulingEnabled(ctx))) {
     throw new ConflictError(

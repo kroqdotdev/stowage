@@ -62,9 +62,7 @@ export async function listTags(ctx: Ctx): Promise<TagView[]> {
   // PB's SQL sort is lexicographic (uppercase before lowercase), so mixed-case
   // names would come back in the wrong order. Sort in JS with
   // localeCompare(..., { sensitivity: "base" }) instead.
-  const records = await ctx.pb
-    .collection("tags")
-    .getFullList<TagRecord>();
+  const records = await ctx.pb.collection("tags").getFullList<TagRecord>();
   return records
     .sort((a, b) =>
       a.name.localeCompare(b.name, undefined, { sensitivity: "base" }),

@@ -99,9 +99,7 @@ export function normalizeLabelTemplateElements({
     const id = element.id.trim();
     if (!id) throw new ValidationError("Element id is required");
     if (seenIds.has(id)) {
-      throw new ValidationError(
-        "Element ids must be unique within a template",
-      );
+      throw new ValidationError("Element ids must be unique within a template");
     }
     seenIds.add(id);
 

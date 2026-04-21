@@ -278,9 +278,9 @@ describe("customFields domain", () => {
       updatedAt: Date.now(),
     });
 
-    await expect(
-      deleteFieldDefinition(ctx(), field.id),
-    ).rejects.toBeInstanceOf(ConflictError);
+    await expect(deleteFieldDefinition(ctx(), field.id)).rejects.toBeInstanceOf(
+      ConflictError,
+    );
   });
 
   it("deletes an unused field definition", async () => {
@@ -289,7 +289,9 @@ describe("customFields domain", () => {
       fieldType: "text",
       required: false,
     });
-    await expect(deleteFieldDefinition(ctx(), field.id)).resolves.toBeUndefined();
+    await expect(
+      deleteFieldDefinition(ctx(), field.id),
+    ).resolves.toBeUndefined();
     await expect(listFieldDefinitions(ctx())).resolves.toEqual([]);
   });
 

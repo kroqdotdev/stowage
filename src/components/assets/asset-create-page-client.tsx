@@ -19,10 +19,7 @@ import type {
 import type { FieldDefinition } from "@/components/fields/types";
 import { Button } from "@/components/ui/button";
 import { getAppSettings } from "@/lib/api/app-settings";
-import {
-  createAsset,
-  getAssetFilterOptions,
-} from "@/lib/api/assets";
+import { createAsset, getAssetFilterOptions } from "@/lib/api/assets";
 import { listCustomFields } from "@/lib/api/custom-fields";
 import { upsertSchedule } from "@/lib/api/service-schedules";
 

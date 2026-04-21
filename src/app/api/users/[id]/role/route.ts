@@ -1,8 +1,5 @@
 import { parseJsonBody, withAdmin } from "@/server/auth/route";
-import {
-  UpdateUserRoleInput,
-  updateUserRole,
-} from "@/server/domain/users";
+import { UpdateUserRoleInput, updateUserRole } from "@/server/domain/users";
 
 const ClientUpdateRole = UpdateUserRoleInput.omit({
   userId: true,

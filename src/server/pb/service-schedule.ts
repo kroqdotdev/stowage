@@ -48,11 +48,7 @@ export function requireIsoDate(value: string) {
   return formatIsoDate(parseIsoDate(value));
 }
 
-function applyInterval(
-  date: Date,
-  value: number,
-  unit: ServiceIntervalUnit,
-) {
+function applyInterval(date: Date, value: number, unit: ServiceIntervalUnit) {
   const next = new Date(date.getTime());
   if (unit === "days") {
     next.setUTCDate(next.getUTCDate() + value);
@@ -110,10 +106,7 @@ export function ensureReminderWithinInterval({
 }) {
   requirePositiveInteger(intervalValue, "Interval value");
   requireNonNegativeInteger(reminderLeadValue, "Reminder lead value");
-  const intervalDuration = getDurationMsFromAnchor(
-    intervalValue,
-    intervalUnit,
-  );
+  const intervalDuration = getDurationMsFromAnchor(intervalValue, intervalUnit);
   const reminderDuration = getDurationMsFromAnchor(
     reminderLeadValue,
     reminderLeadUnit,

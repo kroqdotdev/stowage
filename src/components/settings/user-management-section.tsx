@@ -144,10 +144,7 @@ export function UserManagementSection({
     });
   }
 
-  async function handleSaveRole(
-    userId: string,
-    currentRole: "admin" | "user",
-  ) {
+  async function handleSaveRole(userId: string, currentRole: "admin" | "user") {
     const nextRole = roleEdits[userId] ?? currentRole;
     if (nextRole === currentRole) {
       return;

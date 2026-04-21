@@ -17,10 +17,7 @@ import {
   normalizeCustomFieldValues,
   requireAssetName,
 } from "@/server/pb/assets";
-import {
-  NotFoundError,
-  ValidationError,
-} from "@/server/pb/errors";
+import { NotFoundError, ValidationError } from "@/server/pb/errors";
 import {
   getTagIdsForAsset,
   listTagsForAsset,
@@ -76,9 +73,7 @@ export const ListAssetsInput = z.object({
   status: assetStatusSchema.optional(),
   tagIds: z.array(z.string()).optional(),
   search: z.string().optional(),
-  sortBy: z
-    .enum(["createdAt", "name", "assetTag", "status"])
-    .optional(),
+  sortBy: z.enum(["createdAt", "name", "assetTag", "status"]).optional(),
   sortDirection: z.enum(["asc", "desc"]).optional(),
 });
 
@@ -269,9 +264,7 @@ async function getNextAssetTagForPrefix(
   ctx: Ctx,
   prefix: string,
 ): Promise<AssetTagPreview> {
-  const rows = await ctx.pb
-    .collection("assets")
-    .getFullList<AssetRecord>();
+  const rows = await ctx.pb.collection("assets").getFullList<AssetRecord>();
   let maxNumber = 0;
   for (const row of rows) {
     const n = getAssetTagNumber(row.assetTag, prefix);
@@ -323,9 +316,7 @@ function normalizeCustomValueByType(
   if (normalized === null) return null;
 
   if (definition.fieldType === "date" && !isIsoDateOnly(normalized)) {
-    throw new ValidationError(
-      `${definition.name} must use YYYY-MM-DD format`,
-    );
+    throw new ValidationError(`${definition.name} must use YYYY-MM-DD format`);
   }
   if (definition.fieldType === "dropdown") {
     const options = definition.options ?? [];
@@ -402,11 +393,9 @@ async function updateFieldUsageCounts(
       const definition = await ctx.pb
         .collection("customFieldDefinitions")
         .getOne<FieldDefinitionRecord>(fieldId);
-      await ctx.pb
-        .collection("customFieldDefinitions")
-        .update(fieldId, {
-          usageCount: Math.max(0, definition.usageCount - 1),
-        });
+      await ctx.pb.collection("customFieldDefinitions").update(fieldId, {
+        usageCount: Math.max(0, definition.usageCount - 1),
+      });
     } catch (error) {
       if (error instanceof ClientResponseError && error.status === 404) {
         continue;
@@ -529,9 +518,7 @@ async function buildAssetListViews(
     const tagNames = tagIdsForAsset
       .map((id) => tagById.get(id)?.name ?? null)
       .filter((name): name is string => !!name)
-      .sort((a, b) =>
-        a.localeCompare(b, undefined, { sensitivity: "base" }),
-      );
+      .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
 
     return {
       id: asset.id,
@@ -555,15 +542,8 @@ async function buildAssetListViews(
 
 function matchesAssetSearch(row: AssetListView, needle: string) {
   if (!needle) return true;
-  const haystacks = [
-    row.name,
-    row.assetTag,
-    row.notes ?? "",
-    ...row.tagNames,
-  ];
-  return haystacks.some((value) =>
-    value.toLocaleLowerCase().includes(needle),
-  );
+  const haystacks = [row.name, row.assetTag, row.notes ?? "", ...row.tagNames];
+  return haystacks.some((value) => value.toLocaleLowerCase().includes(needle));
 }
 
 export async function generateAssetTag(
@@ -765,11 +745,9 @@ export async function listAssets(
     if (tagAssetIds.size === 0) return [];
   }
 
-  const rows = await ctx.pb
-    .collection("assets")
-    .getFullList<AssetRecord>({
-      filter: filters.length > 0 ? filters.join(" && ") : undefined,
-    });
+  const rows = await ctx.pb.collection("assets").getFullList<AssetRecord>({
+    filter: filters.length > 0 ? filters.join(" && ") : undefined,
+  });
 
   const filtered = tagAssetIds
     ? rows.filter((row) => tagAssetIds!.has(row.id))
@@ -860,10 +838,7 @@ export async function updateAssetStatus(
   });
 }
 
-export async function deleteAsset(
-  ctx: Ctx,
-  assetId: string,
-): Promise<void> {
+export async function deleteAsset(ctx: Ctx, assetId: string): Promise<void> {
   const asset = await loadAsset(ctx, assetId);
   await updateFieldUsageCounts(ctx, asset.customFieldValues ?? {}, {});
 
@@ -877,21 +852,15 @@ export async function deleteAsset(
       ctx.pb.collection("assetTags").getFullList<{ id: string }>({
         filter: `assetId = "${escapeFilter(asset.id)}"`,
       }),
-      ctx.pb
-        .collection("attachments")
-        .getFullList<{ id: string }>({
-          filter: `assetId = "${escapeFilter(asset.id)}"`,
-        }),
-      ctx.pb
-        .collection("serviceSchedules")
-        .getFullList<{ id: string }>({
-          filter: `assetId = "${escapeFilter(asset.id)}"`,
-        }),
-      ctx.pb
-        .collection("serviceRecords")
-        .getFullList<{ id: string }>({
-          filter: `assetId = "${escapeFilter(asset.id)}"`,
-        }),
+      ctx.pb.collection("attachments").getFullList<{ id: string }>({
+        filter: `assetId = "${escapeFilter(asset.id)}"`,
+      }),
+      ctx.pb.collection("serviceSchedules").getFullList<{ id: string }>({
+        filter: `assetId = "${escapeFilter(asset.id)}"`,
+      }),
+      ctx.pb.collection("serviceRecords").getFullList<{ id: string }>({
+        filter: `assetId = "${escapeFilter(asset.id)}"`,
+      }),
     ]);
 
   for (const link of assetTagLinks) {
@@ -939,11 +908,9 @@ export type LabelPreviewAssetView = {
 export async function getLabelPreviewAsset(
   ctx: Ctx,
 ): Promise<LabelPreviewAssetView | null> {
-  const assets = await ctx.pb
-    .collection("assets")
-    .getList<AssetRecord>(1, 1, {
-      sort: "-createdAt",
-    });
+  const assets = await ctx.pb.collection("assets").getList<AssetRecord>(1, 1, {
+    sort: "-createdAt",
+  });
   const asset = assets.items[0] ?? null;
   if (!asset) return null;
   return toLabelPreviewAssetView(ctx, asset);
@@ -957,9 +924,7 @@ export async function getAssetsForLabels(
   const records = await Promise.all(
     dedupedIds.map(async (assetId) => {
       try {
-        return await ctx.pb
-          .collection("assets")
-          .getOne<AssetRecord>(assetId);
+        return await ctx.pb.collection("assets").getOne<AssetRecord>(assetId);
       } catch (error) {
         if (error instanceof ClientResponseError && error.status === 404) {
           return null;
@@ -1026,31 +991,25 @@ export async function getAssetFilterOptions(
   ctx: Ctx,
 ): Promise<AssetFilterOptionsView> {
   const [categories, locations, tags, serviceGroups] = await Promise.all([
-    ctx.pb
-      .collection("categories")
-      .getFullList<{
-        id: string;
-        name: string;
-        prefix: string;
-        color: string;
-      }>(),
-    ctx.pb
-      .collection("locations")
-      .getFullList<{
-        id: string;
-        name: string;
-        parentId: string;
-        path: string;
-      }>(),
-    ctx.pb
-      .collection("tags")
-      .getFullList<{
-        id: string;
-        name: string;
-        color: string;
-        createdAt: number;
-        updatedAt: number;
-      }>(),
+    ctx.pb.collection("categories").getFullList<{
+      id: string;
+      name: string;
+      prefix: string;
+      color: string;
+    }>(),
+    ctx.pb.collection("locations").getFullList<{
+      id: string;
+      name: string;
+      parentId: string;
+      path: string;
+    }>(),
+    ctx.pb.collection("tags").getFullList<{
+      id: string;
+      name: string;
+      color: string;
+      createdAt: number;
+      updatedAt: number;
+    }>(),
     ctx.pb
       .collection("serviceGroups")
       .getFullList<{ id: string; name: string }>(),

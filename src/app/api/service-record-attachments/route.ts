@@ -7,18 +7,21 @@ import {
 } from "@/server/domain/serviceRecordAttachments";
 import { ValidationError } from "@/server/pb/errors";
 
-export const GET = withUser("api/service-record-attachments", async (req, session) => {
-  const url = new URL(req.url);
-  const serviceRecordId = url.searchParams.get("serviceRecordId");
-  if (!serviceRecordId) {
-    throw new ValidationError("serviceRecordId is required");
-  }
-  const attachments = await listServiceRecordAttachments(
-    session.ctx,
-    serviceRecordId,
-  );
-  return { attachments };
-});
+export const GET = withUser(
+  "api/service-record-attachments",
+  async (req, session) => {
+    const url = new URL(req.url);
+    const serviceRecordId = url.searchParams.get("serviceRecordId");
+    if (!serviceRecordId) {
+      throw new ValidationError("serviceRecordId is required");
+    }
+    const attachments = await listServiceRecordAttachments(
+      session.ctx,
+      serviceRecordId,
+    );
+    return { attachments };
+  },
+);
 
 export const POST = withUser(
   "api/service-record-attachments",

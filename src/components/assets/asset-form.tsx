@@ -237,10 +237,7 @@ export function AssetForm({
           <Select
             value={values.categoryId ?? "__none__"}
             onValueChange={(value) =>
-              setFieldValue(
-                "categoryId",
-                value === "__none__" ? null : value,
-              )
+              setFieldValue("categoryId", value === "__none__" ? null : value)
             }
             disabled={submitting}
           >

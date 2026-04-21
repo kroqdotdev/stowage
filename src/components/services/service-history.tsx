@@ -75,9 +75,7 @@ export function ServiceHistory({ assetId }: { assetId: string }) {
         queryKey: ["service-records", "by-asset", assetId],
       });
     } catch (error) {
-      toast.error(
-        getApiErrorMessage(error, "Unable to delete service record"),
-      );
+      toast.error(getApiErrorMessage(error, "Unable to delete service record"));
     }
   }
 

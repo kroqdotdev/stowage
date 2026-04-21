@@ -97,7 +97,10 @@ export function ServicesCalendarMonth() {
   return (
     <section className="space-y-4">
       <div className="flex items-center justify-between gap-2">
-        <h2 data-testid="calendar-month-heading" className="text-base font-semibold tracking-tight">
+        <h2
+          data-testid="calendar-month-heading"
+          className="text-base font-semibold tracking-tight"
+        >
           {monthLabel(state)}
         </h2>
         <div className="flex items-center gap-2">

@@ -74,7 +74,7 @@ describe("attachments domain", () => {
       optimizationAttempts: 0,
       optimizationError: null,
     });
-    expect(list[0].url).toMatch(/\/api\/files\/attachments\/.+/);
+    expect(list[0].url).toBe(`/api/attachments/${attachmentId}/download`);
     expect(list[0].fileSizeOriginal).toBe(TINY_PNG.byteLength);
   });
 
@@ -195,8 +195,8 @@ describe("attachments domain", () => {
       fileBuffer: TINY_PNG,
       actorId: admin.id,
     });
-    await expect(getAttachmentUrl(ctx(), attachmentId)).resolves.toMatch(
-      /\/api\/files\/attachments\//,
+    await expect(getAttachmentUrl(ctx(), attachmentId)).resolves.toBe(
+      `/api/attachments/${attachmentId}/download`,
     );
   });
 

@@ -88,9 +88,7 @@ export function ensureSafeTypeChange(
 
 export function ensureFieldNotInUse(usageCount: number) {
   if (usageCount > 0) {
-    throw new ValidationError(
-      "This field is in use and cannot be deleted",
-    );
+    throw new ValidationError("This field is in use and cannot be deleted");
   }
 }
 

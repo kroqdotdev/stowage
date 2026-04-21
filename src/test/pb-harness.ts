@@ -236,9 +236,7 @@ async function truncateUserCollections(pb: PocketBase) {
     // blocked while children still reference them, so we delete leaves first
     // and then re-scan. Abort if a pass makes zero progress to avoid an
     // infinite loop on genuinely stuck data.
-    let remaining = await pb
-      .collection(name)
-      .getFullList({ batch: 200 });
+    let remaining = await pb.collection(name).getFullList({ batch: 200 });
     while (remaining.length > 0) {
       let progress = false;
       for (const rec of remaining) {

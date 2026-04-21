@@ -98,9 +98,7 @@ function sortTemplates(records: LabelTemplateRecord[]) {
 }
 
 async function listAll(ctx: Ctx) {
-  return ctx.pb
-    .collection("labelTemplates")
-    .getFullList<LabelTemplateRecord>();
+  return ctx.pb.collection("labelTemplates").getFullList<LabelTemplateRecord>();
 }
 
 async function loadTemplate(
@@ -131,9 +129,7 @@ async function assertUniqueName(
     });
   const duplicate = matches.items.find((row) => row.id !== excludeId);
   if (duplicate) {
-    throw new ConflictError(
-      "A label template with this name already exists",
-    );
+    throw new ConflictError("A label template with this name already exists");
   }
 }
 
@@ -176,9 +172,7 @@ async function patchDefaultState(ctx: Ctx, templateId: string) {
     .update(templateId, { isDefault: true });
 }
 
-export async function listTemplates(
-  ctx: Ctx,
-): Promise<LabelTemplateView[]> {
+export async function listTemplates(ctx: Ctx): Promise<LabelTemplateView[]> {
   return sortTemplates(await listAll(ctx)).map(toView);
 }
 
@@ -204,9 +198,7 @@ export async function getDefaultTemplate(
 ): Promise<LabelTemplateView | null> {
   const templates = sortTemplates(await listAll(ctx));
   const template =
-    templates.find((candidate) => candidate.isDefault) ??
-    templates[0] ??
-    null;
+    templates.find((candidate) => candidate.isDefault) ?? templates[0] ?? null;
   return template ? toView(template) : null;
 }
 
@@ -223,8 +215,7 @@ export async function ensureDefaultTemplates(
   const byName = new Map(existing.map((t) => [t.normalizedName, t]));
   const now = Date.now();
   let seeded = false;
-  let defaultId =
-    existing.find((t) => t.isDefault)?.id ?? null;
+  let defaultId = existing.find((t) => t.isDefault)?.id ?? null;
 
   for (const template of createDefaultLabelTemplateDefinitions()) {
     const match = byName.get(template.normalizedName);
@@ -253,9 +244,7 @@ export async function ensureDefaultTemplates(
 
   if (!defaultId) {
     const fallback =
-      byName.get("thermal 57x32 mm") ??
-      Array.from(byName.values())[0] ??
-      null;
+      byName.get("thermal 57x32 mm") ?? Array.from(byName.values())[0] ?? null;
     defaultId = fallback?.id ?? null;
   }
 
@@ -338,9 +327,7 @@ export async function deleteTemplate(
 ): Promise<void> {
   const template = await loadTemplate(ctx, templateId);
   if (template.isDefault) {
-    throw new ConflictError(
-      "The default label template cannot be deleted",
-    );
+    throw new ConflictError("The default label template cannot be deleted");
   }
   await ctx.pb.collection("labelTemplates").delete(template.id);
 }

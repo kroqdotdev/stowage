@@ -334,9 +334,7 @@ export function TemplateDesigner({
       }
       void queryClient.invalidateQueries({ queryKey: ["label-templates"] });
     } catch (error) {
-      toast.error(
-        getApiErrorMessage(error, "Unable to save label template"),
-      );
+      toast.error(getApiErrorMessage(error, "Unable to save label template"));
     }
   }
 
@@ -355,9 +353,7 @@ export function TemplateDesigner({
       setSelectedElementId(null);
       void queryClient.invalidateQueries({ queryKey: ["label-templates"] });
     } catch (error) {
-      toast.error(
-        getApiErrorMessage(error, "Unable to delete label template"),
-      );
+      toast.error(getApiErrorMessage(error, "Unable to delete label template"));
     }
   }
 

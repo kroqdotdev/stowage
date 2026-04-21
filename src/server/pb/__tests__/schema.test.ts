@@ -133,4 +133,32 @@ describe("pb schema", () => {
     );
     expect(byTag.items[0]?.assetTag).toBe("LAP-0100");
   });
+
+  it("hides direct collection reads from anonymous callers", async () => {
+    const pb = getHarness().admin;
+    const category = await pb.collection("categories").create({
+      name: "Hidden",
+      normalizedName: "hidden",
+      color: "#112233",
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    });
+
+    const listRes = await fetch(
+      `${getHarness().url}/api/collections/categories/records`,
+    );
+    const listBody = (await listRes.json()) as {
+      items: Array<{ id: string }>;
+      totalItems: number;
+    };
+
+    expect(listRes.status).toBe(200);
+    expect(listBody.items).toEqual([]);
+    expect(listBody.totalItems).toBe(0);
+
+    const viewRes = await fetch(
+      `${getHarness().url}/api/collections/categories/records/${category.id}`,
+    );
+    expect(viewRes.ok).toBe(false);
+  });
 });

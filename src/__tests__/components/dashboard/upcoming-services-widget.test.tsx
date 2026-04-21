@@ -78,9 +78,7 @@ describe("UpcomingServicesWidget", () => {
       />,
     );
 
-    expect(
-      screen.getByText("Service scheduling is disabled."),
-    ).toBeVisible();
+    expect(screen.getByText("Service scheduling is disabled.")).toBeVisible();
   });
 
   it("shows empty state when enabled but no items", () => {
@@ -93,8 +91,6 @@ describe("UpcomingServicesWidget", () => {
       />,
     );
 
-    expect(
-      screen.getByText("No scheduled services yet."),
-    ).toBeVisible();
+    expect(screen.getByText("No scheduled services yet.")).toBeVisible();
   });
 });

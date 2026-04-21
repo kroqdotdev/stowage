@@ -57,9 +57,7 @@ describe("useRealtimeCollection", () => {
     // Simulate a realtime event
     const [, onChange] = subscribeMock.mock.calls[0];
     onChange({});
-    await waitFor(() =>
-      expect(result.current.data).toEqual({ items: [1, 2] }),
-    );
+    await waitFor(() => expect(result.current.data).toEqual({ items: [1, 2] }));
   });
 
   it("does not subscribe when disabled", async () => {

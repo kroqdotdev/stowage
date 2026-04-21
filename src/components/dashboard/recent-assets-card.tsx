@@ -53,7 +53,8 @@ export function RecentAssetsCard({
                     {asset.assetTag}
                   </p>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    Updated {formatDateFromTimestamp(asset.updatedAt, dateFormat)}
+                    Updated{" "}
+                    {formatDateFromTimestamp(asset.updatedAt, dateFormat)}
                   </p>
                 </div>
                 <div className="flex items-center gap-2">

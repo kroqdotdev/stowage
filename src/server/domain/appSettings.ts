@@ -53,9 +53,7 @@ function toView(record: AppSettingsRecord | null): AppSettingsView {
   };
 }
 
-async function getGlobalRecord(
-  ctx: Ctx,
-): Promise<AppSettingsRecord | null> {
+async function getGlobalRecord(ctx: Ctx): Promise<AppSettingsRecord | null> {
   try {
     return await ctx.pb
       .collection("appSettings")

@@ -147,8 +147,6 @@ export async function updateServiceGroupField(
   return field;
 }
 
-export async function deleteServiceGroupField(
-  fieldId: string,
-): Promise<void> {
+export async function deleteServiceGroupField(fieldId: string): Promise<void> {
   await apiFetch(`/api/service-group-fields/${fieldId}`, { method: "DELETE" });
 }

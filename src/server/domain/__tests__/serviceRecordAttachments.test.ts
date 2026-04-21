@@ -8,10 +8,7 @@ import {
   listServiceRecordAttachments,
 } from "@/server/domain/serviceRecordAttachments";
 import type { Ctx } from "@/server/pb/context";
-import {
-  NotFoundError,
-  ValidationError,
-} from "@/server/pb/errors";
+import { NotFoundError, ValidationError } from "@/server/pb/errors";
 import { usePbHarness } from "@/test/pb-harness";
 
 async function seedAdmin(pb: Ctx["pb"]) {
@@ -83,7 +80,9 @@ describe("serviceRecordAttachments domain", () => {
       fileName: "invoice.pdf",
       fileKind: "pdf",
     });
-    expect(list[0].url).toMatch(/\/api\/files\/serviceRecordAttachments\//);
+    expect(list[0].url).toBe(
+      `/api/service-record-attachments/${attachmentId}/download`,
+    );
 
     await deleteServiceRecordAttachment(ctx(), attachmentId, {
       id: admin.id,

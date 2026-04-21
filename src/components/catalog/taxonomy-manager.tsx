@@ -166,9 +166,7 @@ export function TaxonomyManager({
       toast.success(`${singularTitle} deleted`);
       setDeleteId(null);
     } catch (error) {
-      toast.error(
-        getApiErrorMessage(error, `Unable to delete ${singular}`),
-      );
+      toast.error(getApiErrorMessage(error, `Unable to delete ${singular}`));
     } finally {
       setDeleting(false);
     }

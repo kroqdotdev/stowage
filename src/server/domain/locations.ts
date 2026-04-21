@@ -111,7 +111,9 @@ async function loadParent(
 ): Promise<LocationRecord | null> {
   if (!parentId) return null;
   try {
-    return await ctx.pb.collection("locations").getOne<LocationRecord>(parentId);
+    return await ctx.pb
+      .collection("locations")
+      .getOne<LocationRecord>(parentId);
   } catch (error) {
     if (error instanceof ClientResponseError && error.status === 404) {
       throw new ValidationError("Parent location not found");
@@ -177,9 +179,7 @@ export async function getLocationChildren(
   ctx: Ctx,
   parentId: string | null,
 ): Promise<LocationView[]> {
-  const filter = parentId
-    ? `parentId = "${parentId}"`
-    : `parentId = ""`;
+  const filter = parentId ? `parentId = "${parentId}"` : `parentId = ""`;
   const records = await ctx.pb
     .collection("locations")
     .getFullList<LocationRecord>({ filter });
@@ -247,9 +247,7 @@ async function updateLocationCore(
       ? existing.description
       : (normalizeLocationDescription(args.description) ?? "");
   const nextParentId =
-    args.parentId === undefined
-      ? existing.parentId || null
-      : args.parentId;
+    args.parentId === undefined ? existing.parentId || null : args.parentId;
 
   if (nextParentId === existing.id) {
     throw new ValidationError("A location cannot be its own parent");

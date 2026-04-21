@@ -21,11 +21,7 @@ import type {
 import type { FieldDefinition } from "@/components/fields/types";
 import { Button } from "@/components/ui/button";
 import { getAppSettings } from "@/lib/api/app-settings";
-import {
-  getAsset,
-  getAssetFilterOptions,
-  updateAsset,
-} from "@/lib/api/assets";
+import { getAsset, getAssetFilterOptions, updateAsset } from "@/lib/api/assets";
 import { listCustomFields } from "@/lib/api/custom-fields";
 import {
   deleteSchedule,

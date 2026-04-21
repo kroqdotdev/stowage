@@ -4,7 +4,7 @@ import { z } from "zod";
 
 import { DomainError } from "@/server/pb/errors";
 
-import { PB_AUTH_COOKIE } from "./cookies";
+import { PB_AUTH_COOKIE, clearPbAuthCookie, setPbAuthCookie } from "./cookies";
 import {
   createRequestSession,
   requireAdmin,
@@ -13,7 +13,9 @@ import {
   type SessionUser,
 } from "./session";
 
-export type RouteContext<P extends Record<string, string> = Record<string, string>> = {
+export type RouteContext<
+  P extends Record<string, string> = Record<string, string>,
+> = {
   params: Promise<P>;
 };
 
@@ -44,10 +46,7 @@ export function handleRouteError(
     );
   }
   console.error(`[${context}] unexpected error`, error);
-  return NextResponse.json(
-    { error: "Internal server error" },
-    { status: 500 },
-  );
+  return NextResponse.json({ error: "Internal server error" }, { status: 500 });
 }
 
 type SessionHandler<R, P extends Record<string, string>> = (
@@ -63,43 +62,61 @@ type UserHandler<R, P extends Record<string, string>> = (
   routeCtx: RouteContext<P>,
 ) => Promise<R | NextResponse>;
 
-export function withSession<R, P extends Record<string, string> = Record<string, never>>(
-  context: string,
-  handler: SessionHandler<R, P>,
-) {
+function applySessionCookies(res: NextResponse, session: RequestSession) {
+  if (session.activeToken) {
+    setPbAuthCookie(res, session.activeToken);
+    return;
+  }
+
+  if (session.staleToken) {
+    clearPbAuthCookie(res);
+  }
+}
+
+export function withSession<
+  R,
+  P extends Record<string, string> = Record<string, never>,
+>(context: string, handler: SessionHandler<R, P>) {
   return async (
     req: NextRequest,
     routeCtx?: RouteContext<P>,
   ): Promise<NextResponse> => {
+    let session: RequestSession | null = null;
     try {
-      const session = await getRequestSession(req);
+      session = await getRequestSession(req);
       const result = await handler(
         req,
         session,
         routeCtx ?? { params: Promise.resolve({} as P) },
       );
-      if (result instanceof NextResponse) return result;
-      return NextResponse.json(result);
+      const res =
+        result instanceof NextResponse ? result : NextResponse.json(result);
+      applySessionCookies(res, session);
+      return res;
     } catch (error) {
-      return handleRouteError(error, context);
+      const res = handleRouteError(error, context);
+      if (session) {
+        applySessionCookies(res, session);
+      }
+      return res;
     }
   };
 }
 
-export function withUser<R, P extends Record<string, string> = Record<string, never>>(
-  context: string,
-  handler: UserHandler<R, P>,
-) {
+export function withUser<
+  R,
+  P extends Record<string, string> = Record<string, never>,
+>(context: string, handler: UserHandler<R, P>) {
   return withSession<R, P>(context, async (req, session, routeCtx) => {
     const user = requireUser(session);
     return handler(req, session, user, routeCtx);
   });
 }
 
-export function withAdmin<R, P extends Record<string, string> = Record<string, never>>(
-  context: string,
-  handler: UserHandler<R, P>,
-) {
+export function withAdmin<
+  R,
+  P extends Record<string, string> = Record<string, never>,
+>(context: string, handler: UserHandler<R, P>) {
   return withSession<R, P>(context, async (req, session, routeCtx) => {
     const user = requireAdmin(session);
     return handler(req, session, user, routeCtx);

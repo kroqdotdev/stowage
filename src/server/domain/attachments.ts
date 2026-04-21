@@ -2,7 +2,7 @@ import { ClientResponseError } from "pocketbase";
 import { z } from "zod";
 
 import type { Ctx } from "@/server/pb/context";
-import { getPbPublicUrl } from "@/server/pb/client";
+import { getPbUrl } from "@/server/pb/client";
 import {
   ATTACHMENT_KINDS,
   ATTACHMENT_STATUSES,
@@ -53,6 +53,10 @@ export type AttachmentView = {
   url: string | null;
 };
 
+export type AttachmentDownloadSource = {
+  url: string;
+};
+
 export const CreateAttachmentInput = z.object({
   assetId: z.string(),
   fileName: z.string(),
@@ -63,9 +67,9 @@ export const CreateAttachmentInput = z.object({
 
 export type CreateAttachmentInput = z.infer<typeof CreateAttachmentInput>;
 
-function attachmentFileUrl(record: AttachmentRecord): string | null {
+function attachmentStorageUrl(record: AttachmentRecord): string | null {
   if (!record.storageFile) return null;
-  return `${getPbPublicUrl()}/api/files/attachments/${record.id}/${encodeURIComponent(
+  return `${getPbUrl()}/api/files/attachments/${record.id}/${encodeURIComponent(
     record.storageFile,
   )}`;
 }
@@ -86,7 +90,7 @@ function toView(record: AttachmentRecord): AttachmentView {
     uploadedBy: record.uploadedBy,
     uploadedAt: record.uploadedAt,
     updatedAt: record.updatedAt,
-    url: attachmentFileUrl(record),
+    url: record.storageFile ? `/api/attachments/${record.id}/download` : null,
   };
 }
 
@@ -224,7 +228,19 @@ export async function getAttachmentUrl(
   attachmentId: string,
 ): Promise<string | null> {
   const record = await requireAttachment(ctx, attachmentId);
-  return attachmentFileUrl(record);
+  return record.storageFile ? `/api/attachments/${record.id}/download` : null;
+}
+
+export async function getAttachmentDownloadSource(
+  ctx: Ctx,
+  attachmentId: string,
+): Promise<AttachmentDownloadSource | null> {
+  const record = await requireAttachment(ctx, attachmentId);
+  const url = attachmentStorageUrl(record);
+  if (!url) {
+    return null;
+  }
+  return { url };
 }
 
 export async function deleteAttachment(
@@ -241,9 +257,7 @@ export async function retryAttachmentOptimization(
 ): Promise<AttachmentView> {
   const attachment = await requireAttachment(ctx, attachmentId);
   if (attachment.status !== "failed" && attachment.status !== "pending") {
-    throw new ValidationError(
-      "This attachment is not in a retryable state.",
-    );
+    throw new ValidationError("This attachment is not in a retryable state.");
   }
   const updated = await ctx.pb
     .collection("attachments")
@@ -283,14 +297,22 @@ export async function markAttachmentProcessing(
   }
 
   const nextAttempt = (attachment.optimizationAttempts ?? 0) + 1;
-  const updated = await ctx.pb
-    .collection("attachments")
-    .update<AttachmentRecord>(attachment.id, {
-      status: "processing",
-      optimizationAttempts: nextAttempt,
-      optimizationError: "",
-      updatedAt: Date.now(),
-    });
+  let updated: AttachmentRecord;
+  try {
+    updated = await ctx.pb
+      .collection("attachments")
+      .update<AttachmentRecord>(attachment.id, {
+        status: "processing",
+        optimizationAttempts: nextAttempt,
+        optimizationError: "",
+        updatedAt: Date.now(),
+      });
+  } catch (error) {
+    if (error instanceof ClientResponseError && error.status === 404) {
+      return { state: "missing" };
+    }
+    throw error;
+  }
 
   return { state: "started", attempt: nextAttempt, record: updated };
 }
@@ -329,17 +351,31 @@ export async function markAttachmentReady(
     form.append("status", "ready");
     form.append("optimizationError", "");
     form.append("updatedAt", String(now));
-    await ctx.pb.collection("attachments").update(attachmentId, form);
+    try {
+      await ctx.pb.collection("attachments").update(attachmentId, form);
+    } catch (error) {
+      if (error instanceof ClientResponseError && error.status === 404) {
+        return;
+      }
+      throw error;
+    }
     return;
   }
 
-  await ctx.pb.collection("attachments").update(attachmentId, {
-    fileSizeOptimized,
-    status: "ready",
-    optimizationError: "",
-    "originalFile-": "",
-    updatedAt: now,
-  });
+  try {
+    await ctx.pb.collection("attachments").update(attachmentId, {
+      fileSizeOptimized,
+      status: "ready",
+      optimizationError: "",
+      "originalFile-": "",
+      updatedAt: now,
+    });
+  } catch (error) {
+    if (error instanceof ClientResponseError && error.status === 404) {
+      return;
+    }
+    throw error;
+  }
 }
 
 export async function markAttachmentFailed(
@@ -362,13 +398,20 @@ export async function markAttachmentFailed(
     throw error;
   }
 
-  await ctx.pb.collection("attachments").update(attachment.id, {
-    status: "failed",
-    optimizationError: errorMessage,
-    updatedAt: Date.now(),
-  });
-
   const attempt = attachment.optimizationAttempts ?? 0;
+  try {
+    await ctx.pb.collection("attachments").update(attachment.id, {
+      status: "failed",
+      optimizationError: errorMessage,
+      updatedAt: Date.now(),
+    });
+  } catch (error) {
+    if (error instanceof ClientResponseError && error.status === 404) {
+      return { attempt, shouldRetry: false };
+    }
+    throw error;
+  }
+
   return {
     attempt,
     shouldRetry: retryable && attempt < MAX_ATTACHMENT_RETRY_ATTEMPTS,

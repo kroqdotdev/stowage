@@ -114,9 +114,7 @@ export async function listAssets(
   return assets;
 }
 
-export async function getAsset(
-  assetId: string,
-): Promise<AssetDetail | null> {
+export async function getAsset(assetId: string): Promise<AssetDetail | null> {
   const { asset } = await apiFetch<{ asset: AssetDetail | null }>(
     `/api/assets/${assetId}`,
   );

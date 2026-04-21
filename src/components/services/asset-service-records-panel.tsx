@@ -2,10 +2,6 @@
 
 import { ServiceHistory } from "@/components/services/service-history";
 
-export function AssetServiceRecordsPanel({
-  assetId,
-}: {
-  assetId: string;
-}) {
+export function AssetServiceRecordsPanel({ assetId }: { assetId: string }) {
   return <ServiceHistory assetId={assetId} />;
 }

@@ -20,9 +20,11 @@ export const CreateFieldInput = z.object({
   actorId: z.string(),
 });
 
-export const UpdateFieldInput = CreateFieldInput.omit({ groupId: true }).extend({
-  fieldId: z.string(),
-});
+export const UpdateFieldInput = CreateFieldInput.omit({ groupId: true }).extend(
+  {
+    fieldId: z.string(),
+  },
+);
 
 export const ReorderFieldsInput = z.object({
   groupId: z.string(),
@@ -155,9 +157,7 @@ export async function createField(
       filter: `groupId = "${parsed.groupId}"`,
       sort: "-sortOrder",
     });
-  const nextSortOrder = existing.items[0]
-    ? existing.items[0].sortOrder + 1
-    : 0;
+  const nextSortOrder = existing.items[0] ? existing.items[0].sortOrder + 1 : 0;
 
   const now = Date.now();
   const record = await ctx.pb

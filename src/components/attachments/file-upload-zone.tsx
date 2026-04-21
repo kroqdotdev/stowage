@@ -7,10 +7,7 @@ import { toast } from "sonner";
 import { getAttachmentUiErrorMessage } from "@/components/attachments/error-messages";
 import type { AttachmentItem } from "@/components/attachments/types";
 import { cn } from "@/lib/utils";
-import {
-  getStorageUsage,
-  listAttachments,
-} from "@/lib/api/attachments";
+import { getStorageUsage, listAttachments } from "@/lib/api/attachments";
 import { ApiRequestError } from "@/lib/api-client";
 
 function formatStorageSize(bytes: number) {
@@ -100,9 +97,10 @@ function uploadWithProgress(
 
     request.onload = () => {
       if (request.status < 200 || request.status >= 300) {
-        const body = request.response as
-          | { error?: string; issues?: unknown }
-          | null;
+        const body = request.response as {
+          error?: string;
+          issues?: unknown;
+        } | null;
         reject(
           new ApiRequestError({
             error: body?.error ?? "Upload failed",
@@ -340,8 +338,7 @@ export function FileUploadZone({ assetId }: { assetId: string }) {
       const { attachmentId } = await uploadWithProgress(
         assetId,
         file,
-        (progress) =>
-          upsertJob(jobId, { progress, status: "uploading" }),
+        (progress) => upsertJob(jobId, { progress, status: "uploading" }),
       );
 
       upsertJob(jobId, {

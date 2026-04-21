@@ -3,6 +3,7 @@ import { NextRequest } from "next/server";
 
 import { makeRequest, readJson, seedUser } from "@/app/api/__tests__/helpers";
 import { createAsset } from "@/server/domain/assets";
+import { createAttachment } from "@/server/domain/attachments";
 import { usePbHarness } from "@/test/pb-harness";
 
 describe("attachments routes", () => {
@@ -130,14 +131,43 @@ describe("attachments routes", () => {
 
       const { GET } = await import("@/app/api/attachments/route");
       const res = await GET(
-        makeRequest(
-          `http://localhost/api/attachments?assetId=${assetId}`,
-          { token: admin.token },
-        ),
+        makeRequest(`http://localhost/api/attachments?assetId=${assetId}`, {
+          token: admin.token,
+        }),
       );
       expect(res.status).toBe(200);
       const body = await readJson<{ attachments: unknown[] }>(res);
       expect(Array.isArray(body.attachments)).toBe(true);
+    });
+  });
+
+  describe("GET /api/attachments/[id]/download", () => {
+    it("proxies file bytes through the app for authenticated users", async () => {
+      const admin = await seedUser(getHarness(), "admin");
+      const assetId = await createAssetDirect(admin.id);
+      const { attachmentId } = await createAttachment(
+        { pb: getHarness().admin },
+        {
+          assetId,
+          fileName: "note.pdf",
+          fileType: "application/pdf",
+          fileBuffer: new Uint8Array([0x25, 0x50, 0x44, 0x46, 0x2d]),
+          actorId: admin.id,
+        },
+      );
+
+      const { GET } = await import("@/app/api/attachments/[id]/download/route");
+      const res = await GET(
+        makeRequest(
+          `http://localhost/api/attachments/${attachmentId}/download`,
+          { token: admin.token },
+        ),
+        { params: Promise.resolve({ id: attachmentId }) },
+      );
+
+      expect(res.status).toBe(200);
+      expect(res.headers.get("content-type")).toContain("application/pdf");
+      expect((await res.arrayBuffer()).byteLength).toBe(5);
     });
   });
 });

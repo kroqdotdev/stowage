@@ -188,8 +188,8 @@ describe("tags domain", () => {
   });
 
   it("throws NotFoundError when deleting a tag that does not exist", async () => {
-    await expect(
-      deleteTag(ctx(), "nonexistent0000"),
-    ).rejects.toBeInstanceOf(NotFoundError);
+    await expect(deleteTag(ctx(), "nonexistent0000")).rejects.toBeInstanceOf(
+      NotFoundError,
+    );
   });
 });

@@ -263,9 +263,7 @@ export function ServiceRecordForm({
         queryKey: ["service-schedules"],
       });
     } catch (error) {
-      toast.error(
-        getApiErrorMessage(error, "Unable to save service record"),
-      );
+      toast.error(getApiErrorMessage(error, "Unable to save service record"));
     }
   }
 

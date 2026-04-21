@@ -8,7 +8,10 @@ vi.mock("@/lib/api/auth", () => ({
   getCurrentUser: () => getCurrentUserMock(),
 }));
 
-import { CURRENT_USER_QUERY_KEY, useCurrentUser } from "@/hooks/use-current-user";
+import {
+  CURRENT_USER_QUERY_KEY,
+  useCurrentUser,
+} from "@/hooks/use-current-user";
 
 function wrapper() {
   const qc = new QueryClient({
@@ -29,14 +32,18 @@ describe("useCurrentUser", () => {
       name: "Alex",
       role: "admin",
     });
-    const { result } = renderHook(() => useCurrentUser(), { wrapper: wrapper() });
+    const { result } = renderHook(() => useCurrentUser(), {
+      wrapper: wrapper(),
+    });
     await waitFor(() => expect(result.current.data).toBeDefined());
     expect(result.current.data?.email).toBe("a@x.com");
   });
 
   it("returns null when unauthenticated", async () => {
     getCurrentUserMock.mockResolvedValueOnce(null);
-    const { result } = renderHook(() => useCurrentUser(), { wrapper: wrapper() });
+    const { result } = renderHook(() => useCurrentUser(), {
+      wrapper: wrapper(),
+    });
     await waitFor(() => expect(result.current.isPending).toBe(false));
     expect(result.current.data).toBeNull();
   });

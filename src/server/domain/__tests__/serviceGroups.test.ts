@@ -9,9 +9,7 @@ import {
   listGroupAssets,
   updateGroup,
 } from "@/server/domain/serviceGroups";
-import {
-  createField,
-} from "@/server/domain/serviceGroupFields";
+import { createField } from "@/server/domain/serviceGroupFields";
 import type { Ctx } from "@/server/pb/context";
 import {
   ConflictError,
@@ -199,9 +197,9 @@ describe("serviceGroups domain", () => {
         actorId: admin.id,
       }),
     ).rejects.toBeInstanceOf(NotFoundError);
-    await expect(
-      deleteGroup(ctx(), "nonexistent0000"),
-    ).rejects.toBeInstanceOf(NotFoundError);
+    await expect(deleteGroup(ctx(), "nonexistent0000")).rejects.toBeInstanceOf(
+      NotFoundError,
+    );
     await expect(
       listGroupAssets(ctx(), "nonexistent0000"),
     ).rejects.toBeInstanceOf(NotFoundError);

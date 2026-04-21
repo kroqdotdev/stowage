@@ -16,7 +16,11 @@ import {
   requireCatalogName,
 } from "@/server/pb/catalog";
 import type { Ctx } from "@/server/pb/context";
-import { ConflictError, NotFoundError, ValidationError } from "@/server/pb/errors";
+import {
+  ConflictError,
+  NotFoundError,
+  ValidationError,
+} from "@/server/pb/errors";
 import { usePbHarness } from "@/test/pb-harness";
 
 describe("catalog helpers", () => {

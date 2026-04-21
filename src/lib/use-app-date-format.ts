@@ -11,5 +11,7 @@ export function useAppDateFormat(): AppDateFormat {
     queryFn: getAppSettings,
     staleTime: 5 * 60_000,
   });
-  return (data?.dateFormat as AppDateFormat | undefined) ?? DEFAULT_APP_DATE_FORMAT;
+  return (
+    (data?.dateFormat as AppDateFormat | undefined) ?? DEFAULT_APP_DATE_FORMAT
+  );
 }

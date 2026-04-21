@@ -270,8 +270,8 @@ describe("serviceSchedules domain", () => {
     const listed = await listScheduledAssets(ctx());
     expect(listed.map((item) => item.assetId)).toEqual([laptop, monitor]);
 
-    await expect(
-      listUpcomingServiceDueInDays(ctx(), 0),
-    ).rejects.toBeInstanceOf(ValidationError);
+    await expect(listUpcomingServiceDueInDays(ctx(), 0)).rejects.toBeInstanceOf(
+      ValidationError,
+    );
   });
 });

@@ -51,9 +51,7 @@ describe("RecentAssetsCard", () => {
   it("shows empty state when items is empty", () => {
     render(<RecentAssetsCard items={[]} dateFormat="DD-MM-YYYY" />);
 
-    expect(
-      screen.getByText("No assets have been added yet."),
-    ).toBeVisible();
+    expect(screen.getByText("No assets have been added yet.")).toBeVisible();
   });
 
   it("renders 'View all' link pointing to /assets", () => {
@@ -69,9 +67,6 @@ describe("RecentAssetsCard", () => {
 
     const viewLinks = screen.getAllByText("View");
     expect(viewLinks).toHaveLength(2);
-    expect(viewLinks[0].closest("a")).toHaveAttribute(
-      "href",
-      "/assets/asset1",
-    );
+    expect(viewLinks[0].closest("a")).toHaveAttribute("href", "/assets/asset1");
   });
 });

@@ -14,10 +14,7 @@ import { createField } from "@/server/domain/serviceGroupFields";
 import { createProvider } from "@/server/domain/serviceProviders";
 import { upsertSchedule } from "@/server/domain/serviceSchedules";
 import type { Ctx } from "@/server/pb/context";
-import {
-  NotFoundError,
-  ValidationError,
-} from "@/server/pb/errors";
+import { NotFoundError, ValidationError } from "@/server/pb/errors";
 import { usePbHarness } from "@/test/pb-harness";
 
 async function seedAdmin(pb: Ctx["pb"], name = "Admin User") {

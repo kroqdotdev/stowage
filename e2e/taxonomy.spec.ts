@@ -29,9 +29,7 @@ test.describe.serial("taxonomy page", () => {
     await signIn(page, email!, password!);
 
     await page.goto("/taxonomy");
-    await expect(
-      page.getByRole("heading", { name: "Taxonomy" }),
-    ).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Taxonomy" })).toBeVisible();
 
     // Default tab is categories
     await expect(page.getByRole("tab", { name: "Categories" })).toBeVisible();

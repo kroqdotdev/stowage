@@ -1,11 +1,14 @@
 "use client";
 
-import {
-  QueryClient,
-  QueryClientProvider,
-} from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import PocketBase from "pocketbase";
-import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
 
 type PbContext = {
   pb: PocketBase;
@@ -42,7 +45,9 @@ export function PocketBaseClientProvider({
 export function usePocketBase() {
   const ctx = useContext(Context);
   if (!ctx) {
-    throw new Error("usePocketBase must be used inside PocketBaseClientProvider");
+    throw new Error(
+      "usePocketBase must be used inside PocketBaseClientProvider",
+    );
   }
   return ctx.pb;
 }

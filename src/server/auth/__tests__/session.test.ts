@@ -64,6 +64,21 @@ describe("auth session helpers", () => {
     });
   });
 
+  it("createRequestSession captures refreshed auth state", async () => {
+    const { token } = await seedAndSignIn("admin");
+    const session = await createRequestSession(token);
+    expect(session.user?.role).toBe("admin");
+    expect(session.activeToken).toBeTruthy();
+    expect(session.staleToken).toBe(false);
+  });
+
+  it("createRequestSession marks stale tokens", async () => {
+    const session = await createRequestSession("garbage.token.value");
+    expect(session.user).toBeNull();
+    expect(session.activeToken).toBeNull();
+    expect(session.staleToken).toBe(true);
+  });
+
   it("requireUser / requireAdmin enforce roles", async () => {
     const { token: userToken } = await seedAndSignIn("user");
     const userSession = await createRequestSession(userToken);

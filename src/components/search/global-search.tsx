@@ -69,7 +69,9 @@ export function GlobalSearch() {
   );
 
   const handleOpenShortcut = useEffectEvent((event: KeyboardEvent) => {
-    if (!((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k")) {
+    if (
+      !((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k")
+    ) {
       return;
     }
 
@@ -163,13 +165,20 @@ export function GlobalSearch() {
                 >
                   <div className="min-w-0 flex-1">
                     <div className="flex min-w-0 items-center gap-2">
-                      <span className="truncate font-medium">{result.name}</span>
-                      <StatusBadge status={result.status} className="shrink-0" />
+                      <span className="truncate font-medium">
+                        {result.name}
+                      </span>
+                      <StatusBadge
+                        status={result.status}
+                        className="shrink-0"
+                      />
                     </div>
                     <div className="mt-1 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
                       <span className="font-mono">{result.assetTag}</span>
                       <span className="text-border">/</span>
-                      <span className="truncate">{getSecondaryMeta(result)}</span>
+                      <span className="truncate">
+                        {getSecondaryMeta(result)}
+                      </span>
                     </div>
                   </div>
                   <CommandShortcut className="flex items-center gap-1 normal-case tracking-normal">

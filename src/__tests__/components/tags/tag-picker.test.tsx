@@ -10,9 +10,7 @@ const options = [
 
 describe("TagPicker", () => {
   it("renders available tag options", () => {
-    render(
-      <TagPicker value={[]} options={options} onChange={vi.fn()} />,
-    );
+    render(<TagPicker value={[]} options={options} onChange={vi.fn()} />);
 
     expect(screen.getByText("Fragile")).toBeInTheDocument();
     expect(screen.getByText("Heavy")).toBeInTheDocument();
@@ -20,9 +18,7 @@ describe("TagPicker", () => {
   });
 
   it("shows empty message when no tags defined", () => {
-    render(
-      <TagPicker value={[]} options={[]} onChange={vi.fn()} />,
-    );
+    render(<TagPicker value={[]} options={[]} onChange={vi.fn()} />);
 
     expect(screen.getByText("No tags defined.")).toBeInTheDocument();
   });

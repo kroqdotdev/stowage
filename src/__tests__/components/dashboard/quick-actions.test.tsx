@@ -29,8 +29,9 @@ describe("QuickActions", () => {
       "href",
       "/assets/new",
     );
-    expect(
-      screen.getByText("View All Assets").closest("a"),
-    ).toHaveAttribute("href", "/assets");
+    expect(screen.getByText("View All Assets").closest("a")).toHaveAttribute(
+      "href",
+      "/assets",
+    );
   });
 });

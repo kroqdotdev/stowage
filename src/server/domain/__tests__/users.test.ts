@@ -27,6 +27,19 @@ describe("users domain", () => {
     await expect(checkFirstRun(ctx())).resolves.toBe(true);
   });
 
+  it("checkFirstRun stays true until an admin exists", async () => {
+    await ctx().pb.collection("users").create({
+      email: "member@stowage.local",
+      password: "password123",
+      passwordConfirm: "password123",
+      name: "Member",
+      role: "user",
+      createdAt: Date.now(),
+    });
+
+    await expect(checkFirstRun(ctx())).resolves.toBe(true);
+  });
+
   it("createFirstAdmin seeds the bootstrap admin and locks the endpoint", async () => {
     const admin = await createFirstAdmin(ctx(), {
       email: "Admin@Stowage.Local",
@@ -49,6 +62,26 @@ describe("users domain", () => {
         password: "password123",
       }),
     ).rejects.toBeInstanceOf(ConflictError);
+  });
+
+  it("createFirstAdmin still works when only non-admin users exist", async () => {
+    await ctx().pb.collection("users").create({
+      email: "member@stowage.local",
+      password: "password123",
+      passwordConfirm: "password123",
+      name: "Member",
+      role: "user",
+      createdAt: Date.now(),
+    });
+
+    const admin = await createFirstAdmin(ctx(), {
+      email: "admin@stowage.local",
+      name: "Admin",
+      password: "password123",
+    });
+
+    expect(admin.role).toBe("admin");
+    await expect(checkFirstRun(ctx())).resolves.toBe(false);
   });
 
   it("createFirstAdmin validates email, name, and password", async () => {

@@ -114,9 +114,7 @@ function AssetsPageClientContent({
     }
 
     const selectedSet = selectedIds;
-    return rows
-      .filter((row) => selectedSet.has(row.id))
-      .map((row) => row.name);
+    return rows.filter((row) => selectedSet.has(row.id)).map((row) => row.name);
   }, [rows, selectedIds]);
 
   const selectedCount = selectedAssetNames.length;

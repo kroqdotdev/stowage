@@ -55,11 +55,7 @@ export function LabelsPageClient() {
       return;
     }
 
-    if (
-      templatesQuery.isPending ||
-      !templatesQuery.data ||
-      !currentUser
-    ) {
+    if (templatesQuery.isPending || !templatesQuery.data || !currentUser) {
       return;
     }
 
@@ -73,7 +69,12 @@ export function LabelsPageClient() {
         seededRef.current = false;
       },
     });
-  }, [currentUser, ensureMutation, templatesQuery.data, templatesQuery.isPending]);
+  }, [
+    currentUser,
+    ensureMutation,
+    templatesQuery.data,
+    templatesQuery.isPending,
+  ]);
 
   if (
     templatesQuery.isPending ||
@@ -90,8 +91,10 @@ export function LabelsPageClient() {
 
   const templates = (templatesQuery.data ?? []) as LabelTemplate[];
   const labelUrlBase = labelUrlBaseQuery.data ?? null;
-  const sampleAsset = (sampleAssetQuery.data ?? null) as LabelPreviewAsset | null;
-  const fieldDefinitions = (fieldDefinitionsQuery.data ?? []) as FieldDefinition[];
+  const sampleAsset = (sampleAssetQuery.data ??
+    null) as LabelPreviewAsset | null;
+  const fieldDefinitions = (fieldDefinitionsQuery.data ??
+    []) as FieldDefinition[];
 
   return (
     <TemplateDesigner

@@ -43,13 +43,13 @@ The browser talks to PocketBase directly for realtime subscriptions, so for a pu
 
 Environment variables:
 
-| Var | Required | Notes |
-| --- | --- | --- |
-| `POCKETBASE_URL` | yes | Server-to-PB URL (e.g. `http://pocketbase:8090`) |
-| `NEXT_PUBLIC_POCKETBASE_URL` | yes | Browser-to-PB URL (same origin as the app in prod) |
-| `POCKETBASE_SUPERUSER_EMAIL` / `_PASSWORD` | yes | Used by `pnpm pb:bootstrap` and the app's admin client |
-| `STORAGE_LIMIT_GB` | no | Global cap on total attachment bytes; omit for no limit |
-| `SITE_URL` | no | Base URL embedded in label QR codes |
+| Var                                        | Required | Notes                                                   |
+| ------------------------------------------ | -------- | ------------------------------------------------------- |
+| `POCKETBASE_URL`                           | yes      | Server-to-PB URL (e.g. `http://pocketbase:8090`)        |
+| `NEXT_PUBLIC_POCKETBASE_URL`               | yes      | Browser-to-PB URL (same origin as the app in prod)      |
+| `POCKETBASE_SUPERUSER_EMAIL` / `_PASSWORD` | yes      | Used by `pnpm pb:bootstrap` and the app's admin client  |
+| `STORAGE_LIMIT_GB`                         | no       | Global cap on total attachment bytes; omit for no limit |
+| `SITE_URL`                                 | no       | Base URL embedded in label QR codes                     |
 
 ## Tests
 

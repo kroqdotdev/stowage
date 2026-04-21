@@ -112,9 +112,8 @@ describe("dashboard domain", () => {
       overview.categoryBreakdown.find((entry) => entry.name === "IT")?.count,
     ).toBe(2);
     expect(
-      overview.locationBreakdown.find(
-        (entry) => entry.name === "Warehouse",
-      )?.count,
+      overview.locationBreakdown.find((entry) => entry.name === "Warehouse")
+        ?.count,
     ).toBe(1);
   });
 
@@ -144,9 +143,8 @@ describe("dashboard domain", () => {
 
     // Disable scheduling and confirm the preview empties.
     const admin2 = await seedAdmin(pb);
-    const { updateServiceSchedulingEnabled } = await import(
-      "@/server/domain/appSettings"
-    );
+    const { updateServiceSchedulingEnabled } =
+      await import("@/server/domain/appSettings");
     await updateServiceSchedulingEnabled(ctx(), {
       enabled: false,
       actorId: admin2.id,

@@ -79,17 +79,16 @@ function toSummary(record: UserRecord): UserSummary {
 }
 
 export async function checkFirstRun(ctx: Ctx): Promise<boolean> {
-  const records = await ctx.pb
-    .collection("users")
-    .getList<UserRecord>(1, 1, { fields: "id" });
+  const records = await ctx.pb.collection("users").getList<UserRecord>(1, 1, {
+    fields: "id",
+    filter: 'role = "admin"',
+  });
   return records.totalItems === 0;
 }
 
 export async function listUsers(ctx: Ctx): Promise<UserSummary[]> {
   const records = await ctx.pb.collection("users").getFullList<UserRecord>();
-  return records
-    .sort((a, b) => b.createdAt - a.createdAt)
-    .map(toSummary);
+  return records.sort((a, b) => b.createdAt - a.createdAt).map(toSummary);
 }
 
 export async function getUserById(
@@ -97,9 +96,7 @@ export async function getUserById(
   userId: string,
 ): Promise<UserSummary | null> {
   try {
-    const record = await ctx.pb
-      .collection("users")
-      .getOne<UserRecord>(userId);
+    const record = await ctx.pb.collection("users").getOne<UserRecord>(userId);
     return toSummary(record);
   } catch (error) {
     if (error instanceof ClientResponseError && error.status === 404) {

@@ -144,9 +144,9 @@ describe("serviceProviders domain", () => {
       updatedAt: Date.now(),
     });
 
-    await expect(
-      deleteProvider(ctx(), provider.id),
-    ).rejects.toBeInstanceOf(ConflictError);
+    await expect(deleteProvider(ctx(), provider.id)).rejects.toBeInstanceOf(
+      ConflictError,
+    );
   });
 
   it("deletes an unused provider", async () => {

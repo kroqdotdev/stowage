@@ -1,15 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  getAssetTags,
-  setAssetTags,
-} from "@/server/domain/assetTags";
+import { getAssetTags, setAssetTags } from "@/server/domain/assetTags";
 import { createTag } from "@/server/domain/tags";
 import type { Ctx } from "@/server/pb/context";
-import {
-  NotFoundError,
-  ValidationError,
-} from "@/server/pb/errors";
+import { NotFoundError, ValidationError } from "@/server/pb/errors";
 import { usePbHarness } from "@/test/pb-harness";
 
 async function seedAdmin(pb: Ctx["pb"]) {
@@ -115,8 +109,8 @@ describe("assetTags domain", () => {
       }),
     ).rejects.toBeInstanceOf(NotFoundError);
 
-    await expect(
-      getAssetTags(ctx(), "nonexistent0000"),
-    ).rejects.toBeInstanceOf(NotFoundError);
+    await expect(getAssetTags(ctx(), "nonexistent0000")).rejects.toBeInstanceOf(
+      NotFoundError,
+    );
   });
 });
