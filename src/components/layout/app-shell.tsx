@@ -5,13 +5,13 @@ import { Topbar } from "@/components/layout/topbar";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (
-    <SidebarProvider>
+    <SidebarProvider className="max-lg:h-auto max-lg:overflow-visible">
       <div className="hidden lg:contents">
         <AppSidebar />
       </div>
       <SidebarInset>
         <Topbar />
-        <main className="flex-1 overflow-auto p-4 pb-24 lg:p-6 lg:pb-6">
+        <main className="flex-1 p-4 pb-24 lg:overflow-auto lg:p-6 lg:pb-6">
           {children}
         </main>
         <BottomNav />
