@@ -50,3 +50,5 @@ import-meta.d.ts
 mprocs.log
 .playwright-mcp/
 /*.png
+
+certificates

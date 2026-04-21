@@ -24,6 +24,7 @@ export const metadata: Metadata = {
     capable: true,
     title: "Stowage",
     statusBarStyle: "default",
+    startupImage: ["/images/web/apple-touch-icon.png"],
   },
   icons: {
     icon: [
@@ -40,7 +41,24 @@ export const metadata: Metadata = {
       },
     ],
     shortcut: "/images/web/favicon.ico",
-    apple: "/images/web/apple-touch-icon.png",
+    apple: [
+      {
+        url: "/images/web/apple-touch-icon.png",
+        sizes: "180x180",
+        type: "image/png",
+      },
+    ],
+    other: [
+      {
+        rel: "apple-touch-icon-precomposed",
+        url: "/images/web/apple-touch-icon.png",
+      },
+      {
+        rel: "mask-icon",
+        url: "/images/web/icon-512-maskable.png",
+        color: "#c2410c",
+      },
+    ],
   },
 };
 
