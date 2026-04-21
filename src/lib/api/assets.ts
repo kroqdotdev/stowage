@@ -114,6 +114,19 @@ export async function listAssets(
   return assets;
 }
 
+export async function getAssetByTag(
+  assetTag: string,
+): Promise<AssetDetail | null> {
+  const trimmed = assetTag.trim();
+  if (!trimmed) return null;
+  const matches = await listAssets({ search: trimmed });
+  const hit = matches.find(
+    (item) => item.assetTag.toLowerCase() === trimmed.toLowerCase(),
+  );
+  if (!hit) return null;
+  return getAsset(hit.id);
+}
+
 export async function getAsset(assetId: string): Promise<AssetDetail | null> {
   const { asset } = await apiFetch<{ asset: AssetDetail | null }>(
     `/api/assets/${assetId}`,
