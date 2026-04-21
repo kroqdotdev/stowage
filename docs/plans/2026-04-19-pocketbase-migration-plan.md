@@ -2,15 +2,24 @@
 
 **Date:** 2026-04-19
 **Branch:** `pocketbase-migration`
-**Status:** Server side complete (domains + auth session layer + API routes + attachments/optimization pipeline). Frontend refactor is the last major chunk.
+**Status:** **Ready to merge.** Server, frontend, docker deploy, and full e2e suite all green against a `docker compose up` stack. No Convex code remains.
 
 Replace the Convex backend with a self-hosted PocketBase. Stowage ships as clean installs only; **no existing deployment will carry data across**, so there is no data migration, no ETL, no cutover password flow, no ID redirect table. The bar is functional parity: every feature that works on Convex today must work identically on PocketBase, proven by tests before we land the branch on `main`.
 
 ---
 
-## Current status (updated 2026-04-20)
+## Current status (updated 2026-04-21)
 
-**27 commits on `pocketbase-migration`.** Test surface: **209 PB tests across 21 files**, **437 main tests** (jsdom + convex-test), typecheck clean, lint 0 errors. All frontend features now run through `/api/**` via TanStack Query. `ConvexClientProvider`, `AuthTokenCookieBridge`, and `auth-token-cookie` lib are removed; `convex/react` and `@convex-dev/auth/react` are no longer imported anywhere in `src/`.
+**32 commits on `pocketbase-migration`.** Full test surface:
+
+| Suite | Files | Tests | Runtime |
+| --- | --- | --- | --- |
+| `pnpm test` (jsdom — components, hooks, lib, api-client) | 77 | 235 | ~10s |
+| `pnpm test:pb` (real PocketBase — domain + API routes + auth session) | 25 | 245 | ~5s |
+| `pnpm test:e2e` (Playwright against docker-compose stack) | 13 | 25 | ~28s |
+| **Total** | **115** | **505** | — |
+
+Typecheck clean, lint 0 errors. Coverage: **PB suite 85.75% lines / 90.27% functions**, jsdom suite 61% lines / 54% functions. All frontend features run through `/api/**` via TanStack Query. `ConvexClientProvider`, `AuthTokenCookieBridge`, and `auth-token-cookie` lib are removed; `convex/react` and `@convex-dev/auth/react` are no longer imported anywhere in `src/`.
 
 ### Done
 
@@ -49,7 +58,61 @@ Authz lives at the API route boundary via `withUser` / `withAdmin` rather than i
 
 ### Remaining
 
-- **E2E** — Playwright tests currently drive the app against a running stack; still need to validate them against a clean PB instance in CI.
+None blocking merge. Nice-to-haves (not in scope for this branch):
+
+- Wire the Playwright suite into CI (currently runs locally against a
+  docker-compose stack; CI runs `test` + `test:pb` only).
+- Production deployment guide: reverse-proxy example (Caddyfile/nginx) so
+  a public install can put Next + PB on one origin and run the realtime
+  websocket without CORS gymnastics.
+
+### Test hardening round (2026-04-21)
+
+Five real migration bugs surfaced once the full Playwright suite ran against
+the docker-compose stack (chromium driving the containers over localhost).
+All fixed in commit `4531ba7`:
+
+1. **Attachment URLs used the in-container PB hostname.** `attachmentFileUrl`
+   composed URLs with `getPbUrl()` → `http://pocketbase:8090`, which the
+   browser can't resolve. Added `getPbPublicUrl()` that reads
+   `NEXT_PUBLIC_POCKETBASE_URL` (falls back to `POCKETBASE_URL`) and
+   switched both file-URL builders to it.
+2. **`LogServiceDialog` auto-closed before the user could attach a report.**
+   The port added `onSubmitted={() => onClose()}` on the create-mode dialog
+   which killed the attach-after-complete flow from the Convex version.
+   Dropped the callback (both in the dialog component and in
+   `service-history.tsx`).
+3. **Manual service-record creation didn't advance the schedule client-side.**
+   `createServiceRecord` in `src/lib/api/service-records.ts` typed the
+   response as `{ recordId }`, hiding the `nextServiceDate` the server
+   already returned. Widened the client type, threaded the result through
+   `ServiceRecordForm`'s `onSubmitted`, and invalidated
+   `["service-schedules"]` on success.
+4. **Asset mutations never invalidated `["dashboard"]`.** TanStack's 30s
+   staleTime + no invalidation meant `/dashboard` kept showing pre-create
+   data. Added invalidations for `["dashboard"]` and `["service-schedules"]`
+   on every asset create/edit/status/delete.
+5. **Dashboard service-queue tiebreaker buried new overdue items.** Sort was
+   `"nextServiceDate"` + `.slice(0, 5)`, so when several schedules shared a
+   due date PB's default creation-order sort pushed the newest one past the
+   preview window. Changed to `"nextServiceDate,-createdAt"`.
+
+Plus one UX fix — `CrudModal` had no overflow handling, so tall forms pushed
+the close X off-screen. Added `max-h-[calc(100dvh-3rem)] overflow-y-auto` on
+the body.
+
+Test infra (same commit):
+- Added 36 route-handler tests (`src/app/api/**/__tests__`) covering auth
+  guards, zod parsing, status codes, multipart uploads, role changes, and
+  password changes against a real PB instance.
+- Added 13 hook + `api-client` tests (`ApiRequestError`, FormData path,
+  `useCurrentUser`, `useIsMobile`, `useRealtimeRecord`, `useRealtimeCollection`).
+- `playwright.config.ts` is now `workers: 1`, `fullyParallel: false`. The
+  suite shares one PB instance and several tests toggle app-wide settings
+  (scheduling), so parallel workers raced on global state.
+- Fixed three test-brittleness bugs: `New password` label, `Add field`
+  button, and `dialog.click({position:{x:8,y:8}})` replaced with explicit
+  "Close dialog" role clicks.
 
 ### Completed merge-gate cleanup (2026-04-20)
 
@@ -66,6 +129,12 @@ Project is self-host only now — the hosted SaaS path is gone.
 - New `Dockerfile.pocketbase` (Alpine + pinned PB 0.37.1 binary + baked `pb_migrations`) and `docker-compose.yml` wire a two-service stack: PB on `:8090` with `./pb_data` persisted, Next on `:3000` pointing at the PB service over the compose network. Next Dockerfile updated to set `PORT=3000` and drop the Convex placeholder env.
 - `mprocs.yaml` drops the `convex` proc; `playwright.config.ts` now boots PB + Next together via `webServer: []`.
 - Residual "matches the Convex implementation" comments in `src/server/domain/{tags,categories,search,locations}.ts` and the attachment optimize route rewritten to explain the actual reason standalone.
+
+**Verified 2026-04-21:** `docker compose up --build` boots both services, the
+app serves `/login` + `/dashboard`, `/api/auth/login` sets the cookie, and
+the full 25-spec Playwright suite passes against the running stack
+(attachments upload + download via the public PB URL, realtime cache
+invalidation on mutations, service-record scheduling advancement).
 
 ---
 
