@@ -1,9 +1,15 @@
 import "server-only";
 
 import PocketBase from "pocketbase";
+import { DomainError } from "./errors";
 
 let cached: { pb: PocketBase; email: string; url: string } | null = null;
 let pending: Promise<PocketBase> | null = null;
+
+function normalizeEnvValue(value: string | undefined) {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : undefined;
+}
 
 function readEnv() {
   return {
@@ -12,9 +18,14 @@ function readEnv() {
       process.env.NEXT_PUBLIC_POCKETBASE_URL ??
       process.env.POCKETBASE_URL ??
       "http://127.0.0.1:8090",
-    email: process.env.POCKETBASE_SUPERUSER_EMAIL,
-    password: process.env.POCKETBASE_SUPERUSER_PASSWORD,
+    email: normalizeEnvValue(process.env.POCKETBASE_SUPERUSER_EMAIL),
+    password: normalizeEnvValue(process.env.POCKETBASE_SUPERUSER_PASSWORD),
   };
+}
+
+export function hasPbAdminCredentials() {
+  const { email, password } = readEnv();
+  return Boolean(email && password);
 }
 
 export async function getPbAdmin(): Promise<PocketBase> {
@@ -30,8 +41,9 @@ export async function getPbAdmin(): Promise<PocketBase> {
   if (pending) return pending;
 
   if (!email || !password) {
-    throw new Error(
-      "POCKETBASE_SUPERUSER_EMAIL and POCKETBASE_SUPERUSER_PASSWORD must be set",
+    throw new DomainError(
+      "Server setup incomplete. Set POCKETBASE_SUPERUSER_EMAIL and POCKETBASE_SUPERUSER_PASSWORD, then restart the app.",
+      503,
     );
   }
 

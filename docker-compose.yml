@@ -4,6 +4,9 @@ services:
       context: .
       dockerfile: Dockerfile.pocketbase
     restart: unless-stopped
+    environment:
+      POCKETBASE_SUPERUSER_EMAIL: ${POCKETBASE_SUPERUSER_EMAIL}
+      POCKETBASE_SUPERUSER_PASSWORD: ${POCKETBASE_SUPERUSER_PASSWORD}
     ports:
       - "${POCKETBASE_HOST_PORT:-8090}:8090"
     volumes:
@@ -29,7 +32,7 @@ services:
     environment:
       HOSTNAME: 0.0.0.0
       PORT: ${APP_PORT:-3000}
-      POCKETBASE_URL: http://pocketbase:8090
+      POCKETBASE_URL: ${POCKETBASE_URL:-http://pocketbase:8090}
       NEXT_PUBLIC_POCKETBASE_URL: ${NEXT_PUBLIC_POCKETBASE_URL:-http://localhost:8090}
       POCKETBASE_SUPERUSER_EMAIL: ${POCKETBASE_SUPERUSER_EMAIL}
       POCKETBASE_SUPERUSER_PASSWORD: ${POCKETBASE_SUPERUSER_PASSWORD}

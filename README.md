@@ -37,6 +37,11 @@ docker compose up --build
 
 Open <http://localhost:3000/setup> to create the first admin.
 
+When running under Docker, the PocketBase container also upserts the configured
+superuser on startup using `POCKETBASE_SUPERUSER_EMAIL` and
+`POCKETBASE_SUPERUSER_PASSWORD`. That keeps the app's admin client credentials
+in sync with the PocketBase data volume.
+
 If you prefer to keep Docker settings in `.env.local`, run Compose with it explicitly:
 
 ```bash

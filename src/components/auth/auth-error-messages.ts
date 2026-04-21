@@ -32,6 +32,14 @@ export function getSetupErrorMessage(error: unknown) {
   if (error instanceof Error && error.message) {
     const message = error.message;
 
+    if (
+      message.includes("POCKETBASE_SUPERUSER_EMAIL") ||
+      message.includes("POCKETBASE_SUPERUSER_PASSWORD") ||
+      message.includes("Server setup incomplete")
+    ) {
+      return "Server setup is incomplete. Set POCKETBASE_SUPERUSER_EMAIL and POCKETBASE_SUPERUSER_PASSWORD, then restart the app.";
+    }
+
     if (message.includes("Setup is already complete")) {
       return "Setup is already complete. Sign in instead.";
     }

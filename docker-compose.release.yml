@@ -18,6 +18,10 @@ services:
     profiles: ["pocketbase", "full"]
     image: ghcr.io/kroqdotdev/stowage-pocketbase:${STOWAGE_VERSION:-latest}
     restart: unless-stopped
+    environment:
+      POCKETBASE_SUPERUSER_EMAIL: ${POCKETBASE_SUPERUSER_EMAIL}
+      POCKETBASE_SUPERUSER_PASSWORD: ${POCKETBASE_SUPERUSER_PASSWORD}
+      POCKETBASE_DATA_DIR: /pb_data
     ports:
       - "${POCKETBASE_HOST_BIND:-127.0.0.1}:${POCKETBASE_HOST_PORT:-8090}:8090"
     volumes:

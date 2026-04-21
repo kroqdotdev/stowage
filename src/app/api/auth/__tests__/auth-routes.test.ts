@@ -125,8 +125,12 @@ describe("auth routes", () => {
       const { GET } = await import("@/app/api/auth/first-run/route");
       const res = await GET();
       expect(res.status).toBe(200);
-      const body = await readJson<{ firstRun: boolean }>(res);
+      const body = await readJson<{
+        firstRun: boolean;
+        adminConfigReady: boolean;
+      }>(res);
       expect(body.firstRun).toBe(true);
+      expect(body.adminConfigReady).toBe(true);
     });
 
     it("returns firstRun=true when only non-admin users exist", async () => {
@@ -134,8 +138,12 @@ describe("auth routes", () => {
       const { GET } = await import("@/app/api/auth/first-run/route");
       const res = await GET();
       expect(res.status).toBe(200);
-      const body = await readJson<{ firstRun: boolean }>(res);
+      const body = await readJson<{
+        firstRun: boolean;
+        adminConfigReady: boolean;
+      }>(res);
       expect(body.firstRun).toBe(true);
+      expect(body.adminConfigReady).toBe(true);
     });
 
     it("returns firstRun=false after an admin exists", async () => {
@@ -143,8 +151,26 @@ describe("auth routes", () => {
       const { GET } = await import("@/app/api/auth/first-run/route");
       const res = await GET();
       expect(res.status).toBe(200);
-      const body = await readJson<{ firstRun: boolean }>(res);
+      const body = await readJson<{
+        firstRun: boolean;
+        adminConfigReady: boolean;
+      }>(res);
       expect(body.firstRun).toBe(false);
+      expect(body.adminConfigReady).toBe(true);
+    });
+
+    it("returns adminConfigReady=false when bootstrap env is missing", async () => {
+      vi.stubEnv("POCKETBASE_SUPERUSER_EMAIL", "");
+      vi.stubEnv("POCKETBASE_SUPERUSER_PASSWORD", "");
+      const { GET } = await import("@/app/api/auth/first-run/route");
+      const res = await GET();
+      expect(res.status).toBe(200);
+      const body = await readJson<{
+        firstRun: boolean;
+        adminConfigReady: boolean;
+      }>(res);
+      expect(body.firstRun).toBe(true);
+      expect(body.adminConfigReady).toBe(false);
     });
   });
 

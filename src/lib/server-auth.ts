@@ -5,6 +5,7 @@ import { cookies } from "next/headers";
 import { PB_AUTH_COOKIE } from "@/server/auth/cookies";
 import { resolveSession } from "@/server/auth/session";
 import { checkFirstRun } from "@/server/domain/users";
+import { hasPbAdminCredentials } from "@/server/pb/client";
 import { createAdminCtx } from "@/server/pb/context";
 
 import type { RouteAuthState } from "./auth-route-logic";
@@ -16,6 +17,13 @@ async function readPbToken() {
 
 export async function getServerRouteAuthState(): Promise<RouteAuthState> {
   const token = await readPbToken();
+
+  if (!hasPbAdminCredentials()) {
+    return {
+      firstRun: true,
+      isAuthenticated: false,
+    };
+  }
 
   const [user, ctx] = await Promise.all([
     resolveSession(token),

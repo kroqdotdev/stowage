@@ -21,11 +21,13 @@ export function LoginForm() {
   const router = useRouter();
   const qc = useQueryClient();
   const { data: currentUser, isLoading } = useCurrentUser();
-  const { data: firstRun } = useQuery({
+  const { data: bootstrap } = useQuery({
     queryKey: ["auth", "first-run"],
     queryFn: checkFirstRun,
     staleTime: 60_000,
   });
+  const firstRun = bootstrap?.firstRun;
+  const adminConfigReady = bootstrap?.adminConfigReady ?? true;
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -108,10 +110,21 @@ export function LoginForm() {
           </p>
         ) : null}
 
+        {!adminConfigReady ? (
+          <p
+            role="alert"
+            className="rounded-md border border-destructive/20 bg-destructive/5 px-3 py-2 text-sm text-destructive"
+          >
+            Server setup is incomplete. Set
+            {" `POCKETBASE_SUPERUSER_EMAIL` and `POCKETBASE_SUPERUSER_PASSWORD` "}
+            in your environment, then restart the app.
+          </p>
+        ) : null}
+
         <Button
           type="submit"
           className="w-full cursor-pointer"
-          disabled={submitting || isLoading}
+          disabled={submitting || isLoading || !adminConfigReady}
         >
           {submitting ? <Loader2 className="animate-spin" /> : null}
           {submitting ? "Signing in..." : "Sign in"}

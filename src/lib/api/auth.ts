@@ -7,6 +7,11 @@ export type SessionUser = {
   role: "admin" | "user";
 };
 
+export type AuthBootstrapState = {
+  firstRun: boolean;
+  adminConfigReady: boolean;
+};
+
 export async function getCurrentUser(): Promise<SessionUser | null> {
   const { user } = await apiFetch<{ user: SessionUser | null }>("/api/auth/me");
   return user;
@@ -27,11 +32,10 @@ export async function logout(): Promise<void> {
   await apiFetch("/api/auth/logout", { method: "POST" });
 }
 
-export async function checkFirstRun(): Promise<boolean> {
-  const { firstRun } = await apiFetch<{ firstRun: boolean }>(
+export async function checkFirstRun(): Promise<AuthBootstrapState> {
+  return await apiFetch<AuthBootstrapState>(
     "/api/auth/first-run",
   );
-  return firstRun;
 }
 
 export async function createFirstAdmin(input: {

@@ -20,9 +20,8 @@ FROM alpine:3.20
 RUN apk add --no-cache ca-certificates wget
 COPY --from=download /usr/local/bin/pocketbase /usr/local/bin/pocketbase
 COPY pb_migrations /pb_migrations
+COPY deploy/pocketbase-entrypoint.sh /usr/local/bin/pocketbase-entrypoint.sh
+RUN chmod +x /usr/local/bin/pocketbase-entrypoint.sh
 VOLUME ["/pb_data"]
 EXPOSE 8090
-CMD ["pocketbase", "serve", \
-     "--http=0.0.0.0:8090", \
-     "--dir=/pb_data", \
-     "--migrationsDir=/pb_migrations"]
+CMD ["/usr/local/bin/pocketbase-entrypoint.sh"]
