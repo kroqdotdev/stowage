@@ -207,6 +207,13 @@ export function UserManagementSection({
         <p className="mt-4 text-sm text-muted-foreground md:hidden">
           Loading users...
         </p>
+      ) : usersQuery.isError ? (
+        <p
+          role="alert"
+          className="mt-4 rounded-md border border-destructive/20 bg-destructive/5 px-3 py-2 text-sm text-destructive md:hidden"
+        >
+          Could not load users. Please try again.
+        </p>
       ) : rows.length === 0 ? (
         <p className="mt-4 text-sm text-muted-foreground md:hidden">
           No users found.
@@ -300,7 +307,16 @@ export function UserManagementSection({
             </tr>
           </thead>
           <tbody>
-            {usersQuery.isPending ? null : rows.length === 0 ? (
+            {usersQuery.isPending ? null : usersQuery.isError ? (
+              <tr>
+                <td
+                  colSpan={5}
+                  className="px-3 py-6 text-center text-destructive"
+                >
+                  Could not load users. Please try again.
+                </td>
+              </tr>
+            ) : rows.length === 0 ? (
               <tr>
                 <td
                   colSpan={5}

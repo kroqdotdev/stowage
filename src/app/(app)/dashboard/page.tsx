@@ -24,7 +24,6 @@ export default function DashboardPage() {
   const { data: currentUser } = useCurrentUser();
   const {
     data: overview,
-    error,
     isError,
     isPending,
   } = useQuery({
@@ -52,10 +51,6 @@ export default function DashboardPage() {
   }
 
   if (isError || !overview) {
-    const message =
-      error instanceof Error
-        ? error.message
-        : "Could not load the dashboard. Please try again.";
     return (
       <div className="flex h-full flex-col gap-4">
         <PageHeader
@@ -64,7 +59,7 @@ export default function DashboardPage() {
           breadcrumbs={[{ label: "Stowage", href: "/dashboard" }]}
         />
         <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-8 text-center text-sm text-destructive">
-          {message}
+          Could not load the dashboard. Please try again.
         </div>
       </div>
     );

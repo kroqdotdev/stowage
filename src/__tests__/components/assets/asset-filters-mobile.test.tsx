@@ -149,6 +149,27 @@ describe("AssetFiltersMobile", () => {
     );
   });
 
+  it("announces the selected location option", () => {
+    renderFilters({
+      filters: {
+        categoryId: null,
+        status: null,
+        locationId: "loc-2",
+        tagIds: [],
+      },
+    });
+    fireEvent.click(screen.getByTestId("asset-filters-mobile-trigger"));
+
+    expect(screen.getByTestId("asset-filter-location-all")).toHaveAttribute(
+      "aria-pressed",
+      "false",
+    );
+    expect(screen.getByTestId("asset-filter-location-loc-2")).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+  });
+
   it("selecting a sort row emits onSortChange", () => {
     const { handlers } = renderFilters();
     fireEvent.click(screen.getByTestId("asset-filters-mobile-trigger"));

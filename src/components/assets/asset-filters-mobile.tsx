@@ -374,6 +374,7 @@ function LocationList({
           type="button"
           onClick={() => onChange(null)}
           data-testid="asset-filter-location-all"
+          aria-pressed={selectedId === null}
           className={cn(
             "flex w-full items-center justify-between border-b border-border px-3 py-2 text-left text-sm last:border-b-0",
             selectedId === null
@@ -392,6 +393,7 @@ function LocationList({
               type="button"
               onClick={() => onChange(loc.id)}
               data-testid={`asset-filter-location-${loc.id}`}
+              aria-pressed={active}
               className={cn(
                 "flex w-full flex-col border-b border-border px-3 py-2 text-left last:border-b-0",
                 active ? "bg-primary/5 text-primary" : "hover:bg-accent",

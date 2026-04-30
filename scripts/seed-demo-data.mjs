@@ -716,7 +716,7 @@ async function seedServiceSchedules(pb, assets, ownerId) {
       {
         assetId: asset.id,
         nextServiceDate,
-        intervalValue: 3,
+        intervalValue: asset.group === "annual" ? 12 : 3,
         intervalUnit: "months",
         reminderLeadValue: 5,
         reminderLeadUnit: "days",

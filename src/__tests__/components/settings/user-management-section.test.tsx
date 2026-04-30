@@ -138,6 +138,19 @@ describe("UserManagementSection", () => {
       }),
     ).toHaveLength(2);
   });
+
+  it("shows an error state when users fail to load", async () => {
+    listUsersMock.mockRejectedValue(new Error("database is gone"));
+
+    renderWithClient(<UserManagementSection currentUserId={adminUser.id} />);
+
+    await waitFor(() => {
+      expect(
+        screen.getAllByText("Could not load users. Please try again.").length,
+      ).toBeGreaterThan(0);
+    });
+    expect(screen.queryByText("No users found.")).not.toBeInTheDocument();
+  });
 });
 
 describe("SettingsPageClient with non-admin", () => {
