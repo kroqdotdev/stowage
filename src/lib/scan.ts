@@ -31,9 +31,9 @@ export function extractStowageAssetId(
   }
 
   const segments = parsed.pathname.split("/").filter(Boolean);
-  if (segments.length !== 2) return null;
-  if (segments[0] !== "assets") return null;
-  const id = segments[1];
+  const assetsIndex = segments.indexOf("assets");
+  if (assetsIndex === -1) return null;
+  const id = segments[assetsIndex + 1];
   if (!id) return null;
   return id;
 }
@@ -74,7 +74,8 @@ async function safeLookup(
 ): Promise<AssetDetail | null> {
   try {
     return await fn();
-  } catch {
+  } catch (error) {
+    console.warn("safeLookup failed while resolving a scanned asset", error);
     return null;
   }
 }

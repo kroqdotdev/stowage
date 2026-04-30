@@ -177,7 +177,9 @@ function MoreSheet({
     try {
       await logout();
     } catch {
-      toast.error("Signed out locally. Refresh if needed.");
+      toast.error("Could not sign out. Please try again.");
+      setLoggingOut(false);
+      return;
     }
     queryClient.clear();
     onOpenChange(false);

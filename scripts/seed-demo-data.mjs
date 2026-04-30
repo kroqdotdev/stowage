@@ -712,9 +712,6 @@ async function seedServiceSchedules(pb, assets, ownerId) {
     const offset = offsets[oi % offsets.length];
     oi += 1;
     const nextServiceDate = todayIso(offset);
-    const reminderStartOffset = offset - 5;
-    const reminderStart =
-      reminderStartOffset >= 0 ? todayIso(reminderStartOffset) : todayIso(0);
     await pb.collection("serviceSchedules").create(
       {
         assetId: asset.id,
@@ -730,9 +727,6 @@ async function seedServiceSchedules(pb, assets, ownerId) {
       },
       { $autoCancel: false },
     );
-    // Reminder date is derived from interval, but PocketBase doesn't care —
-    // the service-schedules domain computes it on read.
-    void reminderStart;
     count += 1;
   }
   return count;

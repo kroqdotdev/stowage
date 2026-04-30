@@ -37,7 +37,10 @@ describe("SetupForm", () => {
     replaceMock.mockReset();
     checkFirstRunMock.mockReset();
     createFirstAdminMock.mockReset();
-    checkFirstRunMock.mockResolvedValue(true);
+    checkFirstRunMock.mockResolvedValue({
+      firstRun: true,
+      adminConfigReady: true,
+    });
   });
 
   it("renders all setup fields", async () => {
@@ -71,7 +74,10 @@ describe("SetupForm", () => {
   });
 
   it("redirects to login if setup is already complete", async () => {
-    checkFirstRunMock.mockResolvedValue(false);
+    checkFirstRunMock.mockResolvedValue({
+      firstRun: false,
+      adminConfigReady: true,
+    });
     renderWithClient();
     await screen.findByRole("button", { name: "Create admin account" });
     expect(replaceMock).toHaveBeenCalledWith("/login");

@@ -105,6 +105,7 @@ export function LabelsPageClient() {
   if (!isDesktop) {
     return (
       <MobileLabelList
+        currentUserRole={currentUser?.role ?? null}
         templates={templates}
         sampleAsset={sampleAsset}
         fieldDefinitions={fieldDefinitions}
@@ -125,11 +126,13 @@ export function LabelsPageClient() {
 }
 
 function MobileLabelList({
+  currentUserRole,
   templates,
   sampleAsset,
   fieldDefinitions,
   labelUrlBase,
 }: {
+  currentUserRole: "admin" | "user" | null;
   templates: LabelTemplate[];
   sampleAsset: LabelPreviewAsset | null;
   fieldDefinitions: FieldDefinition[];
@@ -143,11 +146,15 @@ function MobileLabelList({
       >
         <Monitor className="mt-0.5 h-5 w-5 shrink-0" aria-hidden="true" />
         <div className="space-y-1">
-          <p className="font-medium">Open Stowage on desktop to edit</p>
+          <p className="font-medium">
+            {currentUserRole === "admin"
+              ? "Open Stowage on desktop to edit"
+              : "Label previews are read-only"}
+          </p>
           <p>
-            The label designer is a drag-and-drop canvas and really only works
-            with a mouse. You can still preview templates and print labels from
-            a phone.
+            {currentUserRole === "admin"
+              ? "The label designer is a drag-and-drop canvas and really only works with a mouse. You can still preview templates and print labels from a phone."
+              : "You can preview templates and print labels from a phone. Ask an admin to change label templates."}
           </p>
         </div>
       </div>

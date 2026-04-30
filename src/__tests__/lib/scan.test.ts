@@ -70,12 +70,21 @@ describe("extractStowageAssetId", () => {
     expect(
       extractStowageAssetId("https://stowage.example.com/assets", APP_ORIGIN),
     ).toBeNull();
+  });
+
+  it("extracts ids from deep links and base-path prefixed asset URLs", () => {
     expect(
       extractStowageAssetId(
         "https://stowage.example.com/assets/abc123/edit",
         APP_ORIGIN,
       ),
-    ).toBeNull();
+    ).toBe("abc123");
+    expect(
+      extractStowageAssetId(
+        "https://stowage.example.com/stowage/assets/abc123/service",
+        APP_ORIGIN,
+      ),
+    ).toBe("abc123");
   });
 
   it("returns null for a non-URL input", () => {
@@ -127,6 +136,7 @@ describe("resolveScanTarget", () => {
   });
 
   it("returns unresolved when fetchById throws (network / 403)", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const fetchById = vi.fn().mockRejectedValue(new Error("forbidden"));
     const fetchByTag = vi.fn();
 
@@ -141,6 +151,11 @@ describe("resolveScanTarget", () => {
       rawText: "https://stowage.example.com/assets/nope",
     });
     expect(fetchByTag).not.toHaveBeenCalled();
+    expect(warn).toHaveBeenCalledWith(
+      "safeLookup failed while resolving a scanned asset",
+      expect.any(Error),
+    );
+    warn.mockRestore();
   });
 
   it("falls back to fetchByTag for bare asset tags", async () => {

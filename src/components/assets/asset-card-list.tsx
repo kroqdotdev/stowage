@@ -14,6 +14,15 @@ import { getAsset, type AssetDetail } from "@/lib/api/assets";
 import { cn } from "@/lib/utils";
 
 function rowToDetailPlaceholder(row: AssetListItem): AssetDetail {
+  const tags =
+    row.tagIds.length === row.tagNames.length
+      ? row.tagIds.map((id, index) => ({
+          id,
+          name: row.tagNames[index] ?? "",
+          color: "",
+        }))
+      : [];
+
   return {
     id: row.id,
     name: row.name,
@@ -38,11 +47,7 @@ function rowToDetailPlaceholder(row: AssetListItem): AssetDetail {
         }
       : null,
     serviceGroup: null,
-    tags: row.tagIds.map((id, index) => ({
-      id,
-      name: row.tagNames[index] ?? "",
-      color: "",
-    })),
+    tags,
   };
 }
 
@@ -137,11 +142,6 @@ function AssetCard({
       className="relative rounded-xl border border-border bg-card p-4 shadow-sm transition-colors hover:bg-accent/40"
       data-testid={`asset-card-${row.id}`}
     >
-      <Link
-        href={`/assets/${row.id}`}
-        className="absolute inset-0 rounded-xl"
-        aria-label={`Open ${row.name}`}
-      />
       <div className="relative flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
@@ -152,7 +152,12 @@ function AssetCard({
                 style={{ backgroundColor: row.categoryColor }}
               />
             ) : null}
-            <p className="truncate text-sm font-semibold">{row.name}</p>
+            <Link
+              href={`/assets/${row.id}`}
+              className="truncate text-sm font-semibold hover:text-primary"
+            >
+              {row.name}
+            </Link>
           </div>
           <p className="mt-0.5 truncate font-mono text-xs text-muted-foreground">
             {row.assetTag}

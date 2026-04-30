@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
 type MobileActionSheetProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  title?: React.ReactNode;
+  title: React.ReactNode;
   description?: React.ReactNode;
   hideHeader?: boolean;
   children: React.ReactNode;
@@ -57,14 +57,14 @@ export function MobileActionSheet({
               <SheetDescription>{description}</SheetDescription>
             ) : null}
           </div>
-        ) : title || description ? (
+        ) : (
           <SheetHeader className="pt-2 pb-3">
-            {title ? <SheetTitle>{title}</SheetTitle> : null}
+            <SheetTitle>{title}</SheetTitle>
             {description ? (
               <SheetDescription>{description}</SheetDescription>
             ) : null}
           </SheetHeader>
-        ) : null}
+        )}
         <div className="flex flex-col gap-2 px-4 pb-4">{children}</div>
       </SheetContent>
     </Sheet>

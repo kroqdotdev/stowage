@@ -76,6 +76,7 @@ export function ScanResultSheet({
         title="Looking up asset…"
         description="Resolving the scanned code."
         hideHeader
+        aria-label="Looking up asset"
       >
         <p className="py-2 text-center text-sm text-muted-foreground">
           Looking up asset…

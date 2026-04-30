@@ -51,4 +51,4 @@ mprocs.log
 .playwright-mcp/
 /*.png
 
-certificates
+/certificates

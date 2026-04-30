@@ -2,6 +2,8 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  ArrowDown,
+  ArrowUp,
   GripVertical,
   Loader2,
   MoreHorizontal,
@@ -268,7 +270,7 @@ export function FieldsPageClient() {
             className="mt-4 flex flex-col gap-2 md:hidden"
             data-testid="field-card-list"
           >
-            {rows.map((definition) => (
+            {rows.map((definition, index) => (
               <li
                 key={definition.id}
                 data-testid={`field-card-${definition.id}`}
@@ -276,6 +278,9 @@ export function FieldsPageClient() {
               >
                 <div className="min-w-0 flex-1 space-y-1.5">
                   <div className="flex min-w-0 items-center gap-2">
+                    <span className="inline-flex shrink-0 items-center rounded-md border border-border/70 bg-muted/20 px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground">
+                      {definition.sortOrder + 1}
+                    </span>
                     <span className="truncate text-sm font-semibold">
                       {definition.name}
                     </span>
@@ -308,6 +313,34 @@ export function FieldsPageClient() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
+                      <DropdownMenuItem
+                        disabled={reordering || index === 0}
+                        onClick={() => {
+                          const next = rows.map((row) => row.id);
+                          [next[index - 1], next[index]] = [
+                            next[index],
+                            next[index - 1],
+                          ];
+                          void saveOrder(next);
+                        }}
+                      >
+                        <ArrowUp className="h-4 w-4" />
+                        Move up
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        disabled={reordering || index === rows.length - 1}
+                        onClick={() => {
+                          const next = rows.map((row) => row.id);
+                          [next[index], next[index + 1]] = [
+                            next[index + 1],
+                            next[index],
+                          ];
+                          void saveOrder(next);
+                        }}
+                      >
+                        <ArrowDown className="h-4 w-4" />
+                        Move down
+                      </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => openEdit(definition.id)}>
                         <Pencil className="h-4 w-4" />
                         Edit

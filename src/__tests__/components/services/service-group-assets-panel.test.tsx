@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 
 const listServiceGroupAssetsMock = vi.fn();
 
@@ -62,12 +62,17 @@ describe("ServiceGroupAssetsPanel", () => {
     renderWithClient(<ServiceGroupAssetsPanel groupId="group1" />);
 
     await waitFor(() => {
-      expect(screen.getAllByText("Generator").length).toBeGreaterThan(0);
+      expect(
+        within(screen.getByTestId("service-group-assets-card-list")).getByText(
+          "Generator",
+        ),
+      ).toBeInTheDocument();
     });
-    expect(screen.getAllByText("AST-0001").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("active").length).toBeGreaterThan(0);
-    // Desktop table exposes an explicit "Open asset" link; mobile cards use
-    // the full card as a link via the asset name. Verify the desktop link.
+    const mobile = within(screen.getByTestId("service-group-assets-card-list"));
+    const desktop = within(screen.getByTestId("service-group-assets-table"));
+    expect(mobile.getByText("AST-0001")).toBeInTheDocument();
+    expect(mobile.getByText("active")).toBeInTheDocument();
+    expect(desktop.getByText("Generator")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Open asset" })).toHaveAttribute(
       "href",
       "/assets/asset1",

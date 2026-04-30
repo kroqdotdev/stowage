@@ -43,6 +43,7 @@ const nextConfig: NextConfig = {
     if (!publicUrl.startsWith("/")) return [];
     const target = process.env.POCKETBASE_URL ?? "http://127.0.0.1:8090";
     const prefix = publicUrl.replace(/\/+$/, "");
+    if (!prefix) return [];
     return [
       {
         source: `${prefix}/:path*`,

@@ -92,6 +92,7 @@ describe("useBarcodeScanner", () => {
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     vi.restoreAllMocks();
   });
 
@@ -164,8 +165,6 @@ describe("useBarcodeScanner", () => {
       scannerState.lastCallback?.(result, undefined, makeControls());
     });
     expect(onResult).toHaveBeenCalledTimes(2);
-
-    vi.useRealTimers();
   });
 
   it("does not suppress distinct texts", async () => {

@@ -5,6 +5,7 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 const pathnameSpy = vi.fn(() => "/dashboard");
 const replaceSpy = vi.fn();
 const logoutSpy = vi.fn();
+const toastErrorSpy = vi.fn();
 
 vi.mock("next/navigation", () => ({
   usePathname: () => pathnameSpy(),
@@ -18,6 +19,10 @@ vi.mock("next-themes", () => ({
 
 vi.mock("@/lib/api/auth", () => ({
   logout: () => logoutSpy(),
+}));
+
+vi.mock("sonner", () => ({
+  toast: { error: (...args: unknown[]) => toastErrorSpy(...args) },
 }));
 
 import { BottomNav } from "@/components/layout/bottom-nav";
@@ -38,6 +43,7 @@ describe("BottomNav", () => {
     pathnameSpy.mockReturnValue("/dashboard");
     replaceSpy.mockReset();
     logoutSpy.mockReset();
+    toastErrorSpy.mockReset();
   });
 
   it("renders all five slots with the scan button in the center", () => {
@@ -140,14 +146,18 @@ describe("BottomNav", () => {
     });
   });
 
-  it("still redirects to login when logout rejects", async () => {
+  it("keeps the user signed in when logout rejects", async () => {
     logoutSpy.mockRejectedValue(new Error("network"));
     renderNav();
     fireEvent.click(screen.getByTestId("bottom-nav-more"));
     fireEvent.click(screen.getByTestId("more-sheet-signout"));
 
     await waitFor(() => {
-      expect(replaceSpy).toHaveBeenCalledWith("/login");
+      expect(logoutSpy).toHaveBeenCalledOnce();
+      expect(toastErrorSpy).toHaveBeenCalledWith(
+        "Could not sign out. Please try again.",
+      );
     });
+    expect(replaceSpy).not.toHaveBeenCalled();
   });
 });

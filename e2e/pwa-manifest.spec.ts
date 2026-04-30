@@ -2,13 +2,15 @@ import { expect, test } from "@playwright/test";
 
 test.describe("web app manifest", () => {
   test("links a manifest from every served HTML page", async ({ page }) => {
-    await page.goto("/");
+    for (const route of ["/", "/dashboard", "/assets", "/scan"]) {
+      await page.goto(route);
 
-    const manifestLink = page.locator('link[rel="manifest"]');
-    await expect(manifestLink).toHaveAttribute(
-      "href",
-      /\/manifest\.webmanifest/,
-    );
+      const manifestLink = page.locator('link[rel="manifest"]');
+      await expect(manifestLink).toHaveAttribute(
+        "href",
+        /\/manifest\.webmanifest/,
+      );
+    }
   });
 
   test("serves the manifest JSON with PWA fields", async ({ request }) => {
@@ -16,10 +18,12 @@ test.describe("web app manifest", () => {
     expect(response.status()).toBe(200);
 
     const manifest = await response.json();
+    expect(manifest.id).toBe("/");
     expect(manifest.name).toBe("Stowage");
     expect(manifest.short_name).toBe("Stowage");
     expect(manifest.start_url).toBe("/dashboard");
     expect(manifest.display).toBe("standalone");
+    expect(manifest.orientation).toBe("any");
     expect(manifest.theme_color).toBe("#c2410c");
     expect(Array.isArray(manifest.icons)).toBe(true);
     expect(manifest.icons.length).toBeGreaterThan(0);
@@ -63,7 +67,7 @@ test.describe("web app manifest", () => {
     await expect(title).toHaveAttribute("content", "Stowage");
 
     const maskIcon = page.locator('link[rel="mask-icon"]').first();
-    await expect(maskIcon).toHaveAttribute("href", /icon-512-maskable\.png$/);
+    await expect(maskIcon).toHaveAttribute("href", /safari-pinned-tab\.svg$/);
   });
 
   test("serves all referenced icon files with 200", async ({ request }) => {
@@ -72,6 +76,7 @@ test.describe("web app manifest", () => {
       "/images/web/icon-512.png",
       "/images/web/icon-192-maskable.png",
       "/images/web/icon-512-maskable.png",
+      "/images/web/safari-pinned-tab.svg",
       "/images/web/apple-touch-icon.png",
       "/images/web/favicon.ico",
       // iOS also requests these at the server root as a legacy fallback;

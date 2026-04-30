@@ -1,21 +1,25 @@
 import { expect, test } from "@playwright/test";
 import { getLanding, signIn } from "./helpers";
 
+async function ensureAuthed(
+  page: import("@playwright/test").Page,
+  skipReason = "Set E2E_AUTH_EMAIL and E2E_AUTH_PASSWORD to run the mobile shell e2e",
+) {
+  const email = process.env.E2E_AUTH_EMAIL;
+  const password = process.env.E2E_AUTH_PASSWORD;
+  test.skip(!email || !password, skipReason);
+
+  const landing = await getLanding(page);
+  test.skip(landing !== "login", "Mobile shell e2e requires setup complete");
+
+  await signIn(page, email!, password!);
+}
+
 test.describe("mobile shell", () => {
   test("bottom nav is only visible on mobile viewports", async ({
     page,
   }, testInfo) => {
-    const email = process.env.E2E_AUTH_EMAIL;
-    const password = process.env.E2E_AUTH_PASSWORD;
-    test.skip(
-      !email || !password,
-      "Set E2E_AUTH_EMAIL and E2E_AUTH_PASSWORD to run the mobile shell e2e",
-    );
-
-    const landing = await getLanding(page);
-    test.skip(landing !== "login", "Mobile shell e2e requires setup complete");
-
-    await signIn(page, email!, password!);
+    await ensureAuthed(page);
     await page.goto("/dashboard");
 
     const bottomNav = page.getByTestId("bottom-nav");
@@ -38,17 +42,7 @@ test.describe("mobile shell", () => {
       "Runs only on mobile-chromium",
     );
 
-    const email = process.env.E2E_AUTH_EMAIL;
-    const password = process.env.E2E_AUTH_PASSWORD;
-    test.skip(
-      !email || !password,
-      "Set E2E_AUTH_EMAIL and E2E_AUTH_PASSWORD to run the mobile shell e2e",
-    );
-
-    const landing = await getLanding(page);
-    test.skip(landing !== "login", "Mobile shell e2e requires setup complete");
-
-    await signIn(page, email!, password!);
+    await ensureAuthed(page);
 
     await page.getByTestId("bottom-nav-assets").click();
     await page.waitForURL(/\/assets$/, { timeout: 10_000 });
@@ -71,17 +65,7 @@ test.describe("mobile shell", () => {
       "Runs only on mobile-chromium",
     );
 
-    const email = process.env.E2E_AUTH_EMAIL;
-    const password = process.env.E2E_AUTH_PASSWORD;
-    test.skip(
-      !email || !password,
-      "Set E2E_AUTH_EMAIL and E2E_AUTH_PASSWORD to run the mobile shell e2e",
-    );
-
-    const landing = await getLanding(page);
-    test.skip(landing !== "login", "Mobile shell e2e requires setup complete");
-
-    await signIn(page, email!, password!);
+    await ensureAuthed(page);
     await page.goto("/dashboard");
 
     await page.getByTestId("bottom-nav-more").click();
@@ -106,20 +90,10 @@ test.describe("mobile shell", () => {
       "Runs only on mobile-chromium",
     );
 
-    const email = process.env.E2E_AUTH_EMAIL;
-    const password = process.env.E2E_AUTH_PASSWORD;
-    test.skip(
-      !email || !password,
+    await ensureAuthed(
+      page,
       "Set E2E_AUTH_EMAIL and E2E_AUTH_PASSWORD to run the assets card list e2e",
     );
-
-    const landing = await getLanding(page);
-    test.skip(
-      landing !== "login",
-      "Assets card list e2e requires setup complete",
-    );
-
-    await signIn(page, email!, password!);
     await page.goto("/assets");
 
     // Card list is visible, mobile filters trigger is visible, no desktop table
@@ -127,6 +101,7 @@ test.describe("mobile shell", () => {
     await expect(
       page.getByTestId("asset-filters-mobile-trigger"),
     ).toBeVisible();
+    await expect(page.locator("table")).toHaveCount(0);
 
     const filterSheetButton = page.getByTestId("asset-filters-mobile-trigger");
     await filterSheetButton.click();
@@ -142,17 +117,7 @@ test.describe("mobile shell", () => {
       "Runs only on desktop chromium",
     );
 
-    const email = process.env.E2E_AUTH_EMAIL;
-    const password = process.env.E2E_AUTH_PASSWORD;
-    test.skip(
-      !email || !password,
-      "Set E2E_AUTH_EMAIL and E2E_AUTH_PASSWORD to run the mobile shell e2e",
-    );
-
-    const landing = await getLanding(page);
-    test.skip(landing !== "login", "Mobile shell e2e requires setup complete");
-
-    await signIn(page, email!, password!);
+    await ensureAuthed(page);
     await page.goto("/dashboard");
 
     await expect(page.getByTestId("bottom-nav")).toBeHidden();

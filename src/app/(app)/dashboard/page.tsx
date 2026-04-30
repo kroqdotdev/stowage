@@ -22,7 +22,12 @@ import { getDashboardOverview } from "@/lib/api/dashboard";
 export default function DashboardPage() {
   const isDesktop = useMediaQuery("(min-width: 1024px)");
   const { data: currentUser } = useCurrentUser();
-  const { data: overview } = useQuery({
+  const {
+    data: overview,
+    error,
+    isError,
+    isPending,
+  } = useQuery({
     queryKey: ["dashboard", "overview"],
     queryFn: getDashboardOverview,
   });
@@ -31,7 +36,7 @@ export default function DashboardPage() {
     ? `Welcome back, ${currentUser.name}`
     : "Dashboard";
 
-  if (!overview) {
+  if (isPending) {
     return (
       <div className="flex h-full flex-col gap-4">
         <PageHeader
@@ -41,6 +46,25 @@ export default function DashboardPage() {
         />
         <div className="rounded-xl border border-border/70 bg-card p-8 text-center text-sm text-muted-foreground">
           Loading dashboard...
+        </div>
+      </div>
+    );
+  }
+
+  if (isError || !overview) {
+    const message =
+      error instanceof Error
+        ? error.message
+        : "Could not load the dashboard. Please try again.";
+    return (
+      <div className="flex h-full flex-col gap-4">
+        <PageHeader
+          title={greeting}
+          description="Overview of your assets and upcoming services."
+          breadcrumbs={[{ label: "Stowage", href: "/dashboard" }]}
+        />
+        <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-8 text-center text-sm text-destructive">
+          {message}
         </div>
       </div>
     );

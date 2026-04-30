@@ -160,7 +160,7 @@ function AssetFiltersSheet({
             testId="asset-sort-tag"
           />
           <SortRow
-            active={sortBy === "status"}
+            active={sortBy === "status" && sortDirection === "asc"}
             label="Status"
             onClick={() => onSortChange("status", "asc")}
             testId="asset-sort-status"

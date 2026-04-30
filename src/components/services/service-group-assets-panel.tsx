@@ -46,29 +46,32 @@ export function ServiceGroupAssetsPanel({ groupId }: { groupId: string }) {
             <li
               key={asset.id}
               data-testid={`service-group-asset-card-${asset.id}`}
-              className="rounded-lg border border-border/70 bg-card p-3 shadow-sm"
+              className="rounded-lg border border-border/70 bg-card shadow-sm transition hover:border-primary/30 hover:bg-accent/40"
             >
-              <div className="flex items-start justify-between gap-3">
+              <Link
+                href={`/assets/${asset.id}`}
+                className="flex items-start justify-between gap-3 p-3"
+              >
                 <div className="min-w-0 flex-1">
-                  <Link
-                    href={`/assets/${asset.id}`}
-                    className="block truncate text-sm font-semibold hover:text-primary"
-                  >
+                  <span className="block truncate text-sm font-semibold">
                     {asset.name}
-                  </Link>
+                  </span>
                   <p className="mt-0.5 truncate font-mono text-xs text-muted-foreground">
                     {asset.assetTag}
                   </p>
                 </div>
                 <StatusBadge status={asset.status} />
-              </div>
+              </Link>
             </li>
           ))}
         </ul>
       )}
 
       <div className="mt-4 hidden overflow-x-auto rounded-lg border border-border/60 md:block">
-        <table className="min-w-full text-sm">
+        <table
+          className="min-w-full text-sm"
+          data-testid="service-group-assets-table"
+        >
           <thead className="bg-muted/40 text-left">
             <tr>
               <th className="px-3 py-2 font-medium">Asset</th>

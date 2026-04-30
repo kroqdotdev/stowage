@@ -59,6 +59,7 @@ function daysBetween(fromIso: string, toIso: string) {
 function bucketForRow(row: ScheduledServiceItem, today: string): BucketKey {
   const diff = daysBetween(today, row.nextServiceDate);
   if (diff < 0) return "overdue";
+  if (row.reminderStartDate > today) return "upcoming";
   if (diff <= 7) return "thisWeek";
   if (diff <= 30) return "thisMonth";
   return "upcoming";
@@ -102,16 +103,6 @@ function getScheduleStatus({
   }
 
   return "scheduled" as const;
-}
-
-function getDaysOverdue(nextServiceDate: string, today: string) {
-  if (nextServiceDate >= today) {
-    return 0;
-  }
-
-  const start = new Date(`${nextServiceDate}T00:00:00Z`).getTime();
-  const end = new Date(`${today}T00:00:00Z`).getTime();
-  return Math.max(0, Math.round((end - start) / (1000 * 60 * 60 * 24)));
 }
 
 const STATUS_LABELS: Record<ReturnType<typeof getScheduleStatus>, string> = {
@@ -233,7 +224,7 @@ function ServicesGroupSection({
       className="rounded-xl border border-border/70 bg-background shadow-sm"
       data-testid={`services-group-${bucket}`}
     >
-      <CollapsibleTrigger className="flex w-full cursor-pointer items-center justify-between px-4 py-3 text-left">
+      <CollapsibleTrigger className="flex w-full items-center justify-between px-4 py-3 text-left">
         <div className="flex items-center gap-2">
           <span className={`text-sm font-semibold ${BUCKET_ACCENTS[bucket]}`}>
             {BUCKET_LABELS[bucket]}
@@ -288,7 +279,6 @@ function ScheduledServiceCard({
     reminderStartDate: row.reminderStartDate,
     today,
   });
-  const daysOverdue = getDaysOverdue(row.nextServiceDate, today);
   const relative = relativeDueDescription(row.nextServiceDate, today);
 
   return (
@@ -318,11 +308,6 @@ function ScheduledServiceCard({
             <Badge className={STATUS_CLASSNAMES[status]}>
               {STATUS_LABELS[status]}
             </Badge>
-            {daysOverdue > 0 ? (
-              <Badge className="bg-rose-500/10 text-rose-800 dark:text-rose-300">
-                {daysOverdue} day{daysOverdue === 1 ? "" : "s"} overdue
-              </Badge>
-            ) : null}
           </div>
           {row.lastServiceDate ? (
             <p className="text-xs text-muted-foreground">

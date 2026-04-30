@@ -482,9 +482,14 @@ function MoveView({
         <li>
           <button
             type="button"
-            disabled={mutation.isPending}
+            disabled={!asset.locationId || mutation.isPending}
             data-testid={`${testIdPrefix}-move-option-none`}
-            className="flex w-full items-center justify-between border-b border-border px-3 py-3 text-left text-sm hover:bg-accent disabled:opacity-60"
+            className={cn(
+              "flex w-full items-center justify-between border-b border-border px-3 py-3 text-left text-sm disabled:opacity-60",
+              !asset.locationId
+                ? "bg-primary/5 font-medium"
+                : "bg-card hover:bg-accent",
+            )}
             onClick={() => mutation.mutate(null)}
           >
             <span>No location</span>

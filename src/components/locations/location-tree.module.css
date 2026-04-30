@@ -10,6 +10,7 @@
     var(--color-muted-foreground) 40%,
     transparent
   );
+
   max-width: 100%;
   overflow-x: hidden;
 }

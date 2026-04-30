@@ -45,14 +45,10 @@ export function ScanDetectedOverlay({
   const padding = 8;
   const x = Math.max(0, rect.minX - padding);
   const y = Math.max(0, rect.minY - padding);
-  const width = Math.min(
-    viewportWidth - x,
-    rect.maxX - rect.minX + padding * 2,
-  );
-  const height = Math.min(
-    viewportHeight - y,
-    rect.maxY - rect.minY + padding * 2,
-  );
+  const right = Math.min(viewportWidth, rect.maxX + padding);
+  const bottom = Math.min(viewportHeight, rect.maxY + padding);
+  const width = Math.max(0, right - x);
+  const height = Math.max(0, bottom - y);
 
   const style = PHASE_STYLE[phase];
 

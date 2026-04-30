@@ -77,6 +77,7 @@ export function DashboardStatsBar({
   return (
     <div
       className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-1 sm:mx-0 sm:grid sm:grid-cols-3 sm:overflow-visible sm:px-0 sm:pb-0 xl:grid-cols-6"
+      data-layout="horizontal-scroll-to-grid"
       data-testid="dashboard-stats-bar"
     >
       {statCards.map((card) => {

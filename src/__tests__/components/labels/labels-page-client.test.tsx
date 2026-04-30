@@ -192,4 +192,29 @@ describe("LabelsPageClient", () => {
     const printLink = screen.getByRole("link", { name: /Print labels/ });
     expect(printLink).toHaveAttribute("href", "/labels/print");
   });
+
+  it("uses read-only mobile label copy for non-admin users", async () => {
+    useMediaQueryMock.mockReturnValue(false);
+    getCurrentUserMock.mockResolvedValue({
+      id: "user-2",
+      email: "u@x.com",
+      name: "User",
+      role: "user",
+    });
+    listLabelTemplatesMock.mockResolvedValue([]);
+    getLabelUrlBaseMock.mockResolvedValue("http://localhost:3000");
+    getLabelPreviewAssetMock.mockResolvedValue(null);
+    listCustomFieldsMock.mockResolvedValue([]);
+
+    renderWithClient(<LabelsPageClient />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("labels-desktop-banner")).toHaveTextContent(
+        "Label previews are read-only",
+      );
+    });
+    expect(screen.getByTestId("labels-desktop-banner")).toHaveTextContent(
+      "Ask an admin to change label templates.",
+    );
+  });
 });

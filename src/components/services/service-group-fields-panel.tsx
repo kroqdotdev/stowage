@@ -1,7 +1,15 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { GripVertical, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowUp,
+  GripVertical,
+  Loader2,
+  Pencil,
+  Plus,
+  Trash2,
+} from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/crud/confirm-dialog";
@@ -376,6 +384,18 @@ export function ServiceGroupFieldsPanel({
   const submitting = createMutation.isPending || updateMutation.isPending;
   const reordering = reorderMutation.isPending;
 
+  function moveFieldByOffset(fieldId: string, offset: number) {
+    const index = fields.findIndex((field) => field.id === fieldId);
+    const targetIndex = index + offset;
+    if (index === -1 || targetIndex < 0 || targetIndex >= fields.length) {
+      return;
+    }
+
+    const next = fields.map((field) => field.id);
+    [next[index], next[targetIndex]] = [next[targetIndex], next[index]];
+    void handleReorder(next);
+  }
+
   return (
     <>
       <section className="rounded-xl border border-border/70 bg-background p-5 shadow-sm">
@@ -385,7 +405,14 @@ export function ServiceGroupFieldsPanel({
               Required record fields
             </h3>
             <p className="text-xs text-muted-foreground">
-              Drag to reorder the fields shown when a service record is logged.
+              <span className="hidden md:inline">
+                Drag to reorder the fields shown when a service record is
+                logged.
+              </span>
+              <span className="md:hidden">
+                Use the buttons to reorder the fields shown when a service
+                record is logged.
+              </span>
             </p>
           </div>
           {canManage ? (
@@ -418,16 +445,21 @@ export function ServiceGroupFieldsPanel({
             className="mt-4 flex flex-col gap-2 md:hidden"
             data-testid="service-group-fields-card-list"
           >
-            {fields.map((field) => (
+            {fields.map((field, index) => (
               <li
                 key={field.id}
                 data-testid={`service-group-field-card-${field.id}`}
                 className="flex items-start justify-between gap-3 rounded-lg border border-border/70 bg-card p-3 shadow-sm"
               >
                 <div className="min-w-0 flex-1 space-y-1.5">
-                  <p className="truncate text-sm font-semibold">
-                    {field.label}
-                  </p>
+                  <div className="flex min-w-0 items-center gap-2">
+                    <span className="inline-flex shrink-0 items-center rounded-md border border-border/70 bg-muted/20 px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground">
+                      {field.sortOrder + 1}
+                    </span>
+                    <p className="truncate text-sm font-semibold">
+                      {field.label}
+                    </p>
+                  </div>
                   <div className="flex flex-wrap items-center gap-1.5">
                     <Badge className="bg-muted/20 capitalize">
                       {field.fieldType}
@@ -441,6 +473,28 @@ export function ServiceGroupFieldsPanel({
                 </div>
                 {canManage ? (
                   <div className="flex shrink-0 items-center gap-1">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon-sm"
+                      className="cursor-pointer"
+                      disabled={reordering || index === 0}
+                      onClick={() => moveFieldByOffset(field.id, -1)}
+                      aria-label={`Move field ${field.label} up`}
+                    >
+                      <ArrowUp className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon-sm"
+                      className="cursor-pointer"
+                      disabled={reordering || index === fields.length - 1}
+                      onClick={() => moveFieldByOffset(field.id, 1)}
+                      aria-label={`Move field ${field.label} down`}
+                    >
+                      <ArrowDown className="h-4 w-4" />
+                    </Button>
                     <Button
                       type="button"
                       variant="ghost"
@@ -477,7 +531,10 @@ export function ServiceGroupFieldsPanel({
         )}
 
         <div className="mt-4 hidden overflow-x-auto rounded-lg border border-border/60 md:block">
-          <table className="min-w-full text-sm">
+          <table
+            className="min-w-full text-sm"
+            data-testid="service-group-fields-table"
+          >
             <thead className="bg-muted/40 text-left">
               <tr>
                 <th className="w-10 px-3 py-2 font-medium">Order</th>

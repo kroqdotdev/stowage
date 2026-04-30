@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 
 const listServiceGroupsMock = vi.fn();
 const getCurrentUserMock = vi.fn();
@@ -55,10 +55,17 @@ describe("ServiceGroupsList", () => {
     renderWithClient(<ServiceGroupsList />);
 
     await waitFor(() => {
-      // Both the desktop table and the mobile card list render in JSDOM
-      // (hidden via CSS), so there may be two instances of the name.
-      expect(screen.getAllByText("Engine checks").length).toBeGreaterThan(0);
+      expect(
+        within(screen.getByTestId("service-groups-card-list")).getByText(
+          "Engine checks",
+        ),
+      ).toBeInTheDocument();
     });
+    expect(
+      within(screen.getByTestId("service-groups-table")).getByText(
+        "Engine checks",
+      ),
+    ).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Create group" }));
     expect(
       screen.getByRole("heading", { name: "Create service group" }),

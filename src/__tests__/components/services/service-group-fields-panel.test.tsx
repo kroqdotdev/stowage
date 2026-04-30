@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 
 const listServiceGroupFieldsMock = vi.fn();
 
@@ -75,8 +75,17 @@ describe("ServiceGroupFieldsPanel", () => {
     renderWithClient(<ServiceGroupFieldsPanel groupId="group1" canManage />);
 
     await waitFor(() => {
-      expect(screen.getAllByText("Technician note").length).toBeGreaterThan(0);
+      expect(
+        within(screen.getByTestId("service-group-fields-card-list")).getByText(
+          "Technician note",
+        ),
+      ).toBeInTheDocument();
     });
+    expect(
+      within(screen.getByTestId("service-group-fields-table")).getByText(
+        "Technician note",
+      ),
+    ).toBeInTheDocument();
     expect(screen.getAllByText("Required").length).toBeGreaterThanOrEqual(1);
 
     await user.click(screen.getByRole("button", { name: /Add field/ }));

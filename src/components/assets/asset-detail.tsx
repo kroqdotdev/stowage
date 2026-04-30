@@ -75,7 +75,10 @@ export function AssetDetail({
               {asset.name}
             </h2>
             <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-              <Badge className="border border-border/70 bg-background/80 font-mono text-xs tracking-wide">
+              <Badge
+                className="border border-border/70 bg-background/80 font-mono text-xs tracking-wide"
+                data-testid="asset-tag"
+              >
                 {asset.assetTag}
               </Badge>
               <StatusBadge status={asset.status} />
@@ -200,8 +203,7 @@ export function AssetDetail({
                       className="text-destructive focus:text-destructive"
                       data-testid="asset-detail-delete"
                       disabled={deleting}
-                      onSelect={(event) => {
-                        event.preventDefault();
+                      onSelect={() => {
                         setConfirmDeleteOpen(true);
                       }}
                     >

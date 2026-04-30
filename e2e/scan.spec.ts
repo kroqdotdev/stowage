@@ -22,7 +22,7 @@ async function authedScan(page: import("@playwright/test").Page) {
 }
 
 async function readAssetTag(page: import("@playwright/test").Page) {
-  const tagBadge = page.locator("span.font-mono").first();
+  const tagBadge = page.getByTestId("asset-tag");
   await expect(tagBadge).toBeVisible();
   const assetTag = (await tagBadge.textContent())?.trim() ?? "";
   expect(assetTag.length).toBeGreaterThan(0);
@@ -143,9 +143,9 @@ test.describe("scan feature", () => {
     // Exactly one of the scanner branches should be visible.
     let matched = 0;
     for (const locator of paths) {
-      if ((await locator.count()) > 0) matched += 1;
+      if (await locator.isVisible().catch(() => false)) matched += 1;
     }
-    expect(matched).toBeGreaterThan(0);
+    expect(matched).toBe(1);
   });
 
   test("back navigation returns to the previous page", async ({ page }) => {

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 
 const listScheduledAssetsMock = vi.fn();
 
@@ -115,7 +115,7 @@ describe("ServicesScheduledList", () => {
         intervalUnit: "months",
         reminderLeadValue: 5,
         reminderLeadUnit: "days",
-        reminderStartDate: "2026-03-15",
+        reminderStartDate: "2026-03-01",
         lastServiceDate: null,
         lastServiceDescription: null,
         lastServiceProviderName: null,
@@ -148,7 +148,50 @@ describe("ServicesScheduledList", () => {
     expect(screen.getByTestId("services-group-thisWeek")).toBeInTheDocument();
     expect(screen.getByTestId("services-group-thisMonth")).toBeInTheDocument();
     expect(screen.getByTestId("services-group-upcoming")).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId("services-group-overdue")).getByText("Late"),
+    ).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId("services-group-thisWeek")).getByText("Soon"),
+    ).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId("services-group-thisMonth")).getByText(
+        "Monthly",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId("services-group-upcoming")).getByText("Far"),
+    ).toBeInTheDocument();
     expect(screen.getAllByText(/days overdue/i).length).toBeGreaterThan(0);
+  });
+
+  it("keeps future reminder-window rows in upcoming", async () => {
+    listScheduledAssetsMock.mockResolvedValue([
+      {
+        scheduleId: "future-reminder",
+        assetId: "a1",
+        assetName: "Not Ready",
+        assetTag: "A-1",
+        assetStatus: "active",
+        nextServiceDate: "2026-03-05",
+        intervalValue: 1,
+        intervalUnit: "months",
+        reminderLeadValue: 1,
+        reminderLeadUnit: "days",
+        reminderStartDate: "2026-03-04",
+        lastServiceDate: null,
+        lastServiceDescription: null,
+        lastServiceProviderName: null,
+      },
+    ]);
+
+    renderWithClient(<ServicesScheduledList />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("services-group-upcoming")).toBeInTheDocument();
+    });
+    expect(screen.queryByTestId("services-group-thisWeek")).toBeNull();
+    expect(screen.getByText("Scheduled")).toBeInTheDocument();
   });
 
   it("renders empty state when no schedules exist", async () => {

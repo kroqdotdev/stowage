@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 const listUsersMock = vi.fn();
@@ -73,13 +73,17 @@ describe("UserManagementSection", () => {
     const user = userEvent.setup();
     renderWithClient(<UserManagementSection currentUserId={adminUser.id} />);
 
-    // Each user renders in both the mobile card list and the desktop table
-    // (CSS-hidden per breakpoint); tests need to tolerate multiple matches.
     await waitFor(() => {
-      expect(screen.getAllByText("Alex Admin").length).toBeGreaterThan(0);
+      expect(
+        within(screen.getByTestId("users-card-list")).getByText("Alex Admin"),
+      ).toBeInTheDocument();
     });
-    expect(screen.getAllByText("Morgan Member").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("member@example.com").length).toBeGreaterThan(0);
+    const mobile = within(screen.getByTestId("users-card-list"));
+    const desktop = within(screen.getByTestId("users-table"));
+    expect(mobile.getByText("Morgan Member")).toBeInTheDocument();
+    expect(mobile.getByText("member@example.com")).toBeInTheDocument();
+    expect(desktop.getByText("Alex Admin")).toBeInTheDocument();
+    expect(desktop.getByText("Morgan Member")).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: /add user/i }));
 
@@ -92,13 +96,16 @@ describe("UserManagementSection", () => {
 
     await waitFor(() => {
       expect(
-        screen.getAllByRole("combobox", { name: "Role for Alex Admin" }).length,
-      ).toBeGreaterThan(0);
+        within(screen.getByTestId("users-card-list")).getByRole("combobox", {
+          name: "Role for Alex Admin",
+        }),
+      ).toBeInTheDocument();
     });
     expect(
-      screen.getAllByRole("combobox", { name: "Role for Morgan Member" })
-        .length,
-    ).toBeGreaterThan(0);
+      within(screen.getByTestId("users-table")).getByRole("combobox", {
+        name: "Role for Morgan Member",
+      }),
+    ).toBeInTheDocument();
   });
 
   it("renders role select in create user dialog", async () => {
@@ -106,7 +113,7 @@ describe("UserManagementSection", () => {
     renderWithClient(<UserManagementSection currentUserId={adminUser.id} />);
 
     await waitFor(() => {
-      expect(screen.getAllByText("Alex Admin").length).toBeGreaterThan(0);
+      expect(screen.getByTestId("users-card-list")).toBeInTheDocument();
     });
     await user.click(screen.getByRole("button", { name: /add user/i }));
 
@@ -119,11 +126,17 @@ describe("UserManagementSection", () => {
     renderWithClient(<UserManagementSection currentUserId={adminUser.id} />);
 
     await waitFor(() => {
-      const saveButtons = screen.getAllByRole("button", { name: "Save" });
-      // 2 users, each rendered in both the mobile card list and the
-      // desktop table → 4 buttons total in JSDOM.
-      expect(saveButtons.length).toBeGreaterThanOrEqual(2);
+      expect(
+        within(screen.getByTestId("users-card-list")).getAllByRole("button", {
+          name: "Save",
+        }),
+      ).toHaveLength(2);
     });
+    expect(
+      within(screen.getByTestId("users-table")).getAllByRole("button", {
+        name: "Save",
+      }),
+    ).toHaveLength(2);
   });
 });
 
