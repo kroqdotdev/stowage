@@ -1,4 +1,21 @@
+import { existsSync } from "node:fs";
 import { defineConfig, devices } from "@playwright/test";
+
+// Load .env.local into process.env so E2E_AUTH_EMAIL / _PASSWORD and any other
+// local secrets are available to the test runner, matching how Next.js loads
+// them for the dev server. Node's native env-file loader is available from
+// 20.12+ which is within our engine floor.
+for (const file of [".env.local", ".env"]) {
+  if (existsSync(file)) {
+    try {
+      (
+        process as unknown as { loadEnvFile?: (p: string) => void }
+      ).loadEnvFile?.(file);
+    } catch {
+      // best effort — skip malformed files
+    }
+  }
+}
 
 export default defineConfig({
   testDir: "./e2e",
@@ -18,6 +35,10 @@ export default defineConfig({
     {
       name: "chromium",
       use: { ...devices["Desktop Chrome"] },
+    },
+    {
+      name: "mobile-chromium",
+      use: { ...devices["Pixel 7"] },
     },
   ],
   webServer: [

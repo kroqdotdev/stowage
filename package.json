@@ -6,6 +6,9 @@
   "scripts": {
     "dev": "mprocs",
     "dev:next": "next dev --turbopack",
+    "dev:next:https": "next dev --turbopack --experimental-https -H 127.0.0.1",
+    "dev:next:lan": "next dev --turbopack --experimental-https -H 0.0.0.0",
+    "dev:https": "mprocs --config mprocs.https.yaml",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
@@ -20,11 +23,13 @@
     "pb:setup": "bash scripts/setup-pocketbase.sh",
     "pb:dev": "./bin/pocketbase serve --http=127.0.0.1:8090 --dir=./pb_data --migrationsDir=./pb_migrations",
     "pb:bootstrap": "bash scripts/bootstrap-pocketbase.sh",
+    "pb:seed": "node --env-file=.env.local scripts/seed-demo-data.mjs",
     "pb:typegen": "pocketbase-typegen --db ./pb_data/data.db --out src/server/pb/types.generated.ts"
   },
   "dependencies": {
     "@auth/core": "^0.37.4",
     "@tanstack/react-query": "^5.99.2",
+    "@zxing/browser": "^0.1.5",
     "bwip-js": "^4.8.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

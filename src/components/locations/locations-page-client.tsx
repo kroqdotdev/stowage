@@ -323,8 +323,11 @@ export function LocationsPageClient() {
     : null;
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(320px,0.85fr)]">
-      <section className="flex max-h-[calc(100dvh-14rem)] flex-col rounded-xl border border-border/70 bg-background p-5 shadow-sm">
+    <div
+      className="grid gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(320px,0.85fr)] lg:gap-6"
+      data-testid="locations-page"
+    >
+      <section className="flex flex-col rounded-xl border border-border/70 bg-background p-4 shadow-sm sm:p-5 lg:max-h-[calc(100dvh-14rem)]">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="space-y-1">
             <h2 className="text-lg font-semibold tracking-tight">
@@ -343,7 +346,7 @@ export function LocationsPageClient() {
             <Button
               type="button"
               variant="outline"
-              className="cursor-pointer"
+              className="w-full cursor-pointer sm:w-auto"
               onClick={openCreateRoot}
             >
               <Plus className="h-4 w-4" />
@@ -352,7 +355,7 @@ export function LocationsPageClient() {
           ) : null}
         </div>
 
-        <div className="mt-4 min-h-0 flex-1 overflow-y-auto">
+        <div className="mt-4 min-h-0 flex-1 lg:overflow-y-auto">
           {loading ? (
             <div className="rounded-lg border border-border/60 px-4 py-8 text-center text-sm text-muted-foreground">
               Loading locations...
@@ -375,7 +378,7 @@ export function LocationsPageClient() {
         </div>
       </section>
 
-      <section className="max-h-[calc(100dvh-14rem)] overflow-y-auto rounded-xl border border-border/70 bg-background p-5 shadow-sm">
+      <section className="rounded-xl border border-border/70 bg-background p-4 shadow-sm sm:p-5 lg:max-h-[calc(100dvh-14rem)] lg:overflow-y-auto">
         {!selectedLocation || !panelDraft ? (
           <div className="flex h-full min-h-72 flex-col items-start justify-center gap-3 rounded-lg border border-dashed border-border/60 bg-muted/20 p-6">
             <div className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-background px-3 py-1 text-xs font-medium text-muted-foreground">

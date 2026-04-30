@@ -26,6 +26,8 @@
   --color-input: var(--input);
   --color-border: var(--border);
   --color-destructive: var(--destructive);
+  --color-scan: var(--scan);
+  --color-scan-foreground: var(--scan-foreground);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
@@ -80,6 +82,8 @@
   --sidebar-accent-foreground: #1c1917;
   --sidebar-border: #e7e5e4;
   --sidebar-ring: #c2410c;
+  --scan: #c2410c;
+  --scan-foreground: #ffffff;
 }
 
 .dark {
@@ -114,6 +118,8 @@
   --sidebar-accent-foreground: #fafaf9;
   --sidebar-border: #44403c;
   --sidebar-ring: #ea580c;
+  --scan: #ea580c;
+  --scan-foreground: #ffffff;
 }
 
 @layer base {
@@ -122,5 +128,30 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+@keyframes scan-detected {
+  0% {
+    opacity: 0;
+    transform: scale(1.05);
+  }
+  25% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-scan-detected {
+  animation: scan-detected 220ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-scan-detected {
+    animation: none;
   }
 }

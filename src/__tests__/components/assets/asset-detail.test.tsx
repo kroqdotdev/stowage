@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AssetDetail } from "@/components/assets/asset-detail";
 import type { AssetDetail as AssetDetailType } from "@/components/assets/types";
@@ -147,5 +147,35 @@ describe("AssetDetail", () => {
 
     expect(screen.getByText("Edit")).toBeInTheDocument();
     expect(screen.getByText("Print label")).toBeInTheDocument();
+  });
+
+  it("renders a mobile kebab menu that collapses Edit / Print / Delete", async () => {
+    renderWithProviders(<AssetDetail {...defaultProps} />);
+    const kebab = screen.getByTestId("asset-detail-kebab");
+    expect(kebab).toBeInTheDocument();
+    expect(kebab.className).toMatch(/lg:hidden/);
+
+    fireEvent.pointerDown(kebab, { pointerType: "mouse", button: 0 });
+    fireEvent.pointerUp(kebab, { pointerType: "mouse", button: 0 });
+    fireEvent.click(kebab);
+    const deleteItem = await screen.findByTestId("asset-detail-delete");
+    expect(deleteItem).toBeInTheDocument();
+  });
+
+  it("hides the kebab delete entry when canDelete is false", async () => {
+    renderWithProviders(<AssetDetail {...defaultProps} canDelete={false} />);
+    const kebab = screen.getByTestId("asset-detail-kebab");
+    fireEvent.pointerDown(kebab, { pointerType: "mouse", button: 0 });
+    fireEvent.pointerUp(kebab, { pointerType: "mouse", button: 0 });
+    fireEvent.click(kebab);
+    // Wait a microtask to let the menu render
+    await Promise.resolve();
+    expect(screen.queryByTestId("asset-detail-delete")).toBeNull();
+  });
+
+  it("makes the detail tabs sticky on mobile", () => {
+    renderWithProviders(<AssetDetail {...defaultProps} />);
+    const tabs = screen.getByTestId("asset-detail-tabs");
+    expect(tabs.className).toMatch(/sticky/);
   });
 });

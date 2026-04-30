@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 
 const listServiceGroupFieldsMock = vi.fn();
 
@@ -33,7 +33,10 @@ describe("ServiceGroupFieldsPanel", () => {
 
     renderWithClient(<ServiceGroupFieldsPanel groupId="group1" canManage />);
 
-    expect(screen.getByText("Loading service fields...")).toBeInTheDocument();
+    // Both mobile card list and desktop table render copies of the text
+    expect(
+      screen.getAllByText("Loading service fields...").length,
+    ).toBeGreaterThan(0);
   });
 
   it("shows empty state when no fields exist", async () => {
@@ -43,10 +46,10 @@ describe("ServiceGroupFieldsPanel", () => {
 
     await waitFor(() => {
       expect(
-        screen.getByText(
+        screen.getAllByText(
           "No fields yet. Add required service fields for this group.",
-        ),
-      ).toBeInTheDocument();
+        ).length,
+      ).toBeGreaterThan(0);
     });
   });
 
@@ -72,8 +75,17 @@ describe("ServiceGroupFieldsPanel", () => {
     renderWithClient(<ServiceGroupFieldsPanel groupId="group1" canManage />);
 
     await waitFor(() => {
-      expect(screen.getByText("Technician note")).toBeInTheDocument();
+      expect(
+        within(screen.getByTestId("service-group-fields-card-list")).getByText(
+          "Technician note",
+        ),
+      ).toBeInTheDocument();
     });
+    expect(
+      within(screen.getByTestId("service-group-fields-table")).getByText(
+        "Technician note",
+      ),
+    ).toBeInTheDocument();
     expect(screen.getAllByText("Required").length).toBeGreaterThanOrEqual(1);
 
     await user.click(screen.getByRole("button", { name: /Add field/ }));

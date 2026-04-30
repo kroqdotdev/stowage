@@ -2,13 +2,22 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { startTransition, useDeferredValue, useMemo, useState } from "react";
+import {
+  startTransition,
+  useDeferredValue,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { Package, Plus, Printer, X } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import {
   AssetFilters,
   type AssetFiltersState,
 } from "@/components/assets/asset-filters";
+import { AssetFiltersMobile } from "@/components/assets/asset-filters-mobile";
+import { AssetCardList } from "@/components/assets/asset-card-list";
 import {
   AssetTable,
   type AssetSortBy,
@@ -20,6 +29,7 @@ import type {
 } from "@/components/assets/types";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
+import { useMediaQuery } from "@/hooks/use-media-query";
 import {
   getAssetFilterOptions,
   listAssets,
@@ -43,21 +53,37 @@ function buildFiltersKey(searchParams: URLSearchParams) {
   ].join("|");
 }
 
-function AssetsPageClientContent({
-  initialFilters,
-}: {
-  initialFilters: AssetFiltersState;
-}) {
+export function AssetsPageClient() {
+  const searchParams = useSearchParams();
   const router = useRouter();
+  const isDesktop = useMediaQuery("(min-width: 1024px)");
 
   const [searchInput, setSearchInput] = useState("");
   const deferredSearch = useDeferredValue(searchInput);
 
-  const [filters, setFilters] = useState<AssetFiltersState>(initialFilters);
+  const [filters, setFilters] = useState<AssetFiltersState>(() =>
+    getInitialFilters(searchParams),
+  );
   const [sortBy, setSortBy] = useState<AssetSortBy>("createdAt");
   const [sortDirection, setSortDirection] =
     useState<AssetSortDirection>("desc");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  // Sync URL → state when the filter-defining params actually change (e.g.,
+  // clicking a category pill on the dashboard). Previously the wrapper used
+  // `key={filtersKey}` to remount the entire subtree, which blew away the
+  // table, in-flight queries, selection, and sort — a visible jank when the
+  // user navigated between pre-filtered links.
+  const lastFiltersKeyRef = useRef(buildFiltersKey(searchParams));
+  useEffect(() => {
+    const nextKey = buildFiltersKey(searchParams);
+    if (nextKey === lastFiltersKeyRef.current) return;
+    lastFiltersKeyRef.current = nextKey;
+    startTransition(() => {
+      setFilters(getInitialFilters(searchParams));
+      setSelectedIds(new Set());
+    });
+  }, [searchParams]);
 
   const filterOptionsQuery = useQuery({
     queryKey: ["assets", "filter-options"],
@@ -65,15 +91,26 @@ function AssetsPageClientContent({
     staleTime: 60_000,
   });
 
-  const listParams: ListAssetsParams = {
-    categoryId: filters.categoryId ?? undefined,
-    status: filters.status ?? undefined,
-    locationId: filters.locationId ?? undefined,
-    tagIds: filters.tagIds,
-    search: deferredSearch.trim() ? deferredSearch.trim() : undefined,
-    sortBy,
-    sortDirection,
-  };
+  const listParams: ListAssetsParams = useMemo(
+    () => ({
+      categoryId: filters.categoryId ?? undefined,
+      status: filters.status ?? undefined,
+      locationId: filters.locationId ?? undefined,
+      tagIds: filters.tagIds,
+      search: deferredSearch.trim() ? deferredSearch.trim() : undefined,
+      sortBy,
+      sortDirection,
+    }),
+    [
+      filters.categoryId,
+      filters.status,
+      filters.locationId,
+      filters.tagIds,
+      deferredSearch,
+      sortBy,
+      sortDirection,
+    ],
+  );
   const assetsQuery = useQuery({
     queryKey: ["assets", "list", listParams],
     queryFn: () => listAssets(listParams),
@@ -153,32 +190,67 @@ function AssetsPageClientContent({
         </Button>
       </div>
 
-      <AssetFilters
-        options={options}
-        search={searchInput}
-        filters={filters}
-        onSearchChange={(value) => {
-          startTransition(() => {
-            setSearchInput(value);
-          });
-        }}
-        onFiltersChange={(nextFilters) => {
-          startTransition(() => {
-            setFilters(nextFilters);
-          });
-        }}
-        onReset={() => {
-          startTransition(() => {
-            setSearchInput("");
-            setFilters({
-              categoryId: null,
-              status: null,
-              locationId: null,
-              tagIds: [],
+      {isDesktop ? (
+        <AssetFilters
+          options={options}
+          search={searchInput}
+          filters={filters}
+          onSearchChange={(value) => {
+            startTransition(() => {
+              setSearchInput(value);
             });
-          });
-        }}
-      />
+          }}
+          onFiltersChange={(nextFilters) => {
+            startTransition(() => {
+              setFilters(nextFilters);
+            });
+          }}
+          onReset={() => {
+            startTransition(() => {
+              setSearchInput("");
+              setFilters({
+                categoryId: null,
+                status: null,
+                locationId: null,
+                tagIds: [],
+              });
+            });
+          }}
+        />
+      ) : (
+        <AssetFiltersMobile
+          options={options}
+          search={searchInput}
+          filters={filters}
+          sortBy={sortBy}
+          sortDirection={sortDirection}
+          onSearchChange={(value) => {
+            startTransition(() => {
+              setSearchInput(value);
+            });
+          }}
+          onFiltersChange={(nextFilters) => {
+            startTransition(() => {
+              setFilters(nextFilters);
+            });
+          }}
+          onSortChange={(nextSortBy, nextDirection) => {
+            setSortBy(nextSortBy);
+            setSortDirection(nextDirection);
+          }}
+          onReset={() => {
+            startTransition(() => {
+              setSearchInput("");
+              setFilters({
+                categoryId: null,
+                status: null,
+                locationId: null,
+                tagIds: [],
+              });
+            });
+          }}
+        />
+      )}
 
       {showEmptyState ? (
         <EmptyState
@@ -196,35 +268,39 @@ function AssetsPageClientContent({
         />
       ) : null}
 
-      <AssetTable
-        rows={rows}
-        loading={loading}
-        sortBy={sortBy}
-        sortDirection={sortDirection}
-        selectedIds={selectedIds}
-        onSort={handleSort}
-        onSelectRow={(assetId, checked) => {
-          setSelectedIds((prev) => {
-            const next = new Set(prev);
-            if (checked) {
-              next.add(assetId);
-            } else {
-              next.delete(assetId);
+      {isDesktop ? (
+        <AssetTable
+          rows={rows}
+          loading={loading}
+          sortBy={sortBy}
+          sortDirection={sortDirection}
+          selectedIds={selectedIds}
+          onSort={handleSort}
+          onSelectRow={(assetId, checked) => {
+            setSelectedIds((prev) => {
+              const next = new Set(prev);
+              if (checked) {
+                next.add(assetId);
+              } else {
+                next.delete(assetId);
+              }
+              return next;
+            });
+          }}
+          onSelectAll={(checked) => {
+            if (!checked) {
+              setSelectedIds(new Set());
+              return;
             }
-            return next;
-          });
-        }}
-        onSelectAll={(checked) => {
-          if (!checked) {
-            setSelectedIds(new Set());
-            return;
-          }
 
-          setSelectedIds(new Set(rows.map((row) => row.id)));
-        }}
-        onRowOpen={(assetId) => router.push(`/assets/${assetId}`)}
-        onRowEdit={(assetId) => router.push(`/assets/${assetId}/edit`)}
-      />
+            setSelectedIds(new Set(rows.map((row) => row.id)));
+          }}
+          onRowOpen={(assetId) => router.push(`/assets/${assetId}`)}
+          onRowEdit={(assetId) => router.push(`/assets/${assetId}/edit`)}
+        />
+      ) : (
+        <AssetCardList rows={rows} loading={loading} />
+      )}
 
       {selectedCount > 0 ? (
         <div className="sticky bottom-4 z-10 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/70 bg-background px-4 py-3 shadow-lg">
@@ -264,18 +340,5 @@ function AssetsPageClientContent({
         </div>
       ) : null}
     </div>
-  );
-}
-
-export function AssetsPageClient() {
-  const searchParams = useSearchParams();
-  const filtersKey = buildFiltersKey(searchParams);
-  const initialFilters = useMemo(
-    () => getInitialFilters(searchParams),
-    [searchParams],
-  );
-
-  return (
-    <AssetsPageClientContent key={filtersKey} initialFilters={initialFilters} />
   );
 }

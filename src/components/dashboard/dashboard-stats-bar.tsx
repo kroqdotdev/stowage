@@ -75,18 +75,26 @@ export function DashboardStatsBar({
   }
 
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
+    <div
+      className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-1 sm:mx-0 sm:grid sm:grid-cols-3 sm:overflow-visible sm:px-0 sm:pb-0 xl:grid-cols-6"
+      data-layout="horizontal-scroll-to-grid"
+      data-testid="dashboard-stats-bar"
+    >
       {statCards.map((card) => {
         const value = getValue(card.key);
         return (
-          <StatCard
+          <div
             key={card.key}
-            statKey={card.key}
-            label={card.label}
-            value={value}
-            icon={card.icon}
-            className={card.className}
-          />
+            className="min-w-[150px] shrink-0 snap-start sm:min-w-0 sm:shrink"
+          >
+            <StatCard
+              statKey={card.key}
+              label={card.label}
+              value={value}
+              icon={card.icon}
+              className={card.className}
+            />
+          </div>
         );
       })}
     </div>

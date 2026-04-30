@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 
 const listScheduledAssetsMock = vi.fn();
 
@@ -14,6 +14,10 @@ vi.mock("@/lib/use-app-date-format", () => ({
 
 vi.mock("@/components/services/log-service-dialog", () => ({
   LogServiceDialog: () => null,
+}));
+
+vi.mock("@/lib/use-today-iso-date", () => ({
+  useTodayIsoDate: () => "2026-03-01",
 }));
 
 import { ServicesScheduledList } from "@/components/services/services-scheduled-list";
@@ -30,7 +34,7 @@ describe("ServicesScheduledList", () => {
     listScheduledAssetsMock.mockReset();
   });
 
-  it("renders schedule rows", async () => {
+  it("renders schedule rows inside a bucketed group with the relative due date", async () => {
     listScheduledAssetsMock.mockResolvedValue([
       {
         scheduleId: "schedule1",
@@ -56,10 +60,138 @@ describe("ServicesScheduledList", () => {
       expect(screen.getByText("Main Engine")).toBeInTheDocument();
     });
     expect(screen.getByText("ENG-0001")).toBeInTheDocument();
-    expect(screen.getByText("Due: 06-03-2026")).toBeInTheDocument();
+    // 2026-03-06 is 5 days from mocked today 2026-03-01 → "Due in 5 days"
+    expect(screen.getByText("Due in 5 days")).toBeInTheDocument();
+    // Group header for "Due this week" is shown with a count of 1
+    expect(screen.getByTestId("services-group-thisWeek")).toBeInTheDocument();
     expect(
       screen.getByText("Last service 01-02-2026 • Dockside Repair"),
     ).toBeInTheDocument();
+    expect(screen.getByTestId("log-service-schedule1")).toBeInTheDocument();
+  });
+
+  it("groups overdue, this-week, this-month and upcoming buckets", async () => {
+    listScheduledAssetsMock.mockResolvedValue([
+      {
+        scheduleId: "overdue1",
+        assetId: "a1",
+        assetName: "Late",
+        assetTag: "A-1",
+        assetStatus: "active",
+        nextServiceDate: "2026-02-10", // 19 days before today
+        intervalValue: 1,
+        intervalUnit: "months",
+        reminderLeadValue: 5,
+        reminderLeadUnit: "days",
+        reminderStartDate: "2026-02-05",
+        lastServiceDate: null,
+        lastServiceDescription: null,
+        lastServiceProviderName: null,
+      },
+      {
+        scheduleId: "week1",
+        assetId: "a2",
+        assetName: "Soon",
+        assetTag: "A-2",
+        assetStatus: "active",
+        nextServiceDate: "2026-03-05", // 4 days
+        intervalValue: 1,
+        intervalUnit: "months",
+        reminderLeadValue: 5,
+        reminderLeadUnit: "days",
+        reminderStartDate: "2026-03-01",
+        lastServiceDate: null,
+        lastServiceDescription: null,
+        lastServiceProviderName: null,
+      },
+      {
+        scheduleId: "month1",
+        assetId: "a3",
+        assetName: "Monthly",
+        assetTag: "A-3",
+        assetStatus: "active",
+        nextServiceDate: "2026-03-20", // 19 days
+        intervalValue: 1,
+        intervalUnit: "months",
+        reminderLeadValue: 5,
+        reminderLeadUnit: "days",
+        reminderStartDate: "2026-03-01",
+        lastServiceDate: null,
+        lastServiceDescription: null,
+        lastServiceProviderName: null,
+      },
+      {
+        scheduleId: "upcoming1",
+        assetId: "a4",
+        assetName: "Far",
+        assetTag: "A-4",
+        assetStatus: "active",
+        nextServiceDate: "2026-06-01", // ~3 months
+        intervalValue: 1,
+        intervalUnit: "months",
+        reminderLeadValue: 5,
+        reminderLeadUnit: "days",
+        reminderStartDate: "2026-05-26",
+        lastServiceDate: null,
+        lastServiceDescription: null,
+        lastServiceProviderName: null,
+      },
+    ]);
+
+    renderWithClient(<ServicesScheduledList />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Late")).toBeInTheDocument();
+    });
+
+    expect(screen.getByTestId("services-group-overdue")).toBeInTheDocument();
+    expect(screen.getByTestId("services-group-thisWeek")).toBeInTheDocument();
+    expect(screen.getByTestId("services-group-thisMonth")).toBeInTheDocument();
+    expect(screen.getByTestId("services-group-upcoming")).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId("services-group-overdue")).getByText("Late"),
+    ).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId("services-group-thisWeek")).getByText("Soon"),
+    ).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId("services-group-thisMonth")).getByText(
+        "Monthly",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId("services-group-upcoming")).getByText("Far"),
+    ).toBeInTheDocument();
+    expect(screen.getAllByText(/days overdue/i).length).toBeGreaterThan(0);
+  });
+
+  it("keeps future reminder-window rows in upcoming", async () => {
+    listScheduledAssetsMock.mockResolvedValue([
+      {
+        scheduleId: "future-reminder",
+        assetId: "a1",
+        assetName: "Not Ready",
+        assetTag: "A-1",
+        assetStatus: "active",
+        nextServiceDate: "2026-03-05",
+        intervalValue: 1,
+        intervalUnit: "months",
+        reminderLeadValue: 1,
+        reminderLeadUnit: "days",
+        reminderStartDate: "2026-03-04",
+        lastServiceDate: null,
+        lastServiceDescription: null,
+        lastServiceProviderName: null,
+      },
+    ]);
+
+    renderWithClient(<ServicesScheduledList />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("services-group-upcoming")).toBeInTheDocument();
+    });
+    expect(screen.queryByTestId("services-group-thisWeek")).toBeNull();
+    expect(screen.getByText("Scheduled")).toBeInTheDocument();
   });
 
   it("renders empty state when no schedules exist", async () => {

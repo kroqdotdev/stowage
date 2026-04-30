@@ -56,9 +56,9 @@ export function Topbar() {
   }
 
   return (
-    <header className="flex h-14 shrink-0 items-center gap-2 border-b border-border px-4">
-      <SidebarTrigger className="cursor-pointer" />
-      <Separator orientation="vertical" className="mr-2 h-4" />
+    <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center gap-2 border-b border-border bg-background/95 px-4 backdrop-blur lg:static lg:z-auto lg:bg-background lg:backdrop-blur-none">
+      <SidebarTrigger className="hidden cursor-pointer lg:flex" />
+      <Separator orientation="vertical" className="mr-2 hidden h-4 lg:block" />
 
       <div className="flex flex-1 items-center gap-2">
         <GlobalSearch />

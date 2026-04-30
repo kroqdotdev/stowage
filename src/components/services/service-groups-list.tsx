@@ -158,8 +158,93 @@ export function ServiceGroupsList() {
           ) : null}
         </div>
 
-        <div className="mt-4 overflow-x-auto rounded-lg border border-border/60">
-          <table className="min-w-full text-sm">
+        {groupsQuery.isPending ? (
+          <p className="mt-4 text-sm text-muted-foreground md:hidden">
+            Loading service groups...
+          </p>
+        ) : rows.length === 0 ? (
+          <p className="mt-4 text-sm text-muted-foreground md:hidden">
+            No service groups yet.
+          </p>
+        ) : (
+          <ul
+            className="mt-4 flex flex-col gap-2 md:hidden"
+            data-testid="service-groups-card-list"
+          >
+            {rows.map((group) => (
+              <li
+                key={group.id}
+                data-testid={`service-group-card-${group.id}`}
+                className="rounded-lg border border-border/70 bg-card p-3 shadow-sm"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1 space-y-1">
+                    <Link
+                      href={`/services/groups/${group.id}`}
+                      className="block truncate text-sm font-semibold hover:text-primary"
+                    >
+                      {group.name}
+                    </Link>
+                    {group.description ? (
+                      <p className="line-clamp-2 text-xs text-muted-foreground">
+                        {group.description}
+                      </p>
+                    ) : null}
+                    <p className="text-[11px] text-muted-foreground">
+                      {group.fieldCount} field
+                      {group.fieldCount === 1 ? "" : "s"} · {group.assetCount}{" "}
+                      asset
+                      {group.assetCount === 1 ? "" : "s"}
+                    </p>
+                  </div>
+                  <div className="flex shrink-0 flex-col items-end gap-1">
+                    <Button
+                      asChild
+                      variant="ghost"
+                      size="sm"
+                      className="cursor-pointer"
+                    >
+                      <Link href={`/services/groups/${group.id}`}>Open</Link>
+                    </Button>
+                    {canManage ? (
+                      <div className="flex items-center gap-1">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="cursor-pointer"
+                          onClick={() => {
+                            setEditorMode("edit");
+                            setActiveGroup(group);
+                            setEditorOpen(true);
+                          }}
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon-sm"
+                          className="cursor-pointer text-destructive"
+                          onClick={() => setDeleteGroupId(group.id)}
+                          aria-label={`Delete ${group.name}`}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        <div className="mt-4 hidden overflow-x-auto rounded-lg border border-border/60 md:block">
+          <table
+            className="min-w-full text-sm"
+            data-testid="service-groups-table"
+          >
             <thead className="bg-muted/40 text-left">
               <tr>
                 <th className="px-3 py-2 font-medium">Name</th>

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 const listUsersMock = vi.fn();
@@ -74,10 +74,16 @@ describe("UserManagementSection", () => {
     renderWithClient(<UserManagementSection currentUserId={adminUser.id} />);
 
     await waitFor(() => {
-      expect(screen.getByText("Alex Admin")).toBeInTheDocument();
+      expect(
+        within(screen.getByTestId("users-card-list")).getByText("Alex Admin"),
+      ).toBeInTheDocument();
     });
-    expect(screen.getByText("Morgan Member")).toBeInTheDocument();
-    expect(screen.getByText("member@example.com")).toBeInTheDocument();
+    const mobile = within(screen.getByTestId("users-card-list"));
+    const desktop = within(screen.getByTestId("users-table"));
+    expect(mobile.getByText("Morgan Member")).toBeInTheDocument();
+    expect(mobile.getByText("member@example.com")).toBeInTheDocument();
+    expect(desktop.getByText("Alex Admin")).toBeInTheDocument();
+    expect(desktop.getByText("Morgan Member")).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: /add user/i }));
 
@@ -90,11 +96,15 @@ describe("UserManagementSection", () => {
 
     await waitFor(() => {
       expect(
-        screen.getByRole("combobox", { name: "Role for Alex Admin" }),
+        within(screen.getByTestId("users-card-list")).getByRole("combobox", {
+          name: "Role for Alex Admin",
+        }),
       ).toBeInTheDocument();
     });
     expect(
-      screen.getByRole("combobox", { name: "Role for Morgan Member" }),
+      within(screen.getByTestId("users-table")).getByRole("combobox", {
+        name: "Role for Morgan Member",
+      }),
     ).toBeInTheDocument();
   });
 
@@ -103,11 +113,12 @@ describe("UserManagementSection", () => {
     renderWithClient(<UserManagementSection currentUserId={adminUser.id} />);
 
     await waitFor(() => {
-      expect(screen.getByText("Alex Admin")).toBeInTheDocument();
+      expect(screen.getByTestId("users-card-list")).toBeInTheDocument();
     });
     await user.click(screen.getByRole("button", { name: /add user/i }));
 
     const comboboxes = screen.getAllByRole("combobox");
+    // 2 per user (card + table) plus the Role select in the dialog.
     expect(comboboxes.length).toBeGreaterThanOrEqual(3);
   });
 
@@ -115,9 +126,30 @@ describe("UserManagementSection", () => {
     renderWithClient(<UserManagementSection currentUserId={adminUser.id} />);
 
     await waitFor(() => {
-      const saveButtons = screen.getAllByRole("button", { name: "Save" });
-      expect(saveButtons).toHaveLength(2);
+      expect(
+        within(screen.getByTestId("users-card-list")).getAllByRole("button", {
+          name: "Save",
+        }),
+      ).toHaveLength(2);
     });
+    expect(
+      within(screen.getByTestId("users-table")).getAllByRole("button", {
+        name: "Save",
+      }),
+    ).toHaveLength(2);
+  });
+
+  it("shows an error state when users fail to load", async () => {
+    listUsersMock.mockRejectedValue(new Error("database is gone"));
+
+    renderWithClient(<UserManagementSection currentUserId={adminUser.id} />);
+
+    await waitFor(() => {
+      expect(
+        screen.getAllByText("Could not load users. Please try again.").length,
+      ).toBeGreaterThan(0);
+    });
+    expect(screen.queryByText("No users found.")).not.toBeInTheDocument();
   });
 });
 

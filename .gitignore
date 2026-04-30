@@ -49,3 +49,6 @@ import-meta.d.ts
 # dev artifacts
 mprocs.log
 .playwright-mcp/
+/*.png
+
+/certificates

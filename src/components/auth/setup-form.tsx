@@ -95,9 +95,10 @@ export function SetupForm() {
             role="alert"
             className="rounded-md border border-destructive/20 bg-destructive/5 px-3 py-2 text-sm text-destructive"
           >
-            Server setup is incomplete. Set
-            {" `POCKETBASE_SUPERUSER_EMAIL` and `POCKETBASE_SUPERUSER_PASSWORD` "}
-            in your Docker or Next environment, then restart the app.
+            Server setup is incomplete. Set{" "}
+            <code>POCKETBASE_SUPERUSER_EMAIL</code> and{" "}
+            <code>POCKETBASE_SUPERUSER_PASSWORD</code> in your Docker or Next
+            environment, then restart the app.
           </p>
         ) : null}
 

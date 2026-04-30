@@ -29,8 +29,49 @@ export function ServiceGroupAssetsPanel({ groupId }: { groupId: string }) {
         </p>
       </div>
 
-      <div className="mt-4 overflow-x-auto rounded-lg border border-border/60">
-        <table className="min-w-full text-sm">
+      {rowsQuery.isPending ? (
+        <p className="mt-4 text-sm text-muted-foreground md:hidden">
+          Loading assets...
+        </p>
+      ) : assets.length === 0 ? (
+        <p className="mt-4 text-sm text-muted-foreground md:hidden">
+          No assets are currently assigned to this group.
+        </p>
+      ) : (
+        <ul
+          className="mt-4 flex flex-col gap-2 md:hidden"
+          data-testid="service-group-assets-card-list"
+        >
+          {assets.map((asset) => (
+            <li
+              key={asset.id}
+              data-testid={`service-group-asset-card-${asset.id}`}
+              className="rounded-lg border border-border/70 bg-card shadow-sm transition hover:border-primary/30 hover:bg-accent/40"
+            >
+              <Link
+                href={`/assets/${asset.id}`}
+                className="flex items-start justify-between gap-3 p-3"
+              >
+                <div className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-semibold">
+                    {asset.name}
+                  </span>
+                  <p className="mt-0.5 truncate font-mono text-xs text-muted-foreground">
+                    {asset.assetTag}
+                  </p>
+                </div>
+                <StatusBadge status={asset.status} />
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <div className="mt-4 hidden overflow-x-auto rounded-lg border border-border/60 md:block">
+        <table
+          className="min-w-full text-sm"
+          data-testid="service-group-assets-table"
+        >
           <thead className="bg-muted/40 text-left">
             <tr>
               <th className="px-3 py-2 font-medium">Asset</th>

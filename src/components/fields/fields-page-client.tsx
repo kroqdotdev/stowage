@@ -2,6 +2,8 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  ArrowDown,
+  ArrowUp,
   GripVertical,
   Loader2,
   MoreHorizontal,
@@ -233,7 +235,136 @@ export function FieldsPageClient() {
           ) : null}
         </div>
 
-        <div className="mt-4 overflow-x-auto rounded-lg border border-border/60">
+        {loading ? (
+          <p className="mt-4 text-sm text-muted-foreground md:hidden">
+            Loading...
+          </p>
+        ) : null}
+
+        {!loading && rows.length === 0 ? (
+          <div className="mt-4 md:hidden">
+            <EmptyState
+              icon={SlidersHorizontal}
+              title="No custom fields"
+              description="Define reusable fields to capture extra asset data."
+              action={
+                canManage ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="cursor-pointer"
+                    onClick={openCreate}
+                  >
+                    <Plus className="h-4 w-4" />
+                    Add field
+                  </Button>
+                ) : undefined
+              }
+            />
+          </div>
+        ) : null}
+
+        {rows.length > 0 ? (
+          <ul
+            className="mt-4 flex flex-col gap-2 md:hidden"
+            data-testid="field-card-list"
+          >
+            {rows.map((definition, index) => (
+              <li
+                key={definition.id}
+                data-testid={`field-card-${definition.id}`}
+                className="flex items-start justify-between gap-3 rounded-lg border border-border/70 bg-card p-3 shadow-sm"
+              >
+                <div className="min-w-0 flex-1 space-y-1.5">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <span className="inline-flex shrink-0 items-center rounded-md border border-border/70 bg-muted/20 px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground">
+                      {definition.sortOrder + 1}
+                    </span>
+                    <span className="truncate text-sm font-semibold">
+                      {definition.name}
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <Badge className="bg-muted/20 capitalize">
+                      {definition.fieldType}
+                    </Badge>
+                    {definition.required ? (
+                      <Badge className="border-amber-300/70 bg-amber-100 text-amber-900 dark:border-amber-400/30 dark:bg-amber-500/15 dark:text-amber-200">
+                        Required
+                      </Badge>
+                    ) : null}
+                    <span className="text-[11px] text-muted-foreground">
+                      Used by {definition.usageCount}
+                    </span>
+                  </div>
+                </div>
+                {canManage ? (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-sm"
+                        className="cursor-pointer"
+                        aria-label={`Actions for ${definition.name}`}
+                      >
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem
+                        disabled={reordering || index === 0}
+                        onClick={() => {
+                          const next = rows.map((row) => row.id);
+                          [next[index - 1], next[index]] = [
+                            next[index],
+                            next[index - 1],
+                          ];
+                          void saveOrder(next);
+                        }}
+                      >
+                        <ArrowUp className="h-4 w-4" />
+                        Move up
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        disabled={reordering || index === rows.length - 1}
+                        onClick={() => {
+                          const next = rows.map((row) => row.id);
+                          [next[index], next[index + 1]] = [
+                            next[index + 1],
+                            next[index],
+                          ];
+                          void saveOrder(next);
+                        }}
+                      >
+                        <ArrowDown className="h-4 w-4" />
+                        Move down
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => openEdit(definition.id)}>
+                        <Pencil className="h-4 w-4" />
+                        Edit
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        variant="destructive"
+                        onClick={() => setDeleteId(definition.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                ) : (
+                  <span className="text-xs text-muted-foreground">
+                    Read only
+                  </span>
+                )}
+              </li>
+            ))}
+          </ul>
+        ) : null}
+
+        <div className="mt-4 hidden overflow-x-auto rounded-lg border border-border/60 md:block">
           <table className="min-w-full text-sm">
             <thead className="bg-muted/40 text-left">
               <tr>
