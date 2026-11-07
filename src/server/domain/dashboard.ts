@@ -43,6 +43,7 @@ export type UpcomingServiceItem = {
 export type UpcomingServicesPreview = {
   serviceSchedulingEnabled: boolean;
   overdueCount: number;
+  scheduledCount: number;
   items: UpcomingServiceItem[];
 };
 
@@ -55,6 +56,7 @@ export type DashboardOverview = {
   locationBreakdown: LocationBreakdownItem[];
   serviceSchedulingEnabled: boolean;
   overdueServiceCount: number;
+  scheduledServiceCount: number;
   upcomingServices: UpcomingServiceItem[];
 };
 
@@ -217,6 +219,7 @@ async function buildUpcomingServicesPreview(
     return {
       serviceSchedulingEnabled: false,
       overdueCount: 0,
+      scheduledCount: 0,
       items: [],
     };
   }
@@ -232,11 +235,12 @@ async function buildUpcomingServicesPreview(
     return {
       serviceSchedulingEnabled: true,
       overdueCount: 0,
+      scheduledCount: 0,
       items: [],
     };
   }
 
-  const previewSchedules = schedules.slice(0, 5);
+  const previewSchedules = schedules.slice(0, 7);
   const assets = await Promise.all(
     previewSchedules.map((schedule) =>
       ctx.pb
@@ -263,6 +267,7 @@ async function buildUpcomingServicesPreview(
   return {
     serviceSchedulingEnabled: true,
     overdueCount: schedules.filter((s) => s.nextServiceDate < todayIso).length,
+    scheduledCount: schedules.length,
     items,
   };
 }
@@ -323,6 +328,7 @@ export async function getOverview(ctx: Ctx): Promise<DashboardOverview> {
     locationBreakdown,
     serviceSchedulingEnabled: upcomingPreview.serviceSchedulingEnabled,
     overdueServiceCount: upcomingPreview.overdueCount,
+    scheduledServiceCount: upcomingPreview.scheduledCount,
     upcomingServices: upcomingPreview.items,
   };
 }

@@ -8,6 +8,7 @@ import { CategoriesPageClient } from "@/components/categories/categories-page-cl
 import { TagsPageClient } from "@/components/tags/tags-page-client";
 import { FieldsPageClient } from "@/components/fields/fields-page-client";
 
+// "tags" stays the URL and code name; the UI calls them keywords.
 const VALID_TABS = ["categories", "tags", "fields"] as const;
 type TabValue = (typeof VALID_TABS)[number];
 
@@ -26,11 +27,11 @@ function TaxonomyTabs() {
   }
 
   return (
-    <Tabs value={tab} onValueChange={handleTabChange}>
-      <TabsList>
+    <Tabs value={tab} onValueChange={handleTabChange} className="gap-0">
+      <TabsList className="-mt-2 -ml-3 max-md:-mt-1">
         <TabsTrigger value="categories">Categories</TabsTrigger>
-        <TabsTrigger value="tags">Tags</TabsTrigger>
-        <TabsTrigger value="fields">Fields</TabsTrigger>
+        <TabsTrigger value="tags">Keywords</TabsTrigger>
+        <TabsTrigger value="fields">Custom fields</TabsTrigger>
       </TabsList>
       <TabsContent value="categories" className="mt-6">
         <CategoriesPageClient />
@@ -47,14 +48,11 @@ function TaxonomyTabs() {
 
 export default function TaxonomyPage() {
   return (
-    <div className="space-y-6">
+    <div>
       <PageHeader
         title="Taxonomy"
-        description="Manage categories, tags, and custom fields."
-        breadcrumbs={[
-          { label: "Stowage", href: "/dashboard" },
-          { label: "Taxonomy" },
-        ]}
+        description="How assets are grouped, labelled and described."
+        className="max-md:hidden"
       />
       <Suspense>
         <TaxonomyTabs />

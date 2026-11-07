@@ -10,7 +10,6 @@ import {
   Trash2,
 } from "lucide-react";
 import { ConfirmDialog } from "@/components/crud/confirm-dialog";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { AttachmentItem } from "@/components/attachments/types";
 import { formatDateFromTimestamp } from "@/lib/date-format";
@@ -30,46 +29,37 @@ function formatSize(size: number | null) {
 
 function FileKindIcon({ fileKind }: { fileKind: AttachmentItem["fileKind"] }) {
   if (fileKind === "image") {
-    return <FileImage className="size-5 text-muted-foreground" />;
+    return <FileImage className="size-5 text-ink-2" />;
   }
 
   if (fileKind === "pdf") {
-    return <FileText className="size-5 text-muted-foreground" />;
+    return <FileText className="size-5 text-ink-2" />;
   }
 
-  return <FileSpreadsheet className="size-5 text-muted-foreground" />;
+  return <FileSpreadsheet className="size-5 text-ink-2" />;
 }
 
-function StatusBadge({ status }: { status: AttachmentItem["status"] }) {
-  if (status === "ready") {
-    return (
-      <Badge className="border-emerald-300/70 bg-emerald-100 text-emerald-900 dark:border-emerald-400/30 dark:bg-emerald-500/15 dark:text-emerald-200">
-        Ready
-      </Badge>
-    );
-  }
-
+/* Status colour only on exceptions: Failed is red, the rest stay quiet. */
+function StatusLabel({ status }: { status: AttachmentItem["status"] }) {
   if (status === "failed") {
     return (
-      <Badge className="border-destructive/50 bg-destructive/10 text-destructive">
+      <span className="inline-flex items-center gap-1.5 font-medium text-destructive">
+        <span
+          aria-hidden="true"
+          className="size-[9px] shrink-0 rounded-xs bg-current"
+        />
         Failed
-      </Badge>
+      </span>
     );
   }
 
-  if (status === "processing") {
-    return (
-      <Badge className="border-amber-300/70 bg-amber-100 text-amber-900 dark:border-amber-400/30 dark:bg-amber-500/15 dark:text-amber-200">
-        Processing
-      </Badge>
-    );
-  }
-
-  return (
-    <Badge className="border-slate-300/70 bg-slate-100 text-slate-900 dark:border-slate-400/30 dark:bg-slate-500/15 dark:text-slate-200">
-      Pending
-    </Badge>
-  );
+  const label =
+    status === "ready"
+      ? "Ready"
+      : status === "processing"
+        ? "Processing"
+        : "Pending";
+  return <span className="text-muted-foreground">{label}</span>;
 }
 
 export function AttachmentCard({
@@ -91,54 +81,56 @@ export function AttachmentCard({
 
   return (
     <>
-      <article className="rounded-lg border border-border/60 bg-background p-3">
-        <div className="flex gap-3">
-          <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-md border border-border/60 bg-muted/20">
-            {canPreviewImage ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={attachment.url ?? undefined}
-                alt={attachment.fileName}
-                className="h-full w-full object-cover"
-              />
-            ) : (
-              <div className="flex h-full w-full items-center justify-center">
-                <FileKindIcon fileKind={attachment.fileKind} />
-              </div>
-            )}
-          </div>
-
-          <div className="min-w-0 flex-1 space-y-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <p className="truncate text-sm font-medium">
-                {attachment.fileName}
-              </p>
-              <StatusBadge status={attachment.status} />
+      <article className="flex flex-wrap items-center gap-x-3 gap-y-2 py-2.5">
+        <div className="relative size-12 shrink-0 overflow-hidden rounded-xs border border-border bg-secondary">
+          {canPreviewImage ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={attachment.url ?? undefined}
+              alt={attachment.fileName}
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center">
+              <FileKindIcon fileKind={attachment.fileKind} />
             </div>
-            <p className="text-xs text-muted-foreground">
-              {attachment.fileType} •{" "}
+          )}
+        </div>
+
+        <div className="min-w-0 flex-1 basis-40">
+          <p className="truncate text-sm font-medium text-foreground">
+            {attachment.fileName}
+          </p>
+          <p className="flex flex-wrap items-center gap-x-1.5 text-[13px] text-ink-2">
+            <span>
               {formatSize(
                 attachment.fileSizeOptimized ?? attachment.fileSizeOriginal,
               )}
-            </p>
-            <p className="text-xs text-muted-foreground">
+            </span>
+            <span aria-hidden="true" className="text-muted-foreground">
+              ·
+            </span>
+            <span>
               Uploaded{" "}
               {formatDateFromTimestamp(attachment.uploadedAt, dateFormat)}
+            </span>
+            <span aria-hidden="true" className="text-muted-foreground">
+              ·
+            </span>
+            <StatusLabel status={attachment.status} />
+          </p>
+          {attachment.status === "failed" && attachment.optimizationError ? (
+            <p className="text-[13px] text-destructive">
+              {attachment.optimizationError}
             </p>
-            {attachment.status === "failed" && attachment.optimizationError ? (
-              <p className="text-xs text-destructive">
-                {attachment.optimizationError}
-              </p>
-            ) : null}
-          </div>
+          ) : null}
         </div>
 
-        <div className="mt-3 flex flex-wrap items-center gap-2">
+        <div className="flex shrink-0 items-center gap-1.5 max-sm:w-full max-sm:pl-[60px]">
           <Button
             type="button"
             variant="outline"
             size="xs"
-            className="cursor-pointer"
             asChild
             disabled={!attachment.url}
           >
@@ -147,7 +139,7 @@ export function AttachmentCard({
               target="_blank"
               rel="noreferrer"
             >
-              <Download className="size-3.5" />
+              <Download />
               Download
             </a>
           </Button>
@@ -157,35 +149,34 @@ export function AttachmentCard({
               type="button"
               variant="outline"
               size="xs"
-              className="cursor-pointer"
               disabled={retrying}
               onClick={() => {
                 void onRetry(attachment.id);
               }}
             >
-              <RefreshCcw className="size-3.5" />
+              <RefreshCcw />
               Retry
             </Button>
           ) : null}
 
           <Button
             type="button"
-            variant="destructive"
-            size="xs"
-            className="cursor-pointer"
+            variant="ghost"
+            size="icon-xs"
             disabled={deleting}
             onClick={() => setConfirmOpen(true)}
+            aria-label={`Delete ${attachment.fileName}…`}
+            title="Delete…"
           >
-            <Trash2 className="size-3.5" />
-            Delete
+            <Trash2 />
           </Button>
         </div>
       </article>
 
       <ConfirmDialog
         open={confirmOpen}
-        title="Delete attachment"
-        description={`Delete ${attachment.fileName}?`}
+        title="Delete attachment?"
+        description={`${attachment.fileName} is deleted from this asset.`}
         confirmLabel="Delete attachment"
         busy={deleting}
         onConfirm={() => {

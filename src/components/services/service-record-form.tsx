@@ -11,7 +11,7 @@ import type {
   ServiceRecord,
   ServiceRecordFormDefinition,
 } from "@/components/services/types";
-import { Badge } from "@/components/ui/badge";
+import { TagChip } from "@/components/ui/tag-chip";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -269,7 +269,7 @@ export function ServiceRecordForm({
 
   if (formDefinitionQuery.isPending || providerOptionsQuery.isPending) {
     return (
-      <div className="rounded-lg border border-border/60 bg-background p-4 text-sm text-muted-foreground">
+      <div className="py-3 text-sm text-muted-foreground">
         Loading service record form...
       </div>
     );
@@ -277,7 +277,7 @@ export function ServiceRecordForm({
 
   if (!formDefinition) {
     return (
-      <div className="rounded-lg border border-border/60 bg-background p-4 text-sm text-muted-foreground">
+      <div className="py-3 text-sm text-muted-foreground">
         Unable to load service record form for this asset.
       </div>
     );
@@ -285,15 +285,13 @@ export function ServiceRecordForm({
 
   return (
     <div className="space-y-4">
-      <div className="rounded-lg border border-border/60 bg-muted/10 px-3 py-2 text-xs text-muted-foreground">
+      <div className="text-sm text-ink-2">
         <div className="flex flex-wrap items-center gap-2">
-          <Badge className="border border-border/70 bg-background text-xs">
-            {formDefinition.assetTag}
-          </Badge>
-          <span>{formDefinition.assetName}</span>
+          <TagChip weight="table">{formDefinition.assetTag}</TagChip>
+          <span className="font-semibold text-foreground">{formDefinition.assetName}</span>
           {formDefinition.serviceGroupName ? (
             <>
-              <span>•</span>
+              <span aria-hidden="true">·</span>
               <span>{formDefinition.serviceGroupName}</span>
             </>
           ) : null}
@@ -393,7 +391,7 @@ export function ServiceRecordForm({
         </div>
 
         {formDefinition.fields.length > 0 ? (
-          <div className="space-y-3 rounded-lg border border-border/60 bg-muted/10 p-4">
+          <div className="space-y-3 rounded-md border border-border bg-secondary p-4">
             <div className="flex items-center gap-2 text-sm font-medium">
               <Wrench className="h-4 w-4" />
               Configurable service fields
@@ -576,7 +574,7 @@ export function ServiceRecordForm({
             })}
           </div>
         ) : (
-          <div className="rounded-lg border border-dashed border-border/70 bg-muted/10 p-4 text-sm text-muted-foreground">
+          <div className="rounded-md border border-dashed border-line-2 bg-secondary p-4 text-sm text-muted-foreground">
             No configurable service fields are required for this asset.
           </div>
         )}
@@ -599,7 +597,7 @@ export function ServiceRecordForm({
       </form>
 
       {currentRecordId ? (
-        <section className="space-y-2 rounded-lg border border-border/60 bg-muted/10 p-4">
+        <section className="space-y-2 rounded-md border border-border bg-secondary p-4">
           <div className="flex items-center gap-2 text-sm font-medium">
             <Paperclip className="h-4 w-4" />
             Service record attachments

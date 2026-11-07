@@ -46,8 +46,7 @@ export function ServiceGroupEditor({
           onClose();
         }
       }}
-      title={mode === "create" ? "Create service group" : "Edit service group"}
-      description="Define reusable service requirements for assets."
+      title={mode === "create" ? "New service plan" : "Edit service plan"}
       footer={
         <>
           <Button
@@ -66,7 +65,7 @@ export function ServiceGroupEditor({
             disabled={submitting}
           >
             {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-            {mode === "create" ? "Create group" : "Save changes"}
+            {mode === "create" ? "Create plan" : "Save plan"}
           </Button>
         </>
       }
@@ -77,7 +76,7 @@ export function ServiceGroupEditor({
         onSubmit={handleSubmit}
       >
         <div className="space-y-1.5">
-          <label htmlFor="service-group-name" className="text-sm font-medium">
+          <label htmlFor="service-group-name" className="text-sm font-semibold">
             Name
           </label>
           <Input
@@ -91,15 +90,15 @@ export function ServiceGroupEditor({
         <div className="space-y-1.5">
           <label
             htmlFor="service-group-description"
-            className="text-sm font-medium"
+            className="text-sm font-semibold"
           >
-            Description
+            Description <span className="font-normal text-muted-foreground">optional</span>
           </label>
           <Textarea
             id="service-group-description"
             value={description}
             onChange={(event) => setDescription(event.target.value)}
-            placeholder="Optional notes for the service group."
+            placeholder="What gets checked, and by whom"
             className="min-h-24"
           />
         </div>

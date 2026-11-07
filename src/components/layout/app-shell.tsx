@@ -1,21 +1,23 @@
-import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
-import { AppSidebar } from "@/components/layout/app-sidebar";
+import { AppRail, AppSidebar } from "@/components/layout/app-sidebar";
 import { BottomNav } from "@/components/layout/bottom-nav";
-import { Topbar } from "@/components/layout/topbar";
+import { MobileTopBar } from "@/components/layout/mobile-top-bar";
 
+/*
+  The Workshop shell: a charcoal sidebar on desktop, an 88px labelled rail on
+  tablet, and charcoal top and bottom bars on phones, around the concrete.
+*/
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (
-    <SidebarProvider className="max-lg:h-auto max-lg:overflow-visible">
-      <div className="hidden lg:contents">
-        <AppSidebar />
-      </div>
-      <SidebarInset>
-        <Topbar />
-        <main className="flex-1 p-4 pb-24 lg:overflow-auto lg:p-6 lg:pb-6">
+    <div className="flex min-h-dvh bg-background">
+      <AppSidebar />
+      <AppRail />
+      <div className="flex min-w-0 flex-1 flex-col">
+        <MobileTopBar />
+        <main className="w-full max-w-[1380px] flex-1 px-4 pt-4 pb-24 md:px-6 md:pt-6 md:pb-14 lg:px-9 lg:pt-8 lg:pb-10">
           {children}
         </main>
         <BottomNav />
-      </SidebarInset>
-    </SidebarProvider>
+      </div>
+    </div>
   );
 }

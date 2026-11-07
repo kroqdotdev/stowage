@@ -44,6 +44,7 @@ export type DashboardOverview = {
   locationBreakdown: LocationBreakdownItem[];
   serviceSchedulingEnabled: boolean;
   overdueServiceCount: number;
+  scheduledServiceCount: number;
   upcomingServices: UpcomingServiceItem[];
 };
 

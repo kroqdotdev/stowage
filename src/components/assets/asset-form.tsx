@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Loader2 } from "lucide-react";
+import Link from "next/link";
+import { Loader2, TriangleAlert } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { DynamicField } from "@/components/fields/dynamic-field";
 import type { FieldDefinition, FieldValue } from "@/components/fields/types";
@@ -27,8 +28,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { SheetHeading } from "@/components/ui/sheet-heading";
+import { TagChip } from "@/components/ui/tag-chip";
 import { Textarea } from "@/components/ui/textarea";
 import { previewAssetTag } from "@/lib/api/assets";
+import { cn } from "@/lib/utils";
 
 type CategoryOption = {
   id: string;
@@ -65,6 +69,7 @@ export function AssetForm({
   assetTag,
   submitting,
   submitLabel,
+  cancelHref,
   serviceSchedulingEnabled,
   serviceScheduleDraft,
   onServiceScheduleChange,
@@ -81,6 +86,8 @@ export function AssetForm({
   assetTag?: string | null;
   submitting: boolean;
   submitLabel: string;
+  /* Where Cancel goes; omit to hide it. */
+  cancelHref?: string;
   serviceSchedulingEnabled?: boolean;
   serviceScheduleDraft?: ServiceScheduleDraft;
   onServiceScheduleChange?: (next: ServiceScheduleDraft) => void;
@@ -211,175 +218,208 @@ export function AssetForm({
     });
   }
 
+  const sectionGrid = "grid gap-x-6 gap-y-4 px-0.5 pt-4 sm:grid-cols-2";
+
   return (
-    <form className="space-y-5" onSubmit={handleSubmit} noValidate>
-      <div className="grid gap-4 lg:grid-cols-2">
-        <div className="space-y-1.5">
-          <label htmlFor="asset-name" className="text-sm font-medium">
-            Name
-            <span className="ml-1 text-destructive">*</span>
-          </label>
-          <Input
-            id="asset-name"
-            value={values.name}
-            onChange={(event) => setFieldValue("name", event.target.value)}
-            placeholder="Asset name"
-            disabled={submitting}
-            aria-invalid={Boolean(errors.name)}
-          />
-          {errors.name ? (
-            <p className="text-xs text-destructive">{errors.name}</p>
-          ) : null}
-        </div>
-
-        <div className="space-y-1.5">
-          <label className="text-sm font-medium">Category</label>
-          <Select
-            value={values.categoryId ?? "__none__"}
-            onValueChange={(value) =>
-              setFieldValue("categoryId", value === "__none__" ? null : value)
-            }
-            disabled={submitting}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="No category" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="__none__">No category</SelectItem>
-              {categories.map((category) => (
-                <SelectItem key={category.id} value={category.id}>
-                  {category.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="space-y-1.5">
-          <label htmlFor="asset-tag" className="text-sm font-medium">
-            Asset tag
-          </label>
-          <div className="flex h-9 items-center rounded-md border border-border/70 bg-muted/20 px-3 text-sm font-mono tracking-wide">
-            {showTagLoading ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+    <form
+      className="max-w-[880px] space-y-10"
+      onSubmit={handleSubmit}
+      noValidate
+    >
+      <section aria-labelledby="asset-form-details">
+        <SheetHeading title={<span id="asset-form-details">Details</span>} />
+        <div className={sectionGrid}>
+          <div className="space-y-1.5 sm:col-span-2">
+            <label htmlFor="asset-name" className="text-sm font-semibold">
+              Name
+            </label>
+            <Input
+              id="asset-name"
+              value={values.name}
+              onChange={(event) => setFieldValue("name", event.target.value)}
+              placeholder="Festool TS 55 plunge saw"
+              disabled={submitting}
+              aria-invalid={Boolean(errors.name)}
+              aria-describedby={errors.name ? "asset-name-error" : undefined}
+            />
+            {errors.name ? (
+              <FieldError id="asset-name-error">{errors.name}</FieldError>
             ) : null}
-            {activeAssetTag}
+          </div>
+
+          <div className="space-y-1.5">
+            <OptionalLabel id="asset-category-label">Category</OptionalLabel>
+            <Select
+              value={values.categoryId ?? "__none__"}
+              onValueChange={(value) =>
+                setFieldValue("categoryId", value === "__none__" ? null : value)
+              }
+              disabled={submitting}
+            >
+              <SelectTrigger
+                className="w-full"
+                aria-labelledby="asset-category-label"
+              >
+                <SelectValue placeholder="No category" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__none__">No category</SelectItem>
+                {categories.map((category) => (
+                  <SelectItem key={category.id} value={category.id}>
+                    {category.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1.5">
+            <span id="asset-tag-label" className="block text-sm font-semibold">
+              Tag
+            </span>
+            <div
+              className="flex h-9 items-center gap-2.5"
+              aria-labelledby="asset-tag-label"
+              role="group"
+            >
+              {showTagLoading ? (
+                <Loader2 className="size-4 animate-spin text-muted-foreground" />
+              ) : (
+                <TagChip>{activeAssetTag}</TagChip>
+              )}
+              <span className="text-[13px] text-muted-foreground">
+                {mode === "create"
+                  ? "Assigned from the category prefix when you save."
+                  : "Printed on the label. It does not change."}
+              </span>
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <label htmlFor="asset-location" className="text-sm font-semibold">
+              Location{" "}
+              <span className="font-normal text-muted-foreground">
+                optional
+              </span>
+            </label>
+            <LocationPicker
+              id="asset-location"
+              value={values.locationId}
+              options={locations}
+              onChange={(locationId) => setFieldValue("locationId", locationId)}
+              disabled={submitting}
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <label htmlFor="asset-status" className="text-sm font-semibold">
+              Status
+            </label>
+            <Select
+              value={values.status}
+              onValueChange={(value) =>
+                setFieldValue("status", value as AssetStatus)
+              }
+              disabled={submitting}
+            >
+              <SelectTrigger id="asset-status" className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {ASSET_STATUS_OPTIONS.map((status) => (
+                  <SelectItem key={status} value={status}>
+                    {ASSET_STATUS_LABELS[status]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1.5">
+            <label
+              htmlFor="asset-service-group"
+              className="text-sm font-semibold"
+            >
+              Service plan{" "}
+              <span className="font-normal text-muted-foreground">
+                optional
+              </span>
+            </label>
+            <Select
+              value={values.serviceGroupId ?? "__none__"}
+              onValueChange={(value) =>
+                setFieldValue(
+                  "serviceGroupId",
+                  value === "__none__" ? null : value,
+                )
+              }
+              disabled={submitting}
+            >
+              <SelectTrigger id="asset-service-group" className="w-full">
+                <SelectValue placeholder="No service plan" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__none__">No service plan</SelectItem>
+                {serviceGroups.map((group) => (
+                  <SelectItem key={group.id} value={group.id}>
+                    {group.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1.5 sm:col-span-2">
+            <OptionalLabel id="asset-keywords-label">Keywords</OptionalLabel>
+            <TagPicker
+              value={values.tagIds}
+              options={tags}
+              onChange={(tagIds) => setFieldValue("tagIds", tagIds)}
+              disabled={submitting}
+              labelledBy="asset-keywords-label"
+            />
+          </div>
+
+          <div className="space-y-1.5 sm:col-span-2">
+            <label htmlFor="asset-notes" className="text-sm font-semibold">
+              Notes{" "}
+              <span className="font-normal text-muted-foreground">
+                optional
+              </span>
+            </label>
+            <Textarea
+              id="asset-notes"
+              value={values.notes}
+              onChange={(event) => setFieldValue("notes", event.target.value)}
+              placeholder="Serial number, quirks, who to ask"
+              className="min-h-24"
+              disabled={submitting}
+            />
           </div>
         </div>
+      </section>
 
-        <div className="space-y-1.5">
-          <label htmlFor="asset-status" className="text-sm font-medium">
-            Status
-          </label>
-          <Select
-            value={values.status}
-            onValueChange={(value) =>
-              setFieldValue("status", value as AssetStatus)
-            }
-            disabled={submitting}
-          >
-            <SelectTrigger id="asset-status" className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {ASSET_STATUS_OPTIONS.map((status) => (
-                <SelectItem key={status} value={status}>
-                  {ASSET_STATUS_LABELS[status]}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      <div className="grid gap-4 lg:grid-cols-2">
-        <div className="space-y-1.5">
-          <label htmlFor="asset-location" className="text-sm font-medium">
-            Location
-          </label>
-          <LocationPicker
-            id="asset-location"
-            value={values.locationId}
-            options={locations}
-            onChange={(locationId) => setFieldValue("locationId", locationId)}
-            disabled={submitting}
-          />
-        </div>
-
-        <div className="space-y-1.5">
-          <label htmlFor="asset-service-group" className="text-sm font-medium">
-            Service group
-          </label>
-          <Select
-            value={values.serviceGroupId ?? "__none__"}
-            onValueChange={(value) =>
-              setFieldValue(
-                "serviceGroupId",
-                value === "__none__" ? null : value,
-              )
-            }
-            disabled={submitting}
-          >
-            <SelectTrigger id="asset-service-group" className="w-full">
-              <SelectValue placeholder="No service group" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="__none__">No service group</SelectItem>
-              {serviceGroups.map((group) => (
-                <SelectItem key={group.id} value={group.id}>
-                  {group.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="space-y-1.5">
-          <label className="text-sm font-medium">Tags</label>
-          <TagPicker
-            value={values.tagIds}
-            options={tags}
-            onChange={(tagIds) => setFieldValue("tagIds", tagIds)}
-            disabled={submitting}
-          />
-        </div>
-      </div>
-
-      <div className="space-y-1.5">
-        <label htmlFor="asset-notes" className="text-sm font-medium">
-          Notes
-        </label>
-        <Textarea
-          id="asset-notes"
-          value={values.notes}
-          onChange={(event) => setFieldValue("notes", event.target.value)}
-          placeholder="Optional notes"
-          className="min-h-24"
-          disabled={submitting}
+      <section aria-labelledby="asset-form-custom-fields">
+        <SheetHeading
+          title={<span id="asset-form-custom-fields">Custom fields</span>}
         />
-      </div>
-
-      <section className="space-y-3 rounded-lg border border-border/60 bg-muted/10 p-4">
-        <div>
-          <h3 className="text-sm font-semibold tracking-tight">
-            Custom fields
-          </h3>
-          <p className="text-xs text-muted-foreground">
-            Values are based on your field definitions.
-          </p>
-        </div>
-
         {fieldDefinitions.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            No custom fields defined.
+          <p className="px-0.5 py-4 text-sm text-ink-2">
+            No custom fields defined.{" "}
+            <Link
+              href="/taxonomy?tab=fields"
+              className="font-medium text-foreground underline underline-offset-[3px]"
+            >
+              Open Taxonomy
+            </Link>
           </p>
         ) : (
-          <div className="grid gap-4 lg:grid-cols-2">
+          <div className={sectionGrid}>
             {fieldDefinitions.map((definition) => {
               const fieldId = definition.id as string;
 
               return (
-                <div key={definition.id} className="space-y-1">
+                <div key={definition.id} className="space-y-1.5">
                   <DynamicField
                     definition={definition}
                     value={values.customFieldValues[fieldId] ?? null}
@@ -387,9 +427,7 @@ export function AssetForm({
                     disabled={submitting}
                   />
                   {errors[`custom:${fieldId}`] ? (
-                    <p className="text-xs text-destructive">
-                      {errors[`custom:${fieldId}`]}
-                    </p>
+                    <FieldError>{errors[`custom:${fieldId}`]}</FieldError>
                   ) : null}
                 </div>
               );
@@ -410,12 +448,57 @@ export function AssetForm({
         />
       ) : null}
 
-      <div className="flex items-center justify-end gap-2">
-        <Button type="submit" className="cursor-pointer" disabled={submitting}>
-          {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+      <div className="flex flex-wrap items-center gap-2 border-t border-border pt-4 max-sm:flex-col-reverse max-sm:items-stretch">
+        <Button type="submit" disabled={submitting} className="max-sm:h-11">
+          {submitting ? <Loader2 className="animate-spin" /> : null}
           {submitLabel}
         </Button>
+        {cancelHref ? (
+          <Button
+            asChild
+            variant="secondary"
+            className={cn(
+              "max-sm:h-11",
+              submitting && "pointer-events-none opacity-50",
+            )}
+          >
+            <Link href={cancelHref}>Cancel</Link>
+          </Button>
+        ) : null}
       </div>
     </form>
+  );
+}
+
+function OptionalLabel({
+  id,
+  children,
+}: {
+  id: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <span className="block text-sm font-semibold">
+      <span id={id}>{children}</span>{" "}
+      <span className="font-normal text-muted-foreground">optional</span>
+    </span>
+  );
+}
+
+function FieldError({
+  id,
+  children,
+}: {
+  id?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <p
+      id={id}
+      className="flex items-start gap-1.5 text-sm font-medium text-destructive"
+    >
+      <TriangleAlert className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
+      <span>{children}</span>
+    </p>
   );
 }

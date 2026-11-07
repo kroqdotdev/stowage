@@ -20,24 +20,35 @@ const items = [
 ];
 
 describe("CategoryBreakdown", () => {
-  it("renders category names and counts", () => {
+  it("renders the heading, category names and counts", () => {
     render(<CategoryBreakdown items={items} />);
 
-    expect(screen.getByText("By Category")).toBeVisible();
+    expect(
+      screen.getByRole("region", { name: "Assets by category" }),
+    ).toBeInTheDocument();
     expect(screen.getByText("Electronics")).toBeVisible();
     expect(screen.getByText("15")).toBeVisible();
     expect(screen.getByText("Furniture")).toBeVisible();
     expect(screen.getByText("8")).toBeVisible();
   });
 
+  it("links to the taxonomy page from the heading", () => {
+    render(<CategoryBreakdown items={items} />);
+
+    expect(screen.getByRole("link", { name: "Open Taxonomy" })).toHaveAttribute(
+      "href",
+      "/taxonomy",
+    );
+  });
+
   it("links each category to filtered assets page", () => {
     render(<CategoryBreakdown items={items} />);
 
-    expect(screen.getByText("Electronics").closest("a")).toHaveAttribute(
+    expect(screen.getByRole("link", { name: /Electronics/ })).toHaveAttribute(
       "href",
       "/assets?category=cat1",
     );
-    expect(screen.getByText("Furniture").closest("a")).toHaveAttribute(
+    expect(screen.getByRole("link", { name: /Furniture/ })).toHaveAttribute(
       "href",
       "/assets?category=cat2",
     );

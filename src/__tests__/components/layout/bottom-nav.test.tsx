@@ -5,7 +5,11 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 const pathnameSpy = vi.fn(() => "/dashboard");
 const replaceSpy = vi.fn();
 const logoutSpy = vi.fn();
-const toastErrorSpy = vi.fn();
+const overdueSpy = vi.fn(() => 0);
+
+vi.mock("@/hooks/use-overdue-count", () => ({
+  useOverdueCount: () => overdueSpy(),
+}));
 
 vi.mock("next/navigation", () => ({
   usePathname: () => pathnameSpy(),
@@ -19,10 +23,6 @@ vi.mock("next-themes", () => ({
 
 vi.mock("@/lib/api/auth", () => ({
   logout: () => logoutSpy(),
-}));
-
-vi.mock("sonner", () => ({
-  toast: { error: (...args: unknown[]) => toastErrorSpy(...args) },
 }));
 
 import { BottomNav } from "@/components/layout/bottom-nav";
@@ -43,7 +43,7 @@ describe("BottomNav", () => {
     pathnameSpy.mockReturnValue("/dashboard");
     replaceSpy.mockReset();
     logoutSpy.mockReset();
-    toastErrorSpy.mockReset();
+    overdueSpy.mockReturnValue(0);
   });
 
   it("renders all five slots with the scan button in the center", () => {
@@ -56,13 +56,43 @@ describe("BottomNav", () => {
 
     const scan = screen.getByTestId("bottom-nav-scan");
     expect(scan).toHaveAttribute("href", "/scan");
-    expect(scan.className).toMatch(/var\(--scan\)/);
+    expect(scan).toHaveAccessibleName("Scan a label");
+    // The amber slab is the inner span; it is the only use of --scan.
+    expect(scan.querySelector("span")?.className).toMatch(/var\(--scan\)/);
+
+    const order = Array.from(
+      screen.getByTestId("bottom-nav").querySelectorAll("[data-testid]"),
+    ).map((el) => el.getAttribute("data-testid"));
+    expect(order).toEqual([
+      "bottom-nav-home",
+      "bottom-nav-assets",
+      "bottom-nav-scan",
+      "bottom-nav-services",
+      "bottom-nav-more",
+    ]);
   });
 
-  it("hides itself on large viewports", () => {
+  it("links the tabs to their pages", () => {
+    renderNav();
+    expect(screen.getByRole("link", { name: "Home" })).toHaveAttribute(
+      "href",
+      "/dashboard",
+    );
+    expect(screen.getByRole("link", { name: "Assets" })).toHaveAttribute(
+      "href",
+      "/assets",
+    );
+    expect(screen.getByRole("link", { name: "Services" })).toHaveAttribute(
+      "href",
+      "/services",
+    );
+    expect(screen.getByRole("button", { name: "More" })).toBeInTheDocument();
+  });
+
+  it("hides itself from tablet width up", () => {
     renderNav();
     const nav = screen.getByTestId("bottom-nav");
-    expect(nav.className).toMatch(/lg:hidden/);
+    expect(nav.className).toMatch(/(^|\s)md:hidden(\s|$)/);
   });
 
   it("marks Home active on /dashboard", () => {
@@ -93,6 +123,23 @@ describe("BottomNav", () => {
     pathnameSpy.mockReturnValue("/services");
     renderNav();
     expect(screen.getByTestId("bottom-nav-services")).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+  });
+
+  it("shows the overdue count on Services", () => {
+    overdueSpy.mockReturnValue(2);
+    renderNav();
+    expect(screen.getByTestId("bottom-nav-services")).toHaveTextContent(
+      "Services2",
+    );
+  });
+
+  it("marks More active on pages that live in the More sheet", () => {
+    pathnameSpy.mockReturnValue("/locations");
+    renderNav();
+    expect(screen.getByTestId("bottom-nav-more")).toHaveAttribute(
       "aria-current",
       "page",
     );
@@ -144,20 +191,5 @@ describe("BottomNav", () => {
       expect(logoutSpy).toHaveBeenCalledOnce();
       expect(replaceSpy).toHaveBeenCalledWith("/login");
     });
-  });
-
-  it("keeps the user signed in when logout rejects", async () => {
-    logoutSpy.mockRejectedValue(new Error("network"));
-    renderNav();
-    fireEvent.click(screen.getByTestId("bottom-nav-more"));
-    fireEvent.click(screen.getByTestId("more-sheet-signout"));
-
-    await waitFor(() => {
-      expect(logoutSpy).toHaveBeenCalledOnce();
-      expect(toastErrorSpy).toHaveBeenCalledWith(
-        "Could not sign out. Please try again.",
-      );
-    });
-    expect(replaceSpy).not.toHaveBeenCalled();
   });
 });

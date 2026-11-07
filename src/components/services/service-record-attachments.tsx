@@ -149,11 +149,11 @@ export function ServiceRecordAttachments({
       </Button>
 
       {attachmentsQuery.isPending ? (
-        <div className="rounded-lg border border-border/60 bg-background p-4 text-sm text-muted-foreground">
+        <div className="py-3 text-sm text-muted-foreground">
           Loading attachments...
         </div>
       ) : attachments.length === 0 ? (
-        <div className="rounded-lg border border-dashed border-border/70 bg-muted/10 p-4 text-sm text-muted-foreground">
+        <div className="rounded-md border border-dashed border-line-2 bg-secondary p-4 text-sm text-muted-foreground">
           No record attachments yet.
         </div>
       ) : (
@@ -161,7 +161,7 @@ export function ServiceRecordAttachments({
           {attachments.map((attachment) => (
             <div
               key={attachment.id}
-              className="flex items-center justify-between gap-2 rounded-lg border border-border/70 bg-background px-3 py-2"
+              className="flex items-center justify-between gap-2 rounded-md border border-border bg-background px-3 py-2"
             >
               <div className="min-w-0">
                 <p className="truncate text-sm font-medium">

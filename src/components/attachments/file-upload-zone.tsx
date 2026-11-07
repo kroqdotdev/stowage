@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { FileUp, Loader2, XCircle } from "lucide-react";
+import { Loader2, Paperclip, XCircle } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { getAttachmentUiErrorMessage } from "@/components/attachments/error-messages";
@@ -404,11 +404,11 @@ export function FileUploadZone({ assetId }: { assetId: string }) {
   return (
     <div className="space-y-3">
       <div
+        data-testid="file-upload-drop"
         className={cn(
-          "rounded-xl border-2 border-dashed p-4 transition-colors",
-          dragActive
-            ? "border-primary/70 bg-primary/5"
-            : "border-border/60 bg-muted/10 hover:bg-muted/15",
+          "dash-slot rounded-md transition-colors",
+          dragActive &&
+            "bg-secondary outline-[1.5px] outline-foreground outline-solid",
         )}
         onDragOver={(event) => {
           event.preventDefault();
@@ -443,33 +443,44 @@ export function FileUploadZone({ assetId }: { assetId: string }) {
 
         <button
           type="button"
-          className="flex w-full cursor-pointer flex-col items-center gap-2 rounded-lg px-3 py-4 text-center"
+          className="flex w-full cursor-pointer items-center gap-3 rounded-md px-3.5 py-3 text-left hover:bg-secondary/60"
           onClick={() => inputRef.current?.click()}
         >
-          <FileUp className="size-5 text-muted-foreground" />
-          <p className="text-sm font-medium">
-            Drag and drop files here, or click to browse
-          </p>
-          <p className="text-xs text-muted-foreground">
-            Images, PDFs, and Office files. Max 25 MB per file.
-          </p>
+          <Paperclip
+            className="size-4 shrink-0 text-ink-2"
+            aria-hidden="true"
+          />
+          <span className="min-w-0">
+            <span className="block text-sm font-medium text-foreground">
+              Add files or photos…
+            </span>
+            <span className="block text-[13px] text-muted-foreground">
+              <span className="max-sm:hidden">Or drop them here. </span>
+              Images, PDFs, and Office files. Max 25 MB per file.
+            </span>
+          </span>
         </button>
       </div>
 
       {storageUsage?.limitBytes != null ? (
         <div className="space-y-1">
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
+          <div className="flex items-center justify-between text-[13px] text-ink-2">
             <span>Storage</span>
-            <span>
+            <span
+              className={cn(
+                "font-mono font-medium",
+                quotaExceeded && "text-destructive",
+              )}
+            >
               {formatStorageSize(storageUsage.usedBytes)} /{" "}
               {formatStorageSize(storageUsage.limitBytes)}
             </span>
           </div>
-          <div className="h-1.5 overflow-hidden rounded-full bg-muted">
+          <div className="h-1.5 overflow-hidden bg-border">
             <div
               className={cn(
                 "h-full transition-[width] duration-200",
-                quotaExceeded ? "bg-destructive" : "bg-primary",
+                quotaExceeded ? "bg-destructive" : "bg-foreground",
               )}
               style={{
                 width: `${Math.min(100, (storageUsage.usedBytes / storageUsage.limitBytes) * 100)}%`,
@@ -480,12 +491,23 @@ export function FileUploadZone({ assetId }: { assetId: string }) {
       ) : null}
 
       {queueJobs.length > 0 ? (
-        <div className="space-y-2 rounded-lg border border-border/60 bg-background p-3">
+        <ul className="border-t border-border">
           {queueJobs.map((job) => (
-            <div key={job.id} className="space-y-1">
+            <li
+              key={job.id}
+              className="space-y-1.5 border-b border-border py-2"
+            >
               <div className="flex items-center justify-between gap-2">
-                <p className="truncate text-xs font-medium">{job.fileName}</p>
-                <span className="text-[11px] text-muted-foreground">
+                <p className="truncate text-[13px] font-medium text-foreground">
+                  {job.fileName}
+                </p>
+                <span
+                  className={cn(
+                    "shrink-0 text-[13px] text-muted-foreground",
+                    job.status === "uploading" && "font-mono",
+                    job.status === "error" && "font-medium text-destructive",
+                  )}
+                >
                   {job.status === "uploading" && `${job.progress}%`}
                   {job.status === "registering" && "Registering"}
                   {job.status === "queued" && "Queued for optimization"}
@@ -494,9 +516,9 @@ export function FileUploadZone({ assetId }: { assetId: string }) {
                 </span>
               </div>
               {job.status === "uploading" || job.status === "registering" ? (
-                <div className="h-1.5 overflow-hidden rounded-full bg-muted">
+                <div className="h-1 overflow-hidden bg-border">
                   <div
-                    className="h-full bg-primary transition-[width] duration-200"
+                    className="h-full bg-foreground transition-[width] duration-200"
                     style={{
                       width: `${Math.min(100, Math.max(0, job.progress))}%`,
                     }}
@@ -504,18 +526,18 @@ export function FileUploadZone({ assetId }: { assetId: string }) {
                 </div>
               ) : null}
               {job.status === "error" && job.error ? (
-                <p className="inline-flex items-center gap-1 text-[11px] text-destructive">
+                <p className="inline-flex items-center gap-1 text-[13px] text-destructive">
                   <XCircle className="size-3.5" />
                   {job.error}
                 </p>
               ) : null}
-            </div>
+            </li>
           ))}
-        </div>
+        </ul>
       ) : null}
 
       {activeJobs.length > 0 ? (
-        <p className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+        <p className="inline-flex items-center gap-1.5 text-[13px] text-muted-foreground">
           <Loader2 className="size-3.5 animate-spin" />
           Uploading {activeJobs.length} file{activeJobs.length === 1 ? "" : "s"}
           ...

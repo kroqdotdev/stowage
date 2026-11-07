@@ -43,9 +43,8 @@ describe("ServiceGroupAssetsPanel", () => {
 
     await waitFor(() => {
       expect(
-        screen.getAllByText("No assets are currently assigned to this group.")
-          .length,
-      ).toBeGreaterThan(0);
+        screen.getByText(/No assets are on this plan yet/),
+      ).toBeInTheDocument();
     });
   });
 
@@ -68,12 +67,11 @@ describe("ServiceGroupAssetsPanel", () => {
         ),
       ).toBeInTheDocument();
     });
-    const mobile = within(screen.getByTestId("service-group-assets-card-list"));
-    const desktop = within(screen.getByTestId("service-group-assets-table"));
-    expect(mobile.getByText("AST-0001")).toBeInTheDocument();
-    expect(mobile.getByText("active")).toBeInTheDocument();
-    expect(desktop.getByText("Generator")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Open asset" })).toHaveAttribute(
+    const list = within(screen.getByTestId("service-group-assets-card-list"));
+    expect(list.getByText("AST-0001")).toBeInTheDocument();
+    // Active is the norm, so it carries no status text.
+    expect(list.queryByText("Active")).toBeNull();
+    expect(screen.getByRole("link", { name: /Generator/ })).toHaveAttribute(
       "href",
       "/assets/asset1",
     );

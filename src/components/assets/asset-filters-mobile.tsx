@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Check, Search, SlidersHorizontal, X } from "lucide-react";
+import { Check, ChevronDown, Search, SlidersHorizontal, X } from "lucide-react";
 import {
   ASSET_STATUS_LABELS,
   ASSET_STATUS_OPTIONS,
@@ -13,7 +13,6 @@ import type {
 } from "@/components/assets/asset-table";
 import type { AssetFiltersState } from "@/components/assets/asset-filters";
 import { MobileActionSheet } from "@/components/layout/mobile-action-sheet";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -56,39 +55,62 @@ export function AssetFiltersMobile({
   const activeCount = countActiveFilters(filters, search);
 
   return (
-    <div className="flex flex-col gap-2" data-testid="asset-filters-mobile">
+    <div className="mb-3.5" data-testid="asset-filters-mobile">
       <div className="flex items-center gap-2">
-        <div className="relative flex-1">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={search}
-            onChange={(event) => onSearchChange(event.target.value)}
-            placeholder="Search assets"
-            className="pl-9"
-            aria-label="Search assets"
-            data-testid="asset-filters-mobile-search"
-          />
-        </div>
-        <Button
+        <label className="relative flex h-11 min-w-0 flex-1 items-center gap-2.5 rounded-md border-[1.5px] border-foreground bg-card px-3.5">
+          <span className="eyebrow shrink-0">Status</span>
+          <select
+            value={filters.status ?? ""}
+            onChange={(event) =>
+              onFiltersChange({
+                ...filters,
+                status: (event.target.value || null) as AssetFiltersState["status"],
+              })
+            }
+            aria-label="Filter by status"
+            data-testid="asset-filters-mobile-status"
+            className="min-w-0 flex-1 cursor-pointer appearance-none bg-transparent pr-6 text-sm font-semibold text-foreground outline-none"
+          >
+            <option value="">All</option>
+            {ASSET_STATUS_OPTIONS.map((status) => (
+              <option key={status} value={status}>
+                {ASSET_STATUS_LABELS[status]}
+              </option>
+            ))}
+          </select>
+          <ChevronDown className="pointer-events-none absolute right-3.5 size-3.5 text-foreground" aria-hidden="true" />
+        </label>
+        <button
           type="button"
-          variant="outline"
-          size="sm"
           onClick={() => setOpen(true)}
-          className="relative cursor-pointer gap-2"
+          aria-label="Filters"
+          title="Filters"
+          className="relative grid size-11 shrink-0 cursor-pointer place-items-center rounded-md border-[1.5px] border-foreground bg-card text-foreground"
           data-testid="asset-filters-mobile-trigger"
         >
-          <SlidersHorizontal className="h-4 w-4" />
-          Filters
+          <SlidersHorizontal className="size-[18px]" />
           {activeCount > 0 ? (
-            <Badge
-              className="ml-1 h-5 min-w-5 rounded-full bg-primary px-1 text-[11px] font-semibold text-primary-foreground"
+            <span
+              className="absolute -top-1.5 -right-1.5 grid h-[18px] min-w-[18px] place-items-center rounded-md bg-foreground px-1 font-mono text-xs font-semibold text-background"
               data-testid="asset-filters-mobile-count"
             >
               {activeCount}
-            </Badge>
+            </span>
           ) : null}
-        </Button>
+        </button>
       </div>
+      {search.trim() ? (
+        <div className="mt-2 flex items-center gap-2 text-[13px] text-ink-2">
+          Searching for <b className="font-semibold text-foreground">“{search.trim()}”</b>
+          <button
+            type="button"
+            onClick={() => onSearchChange("")}
+            className="cursor-pointer font-medium underline underline-offset-[3px]"
+          >
+            Clear
+          </button>
+        </div>
+      ) : null}
 
       <AssetFiltersSheet
         open={open}
@@ -97,6 +119,8 @@ export function AssetFiltersMobile({
         filters={filters}
         sortBy={sortBy}
         sortDirection={sortDirection}
+        search={search}
+        onSearchChange={onSearchChange}
         onFiltersChange={onFiltersChange}
         onSortChange={onSortChange}
         onReset={() => {
@@ -115,10 +139,14 @@ function AssetFiltersSheet({
   filters,
   sortBy,
   sortDirection,
+  search,
+  onSearchChange,
   onFiltersChange,
   onSortChange,
   onReset,
 }: {
+  search: string;
+  onSearchChange: (value: string) => void;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   options: AssetFilterOptions;
@@ -134,16 +162,32 @@ function AssetFiltersSheet({
       open={open}
       onOpenChange={onOpenChange}
       title="Filters"
-      description="Narrow down the asset list."
     >
       <div
         className="flex max-h-[70svh] flex-col gap-4 overflow-auto"
         data-testid="asset-filters-sheet"
       >
+        <div className="relative">
+          <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={search}
+            onChange={(event) => onSearchChange(event.target.value)}
+            placeholder="Search by name, tag or serial"
+            className="h-11 pl-9"
+            aria-label="Search assets"
+            data-testid="asset-filters-mobile-search"
+          />
+        </div>
         <Section title="Sort by">
           <SortRow
+            active={sortBy === "updatedAt" && sortDirection === "desc"}
+            label="Recently updated"
+            onClick={() => onSortChange("updatedAt", "desc")}
+            testId="asset-sort-updated"
+          />
+          <SortRow
             active={sortBy === "createdAt" && sortDirection === "desc"}
-            label="Recent"
+            label="Recently added"
             onClick={() => onSortChange("createdAt", "desc")}
             testId="asset-sort-recent"
           />
@@ -198,7 +242,6 @@ function AssetFiltersSheet({
                 key={category.id}
                 active={filters.categoryId === category.id}
                 label={category.name}
-                dotColor={category.color}
                 onClick={() =>
                   onFiltersChange({ ...filters, categoryId: category.id })
                 }
@@ -221,7 +264,7 @@ function AssetFiltersSheet({
         ) : null}
 
         {options.tags.length > 0 ? (
-          <Section title="Tags">
+          <Section title="Keywords">
             {options.tags.map((tag) => {
               const active = filters.tagIds.includes(tag.id);
               return (
@@ -229,7 +272,6 @@ function AssetFiltersSheet({
                   key={tag.id}
                   active={active}
                   label={tag.name}
-                  dotColor={tag.color}
                   onClick={() =>
                     onFiltersChange({
                       ...filters,
@@ -250,20 +292,23 @@ function AssetFiltersSheet({
         <Button
           type="button"
           variant="outline"
-          className="flex-1 cursor-pointer"
+          size="lg"
+          className="flex-1"
           onClick={onReset}
           data-testid="asset-filters-mobile-reset"
         >
           <X className="h-4 w-4" />
-          Reset
+          Reset filters
         </Button>
         <Button
           type="button"
-          className="flex-1 cursor-pointer"
+          variant="outline"
+          size="lg"
+          className="flex-1 bg-foreground text-background hover:bg-foreground/90"
           onClick={() => onOpenChange(false)}
           data-testid="asset-filters-mobile-apply"
         >
-          Apply
+          Show assets
         </Button>
       </div>
     </MobileActionSheet>
@@ -279,9 +324,7 @@ function Section({
 }) {
   return (
     <div className="space-y-2">
-      <h3 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-        {title}
-      </h3>
+      <h3 className="eyebrow">{title}</h3>
       <div className="flex flex-wrap gap-2">{children}</div>
     </div>
   );
@@ -307,10 +350,10 @@ function OptionPill({
       data-testid={testId}
       aria-pressed={active}
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
+        "inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-md border-[1.5px] px-3 text-sm font-medium transition-colors",
         active
-          ? "border-primary bg-primary/10 text-primary"
-          : "border-border bg-card text-muted-foreground hover:bg-accent",
+          ? "border-foreground bg-foreground text-background"
+          : "border-input bg-card text-foreground hover:bg-secondary",
       )}
     >
       {dotColor ? (
@@ -344,10 +387,10 @@ function SortRow({
       data-testid={testId}
       aria-pressed={active}
       className={cn(
-        "rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
+        "h-9 cursor-pointer rounded-md border-[1.5px] px-3 text-sm font-medium transition-colors",
         active
-          ? "border-primary bg-primary/10 text-primary"
-          : "border-border bg-card text-muted-foreground hover:bg-accent",
+          ? "border-foreground bg-foreground text-background"
+          : "border-input bg-card text-foreground hover:bg-secondary",
       )}
     >
       {label}
@@ -378,8 +421,8 @@ function LocationList({
           className={cn(
             "flex w-full items-center justify-between border-b border-border px-3 py-2 text-left text-sm last:border-b-0",
             selectedId === null
-              ? "bg-primary/5 font-medium text-primary"
-              : "hover:bg-accent",
+              ? "bg-secondary font-semibold text-foreground shadow-[inset_3px_0_0_var(--foreground)]"
+              : "hover:bg-secondary",
           )}
         >
           All locations
@@ -396,7 +439,9 @@ function LocationList({
               aria-pressed={active}
               className={cn(
                 "flex w-full flex-col border-b border-border px-3 py-2 text-left last:border-b-0",
-                active ? "bg-primary/5 text-primary" : "hover:bg-accent",
+                active
+                  ? "bg-secondary font-semibold shadow-[inset_3px_0_0_var(--foreground)]"
+                  : "hover:bg-secondary",
               )}
             >
               <span className="text-sm font-medium">{loc.name}</span>

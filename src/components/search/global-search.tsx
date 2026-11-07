@@ -6,11 +6,13 @@ import {
   useEffectEvent,
   useMemo,
   useState,
+  useSyncExternalStore,
 } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { CornerDownLeft, Loader2, Search } from "lucide-react";
 import { StatusBadge } from "@/components/assets/status-badge";
+import { TagChip } from "@/components/ui/tag-chip";
 import type { AssetStatus } from "@/components/assets/types";
 import {
   CommandDialog,
@@ -21,6 +23,7 @@ import {
   CommandShortcut,
 } from "@/components/ui/command";
 import { searchAssets } from "@/lib/api/search";
+import { cn } from "@/lib/utils";
 
 type SearchResult = {
   id: string;
@@ -39,8 +42,27 @@ function getSecondaryMeta(result: SearchResult) {
   return parts.length > 0 ? parts.join(" / ") : "No category or location";
 }
 
-export function GlobalSearch() {
+export type GlobalSearchVariant = "sidebar" | "rail" | "icon";
+
+const noopSubscribe = () => () => {};
+
+function useIsMacPlatform() {
+  return useSyncExternalStore(
+    noopSubscribe,
+    () => /mac|iphone|ipad/i.test(navigator.platform || navigator.userAgent),
+    () => false,
+  );
+}
+
+export function GlobalSearch({
+  variant = "sidebar",
+  className,
+}: {
+  variant?: GlobalSearchVariant;
+  className?: string;
+}) {
   const router = useRouter();
+  const isMac = useIsMacPlatform();
   const [open, setOpen] = useState(false);
   const [searchValue, setSearchValue] = useState("");
   const deferredSearchValue = useDeferredValue(searchValue.trim());
@@ -107,31 +129,61 @@ export function GlobalSearch() {
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        aria-label="Open global search"
-        aria-keyshortcuts="Control+K Meta+K"
-        className="flex h-9 w-full max-w-xl cursor-pointer items-center justify-between gap-3 rounded-xl border border-border/70 bg-card/70 px-3 text-left shadow-sm transition-colors hover:border-primary/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        data-global-search-trigger
-      >
-        <span className="flex min-w-0 items-center gap-2">
-          <Search className="h-4 w-4 text-muted-foreground" />
-          <span className="truncate text-sm text-muted-foreground">
-            Search assets...
-          </span>
-        </span>
-        <span className="hidden shrink-0 items-center gap-1 rounded-md border border-border/70 bg-background/80 px-2 py-1 text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground md:inline-flex">
-          Ctrl/Cmd K
-        </span>
-      </button>
+      {variant === "icon" ? (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          aria-label="Open global search"
+          aria-keyshortcuts="Control+K Meta+K"
+          className={cn(
+            "grid size-11 cursor-pointer place-items-center rounded-md text-sidebar-foreground hover:bg-sidebar-accent",
+            className,
+          )}
+          data-global-search-trigger
+        >
+          <Search className="size-5" />
+        </button>
+      ) : variant === "rail" ? (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          aria-label="Open global search"
+          aria-keyshortcuts="Control+K Meta+K"
+          className={cn(
+            "flex h-12 w-full cursor-pointer flex-col items-center justify-center gap-1 rounded-md border border-sidebar-muted text-[13px] text-sidebar-foreground hover:bg-sidebar-accent",
+            className,
+          )}
+          data-global-search-trigger
+        >
+          <Search className="size-[18px] text-white" />
+          Search
+        </button>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          aria-label="Open global search"
+          aria-keyshortcuts="Control+K Meta+K"
+          className={cn(
+            "flex h-9 w-full cursor-pointer items-center gap-2 rounded-md bg-sidebar-accent px-2.5 text-left text-sm text-sidebar-muted hover:text-sidebar-foreground",
+            className,
+          )}
+          data-global-search-trigger
+        >
+          <Search className="size-4 shrink-0" />
+          <span className="min-w-0 truncate">Search assets, locations</span>
+          <kbd className="ml-auto shrink-0 font-mono text-[13px] font-medium">
+            {isMac ? "⌘K" : "Ctrl K"}
+          </kbd>
+        </button>
+      )}
 
       <CommandDialog
         open={open}
         onOpenChange={handleOpenChange}
         title="Search assets"
         description="Search assets by name, asset tag, or notes."
-        className="w-[calc(100vw-1.5rem)] max-w-2xl p-0"
+        className="w-[calc(100vw-1.5rem)] max-w-2xl gap-0 p-0"
       >
         <CommandInput
           value={searchValue}
@@ -170,11 +222,11 @@ export function GlobalSearch() {
                       </span>
                       <StatusBadge
                         status={result.status}
-                        className="shrink-0"
+                        className="shrink-0 text-[13px]"
                       />
                     </div>
                     <div className="mt-1 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
-                      <span className="font-mono">{result.assetTag}</span>
+                      <TagChip weight="table">{result.assetTag}</TagChip>
                       <span className="text-border">/</span>
                       <span className="truncate">
                         {getSecondaryMeta(result)}

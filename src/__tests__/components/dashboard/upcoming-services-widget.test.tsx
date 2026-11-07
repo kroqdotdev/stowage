@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { UpcomingServicesWidget } from "@/components/dashboard/upcoming-services-widget";
 
 vi.mock("next/link", () => ({
@@ -36,7 +36,7 @@ const items = [
 ];
 
 describe("UpcomingServicesWidget", () => {
-  it("renders items with asset name, tag, and due label", () => {
+  it("renders the Service due heading", () => {
     render(
       <UpcomingServicesWidget
         items={items}
@@ -46,26 +46,65 @@ describe("UpcomingServicesWidget", () => {
       />,
     );
 
-    expect(screen.getByText("Forklift A")).toBeVisible();
-    expect(screen.getByText("FK-001")).toBeVisible();
-    expect(screen.getByText("2 days overdue")).toBeVisible();
-
-    expect(screen.getByText("Generator B")).toBeVisible();
-    expect(screen.getByText("GN-002")).toBeVisible();
-    expect(screen.getByText("Due in 3 days")).toBeVisible();
+    expect(
+      screen.getByRole("region", { name: "Service due" }),
+    ).toBeInTheDocument();
   });
 
-  it("shows overdue badge when overdueCount > 0", () => {
+  it("links each row to the asset with tag, date and due marker", () => {
     render(
       <UpcomingServicesWidget
         items={items}
-        overdueCount={3}
+        overdueCount={1}
         serviceSchedulingEnabled={true}
         dateFormat="DD-MM-YYYY"
       />,
     );
 
-    expect(screen.getByText("3 overdue")).toBeVisible();
+    const forklift = screen.getByRole("link", { name: /Forklift A/ });
+    expect(forklift).toHaveAttribute("href", "/assets/asset1");
+    expect(within(forklift).getByText("FK-001")).toBeInTheDocument();
+    expect(within(forklift).getByText("05-03-2026")).toBeInTheDocument();
+    expect(within(forklift).getByText("Overdue 2 days")).toBeInTheDocument();
+    expect(within(forklift).getByText("Overdue 2d")).toBeInTheDocument();
+
+    const generator = screen.getByRole("link", { name: /Generator B/ });
+    expect(generator).toHaveAttribute("href", "/assets/asset2");
+    expect(within(generator).getByText("GN-002")).toBeInTheDocument();
+    expect(within(generator).getByText("10-03-2026")).toBeInTheDocument();
+    expect(within(generator).getByText("In 3 days")).toBeInTheDocument();
+  });
+
+  it("closes the list with overdue and more-scheduled counts and a services link", () => {
+    render(
+      <UpcomingServicesWidget
+        items={items}
+        overdueCount={3}
+        scheduledCount={6}
+        serviceSchedulingEnabled={true}
+        dateFormat="DD-MM-YYYY"
+      />,
+    );
+
+    expect(screen.getByText(/3 overdue/)).toBeInTheDocument();
+    expect(screen.getByText(/4 more scheduled/)).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "See all services" }),
+    ).toHaveAttribute("href", "/services");
+  });
+
+  it("omits the overdue and more counts when there are none", () => {
+    render(
+      <UpcomingServicesWidget
+        items={items}
+        overdueCount={0}
+        serviceSchedulingEnabled={true}
+        dateFormat="DD-MM-YYYY"
+      />,
+    );
+
+    expect(screen.queryByText(/overdue ·/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/more scheduled/)).not.toBeInTheDocument();
   });
 
   it("shows disabled message when service scheduling is off", () => {

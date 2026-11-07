@@ -17,7 +17,7 @@ describe("ServiceGroupEditor", () => {
     );
 
     expect(
-      screen.queryByRole("heading", { name: "Create service group" }),
+      screen.queryByRole("heading", { name: "New service plan" }),
     ).not.toBeInTheDocument();
   });
 
@@ -34,12 +34,12 @@ describe("ServiceGroupEditor", () => {
     );
 
     expect(
-      screen.getByRole("heading", { name: "Create service group" }),
+      screen.getByRole("heading", { name: "New service plan" }),
     ).toBeVisible();
     expect(screen.getByLabelText("Name")).toHaveValue("");
-    expect(screen.getByLabelText("Description")).toHaveValue("");
+    expect(screen.getByLabelText(/^Description/)).toHaveValue("");
     expect(
-      screen.getByRole("button", { name: "Create group" }),
+      screen.getByRole("button", { name: "Create plan" }),
     ).toBeInTheDocument();
   });
 
@@ -63,12 +63,12 @@ describe("ServiceGroupEditor", () => {
     );
 
     expect(
-      screen.getByRole("heading", { name: "Edit service group" }),
+      screen.getByRole("heading", { name: "Edit service plan" }),
     ).toBeVisible();
     expect(screen.getByLabelText("Name")).toHaveValue("Engine checks");
-    expect(screen.getByLabelText("Description")).toHaveValue("Quarterly");
+    expect(screen.getByLabelText(/^Description/)).toHaveValue("Quarterly");
 
-    await user.click(screen.getByRole("button", { name: "Save changes" }));
+    await user.click(screen.getByRole("button", { name: "Save plan" }));
     expect(onSubmit).toHaveBeenCalledWith({
       name: "Engine checks",
       description: "Quarterly",

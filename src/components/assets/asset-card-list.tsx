@@ -1,17 +1,18 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { MapPin, MoreHorizontal, Package } from "lucide-react";
+import { Package } from "lucide-react";
 import { AssetActionsSheet } from "@/components/assets/asset-actions-sheet";
-import { StatusBadge } from "@/components/assets/status-badge";
 import type { AssetListItem } from "@/components/assets/types";
-import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Skeleton } from "@/components/ui/skeleton";
+import { StatusText } from "@/components/ui/status-text";
+import { TagChip } from "@/components/ui/tag-chip";
+import { LocationPath } from "@/components/locations/location-path";
+import { useLongPress } from "@/hooks/use-long-press";
 import { getAsset, type AssetDetail } from "@/lib/api/assets";
-import { cn } from "@/lib/utils";
+import { formatRelativeTime } from "@/lib/relative-time";
 
 function rowToDetailPlaceholder(row: AssetListItem): AssetDetail {
   const tags =
@@ -51,12 +52,20 @@ function rowToDetailPlaceholder(row: AssetListItem): AssetDetail {
   };
 }
 
+/*
+  Phone list: stacked cards on one card surface. Line one is the tag chip and
+  the name; line two is "path · time" on every row; exception statuses take a
+  13px third line. Press and hold a card for quick actions.
+*/
 export function AssetCardList({
   rows,
   loading,
+  secondary = "location",
 }: {
   rows: AssetListItem[];
   loading: boolean;
+  /* What line two leads with; inside one location the category says more. */
+  secondary?: "location" | "category";
 }) {
   const [activeId, setActiveId] = useState<string | null>(null);
 
@@ -69,23 +78,25 @@ export function AssetCardList({
     queryKey: ["assets", "detail", activeId],
     queryFn: () => (activeId ? getAsset(activeId) : Promise.resolve(null)),
     enabled: !!activeId,
-    // Seed the sheet from the list row so it opens instantly instead of
-    // showing a blank closed state until the detail fetch completes. The
-    // background refetch fills in fields the list row doesn't carry.
     placeholderData: activeRow ? rowToDetailPlaceholder(activeRow) : undefined,
   });
 
   if (loading && rows.length === 0) {
     return (
-      <ul className="flex flex-col gap-2" data-testid="asset-card-list-loading">
-        {Array.from({ length: 4 }).map((_, i) => (
+      <ul
+        className="rounded-md border border-border bg-card"
+        data-testid="asset-card-list-loading"
+      >
+        {Array.from({ length: 5 }).map((_, i) => (
           <li
             key={`skeleton-${i}`}
-            className="rounded-xl border border-border bg-card p-4"
+            className="flex items-start gap-2.5 border-b border-border px-3.5 py-3 last:border-b-0"
           >
-            <Skeleton className="h-5 w-2/3" />
-            <Skeleton className="mt-2 h-4 w-1/3" />
-            <Skeleton className="mt-3 h-4 w-1/2" />
+            <span className="block h-[23px] w-[70px] shrink-0 rounded-xs border border-line-2" />
+            <div className="flex-1 space-y-2 pt-1.5">
+              <span className="block h-2.5 w-2/3 rounded-full bg-border" />
+              <span className="block h-2.5 w-1/3 rounded-full bg-border" />
+            </div>
           </li>
         ))}
       </ul>
@@ -96,18 +107,21 @@ export function AssetCardList({
     return (
       <EmptyState
         icon={Package}
-        title="No assets match these filters"
-        description="Adjust the filters or reset them to see results."
+        title="No assets match these filters."
+        description="Clear a filter or try fewer words."
       />
     );
   }
 
   return (
     <>
-      <ul className="flex flex-col gap-2" data-testid="asset-card-list">
+      <ul
+        className="rounded-md border border-border bg-card"
+        data-testid="asset-card-list"
+      >
         {rows.map((row) => (
-          <li key={row.id}>
-            <AssetCard row={row} onMore={() => setActiveId(row.id)} />
+          <li key={row.id} className="border-b border-border last:border-b-0">
+            <AssetCard row={row} secondary={secondary} onActions={() => setActiveId(row.id)} />
           </li>
         ))}
       </ul>
@@ -120,7 +134,7 @@ export function AssetCardList({
         onAssetUpdated={() => {
           // list invalidates via the nested mutations' query invalidation
         }}
-        dismissLabel="Close ↓"
+        dismissLabel="Close"
         testIdPrefix="asset"
       />
     </>
@@ -129,84 +143,48 @@ export function AssetCardList({
 
 function AssetCard({
   row,
-  onMore,
+  secondary,
+  onActions,
 }: {
   row: AssetListItem;
-  onMore: () => void;
+  secondary: "location" | "category";
+  onActions: () => void;
 }) {
-  const visibleTags = row.tagNames.slice(0, 3);
-  const extraTagCount = Math.max(0, row.tagNames.length - visibleTags.length);
+  const router = useRouter();
+  const { handlers, consumeClick } = useLongPress(onActions);
+  const time = formatRelativeTime(row.updatedAt);
 
   return (
-    <div
-      className="relative rounded-xl border border-border bg-card p-4 shadow-sm transition-colors hover:bg-accent/40"
+    <a
+      href={`/assets/${row.id}`}
       data-testid={`asset-card-${row.id}`}
+      aria-label={`${row.assetTag}, ${row.name}`}
+      className="grid min-h-14 grid-cols-[auto_minmax(0,1fr)] items-center gap-x-2.5 gap-y-1 px-3.5 py-2.5 select-none active:bg-secondary [-webkit-touch-callout:none]"
+      {...handlers}
+      onClick={(event) => {
+        event.preventDefault();
+        if (consumeClick()) return;
+        router.push(`/assets/${row.id}`);
+      }}
     >
-      <div className="relative flex items-start justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            {row.categoryColor ? (
-              <span
-                aria-hidden="true"
-                className="inline-block h-2.5 w-2.5 shrink-0 rounded-full border border-black/10"
-                style={{ backgroundColor: row.categoryColor }}
-              />
-            ) : null}
-            <Link
-              href={`/assets/${row.id}`}
-              className="truncate text-sm font-semibold hover:text-primary"
-            >
-              {row.name}
-            </Link>
-          </div>
-          <p className="mt-0.5 truncate font-mono text-xs text-muted-foreground">
-            {row.assetTag}
-          </p>
-          {row.locationPath ? (
-            <p className="mt-2 flex items-center gap-1 truncate text-xs text-muted-foreground">
-              <MapPin className="h-3 w-3" aria-hidden="true" />
-              <span className="truncate">{row.locationPath}</span>
-            </p>
-          ) : null}
-          {visibleTags.length > 0 ? (
-            <div className="mt-2 flex flex-wrap gap-1.5">
-              {visibleTags.map((name) => (
-                <span
-                  key={name}
-                  className={cn(
-                    "inline-flex items-center rounded-full border border-border/60 bg-muted/40 px-2 py-0.5 text-[11px] font-medium text-muted-foreground",
-                  )}
-                >
-                  {name}
-                </span>
-              ))}
-              {extraTagCount > 0 ? (
-                <span className="inline-flex items-center rounded-full border border-border/60 bg-muted/40 px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
-                  +{extraTagCount}
-                </span>
-              ) : null}
-            </div>
-          ) : null}
-        </div>
-        <div className="relative flex shrink-0 flex-col items-end gap-2">
-          <StatusBadge status={row.status} />
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            aria-label="Asset actions"
-            data-testid={`asset-card-kebab-${row.id}`}
-            className="relative -m-1 h-8 w-8 cursor-pointer"
-            onClick={(event) => {
-              event.preventDefault();
-              event.stopPropagation();
-              onMore();
-            }}
-          >
-            <MoreHorizontal className="h-4 w-4" aria-hidden="true" />
-          </Button>
-        </div>
-      </div>
-    </div>
+      <TagChip weight="table">{row.assetTag}</TagChip>
+      <span className="truncate text-[15px] leading-snug font-semibold text-foreground">
+        {row.name}
+      </span>
+      <span className="col-start-2 flex min-w-0 items-baseline text-sm whitespace-nowrap">
+        {secondary === "category" ? (
+          <span className="truncate text-ink-2">{row.categoryName ?? "No category"}</span>
+        ) : (
+          <LocationPath path={row.locationPath} compact />
+        )}
+        <span className="shrink-0 whitespace-pre text-muted-foreground">
+          {" · "}
+          {time.short}
+        </span>
+      </span>
+      {row.status !== "active" ? (
+        <StatusText status={row.status} className="col-start-2 text-[13px]" />
+      ) : null}
+    </a>
   );
 }

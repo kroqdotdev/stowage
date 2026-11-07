@@ -76,11 +76,11 @@ describe("TaxonomyManager (categories)", () => {
     );
 
     expect(
-      screen.getByRole("heading", { name: "Categories" }),
+      screen.getByRole("heading", { name: /^Categories/ }),
     ).toBeInTheDocument();
     expect(screen.getByText("Laptops")).toBeInTheDocument();
     expect(screen.getByText("Monitors")).toBeInTheDocument();
-    expect(screen.getByText("Prefix: LAP")).toBeInTheDocument();
+    expect(screen.getByText("LAP")).toBeInTheDocument();
     expect(screen.getByText("Portable computers")).toBeInTheDocument();
   });
 
@@ -114,14 +114,14 @@ describe("TaxonomyManager (categories)", () => {
     );
 
     expect(
-      screen.queryByRole("button", { name: /add category/i }),
+      screen.queryByRole("button", { name: /new category/i }),
     ).not.toBeInTheDocument();
     expect(
       screen.getByText("Only admins can add, edit, or delete categories."),
     ).toBeInTheDocument();
   });
 
-  it("opens create modal on Add Category click", async () => {
+  it("opens create modal on New category click", async () => {
     const user = userEvent.setup();
 
     render(
@@ -136,11 +136,11 @@ describe("TaxonomyManager (categories)", () => {
       />,
     );
 
-    await user.click(screen.getByRole("button", { name: /add category/i }));
+    await user.click(screen.getByRole("button", { name: /new category/i }));
 
     expect(screen.getByRole("dialog")).toBeInTheDocument();
     expect(
-      screen.getByRole("heading", { name: "Add Category" }),
+      screen.getByRole("heading", { name: "New category" }),
     ).toBeInTheDocument();
     expect(screen.getByLabelText("Name")).toBeInTheDocument();
   });
@@ -160,7 +160,9 @@ describe("TaxonomyManager (tags)", () => {
       />,
     );
 
-    expect(screen.getByRole("heading", { name: "Tags" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: /^Keywords/ }),
+    ).toBeInTheDocument();
     expect(screen.getByText("Fragile")).toBeInTheDocument();
     expect(screen.getByText("Heavy")).toBeInTheDocument();
   });
@@ -178,6 +180,6 @@ describe("TaxonomyManager (tags)", () => {
       />,
     );
 
-    expect(screen.getByText("No tags yet.")).toBeInTheDocument();
+    expect(screen.getByText("No keywords yet.")).toBeInTheDocument();
   });
 });

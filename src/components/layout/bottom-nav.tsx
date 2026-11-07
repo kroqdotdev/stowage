@@ -2,26 +2,27 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter, usePathname } from "next/navigation";
-import { useQueryClient } from "@tanstack/react-query";
+import { usePathname } from "next/navigation";
+import { useTheme } from "next-themes";
 import {
-  Home,
   Layers,
   LayoutGrid,
   LogOut,
   MapPin,
-  MoreHorizontal,
+  Menu,
+  Monitor,
+  Moon,
   Package,
   Printer,
   ScanLine,
   Settings,
+  Sun,
   Wrench,
 } from "lucide-react";
-import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { logout } from "@/lib/api/auth";
-import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { MobileActionSheet } from "@/components/layout/mobile-action-sheet";
+import { useLogout } from "@/components/layout/user-menu";
+import { useOverdueCount } from "@/hooks/use-overdue-count";
 
 type Slot = {
   key: "home" | "assets" | "services" | "more";
@@ -31,10 +32,10 @@ type Slot = {
 };
 
 const SLOTS: Slot[] = [
-  { key: "home", label: "Home", href: "/dashboard", icon: Home },
+  { key: "home", label: "Home", href: "/dashboard", icon: LayoutGrid },
   { key: "assets", label: "Assets", href: "/assets", icon: Package },
   { key: "services", label: "Services", href: "/services", icon: Wrench },
-  { key: "more", label: "More", icon: MoreHorizontal },
+  { key: "more", label: "More", icon: Menu },
 ];
 
 const MORE_PATH_PREFIXES = ["/locations", "/taxonomy", "/labels", "/settings"];
@@ -49,20 +50,26 @@ function isSlotActive(pathname: string, slot: Slot, moreOpen: boolean) {
   return pathname.startsWith(slot.href);
 }
 
+/*
+  Phone bottom bar: Home, Assets, Scan, Services (with the overdue badge),
+  More. The raised Scan slab is the only amber on the phone; the current tab is
+  white.
+*/
 export function BottomNav() {
   const pathname = usePathname();
   const [moreOpen, setMoreOpen] = useState(false);
   const scanActive = pathname.startsWith("/scan");
+  const overdue = useOverdueCount();
 
   return (
     <>
       <nav
         aria-label="Primary"
         data-testid="bottom-nav"
-        className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 backdrop-blur lg:hidden"
+        className="on-charcoal fixed inset-x-0 bottom-0 z-40 border-t border-sidebar-border bg-sidebar md:hidden"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
-        <div className="relative mx-auto grid max-w-xl grid-cols-5 items-end">
+        <div className="relative mx-auto grid h-16 max-w-xl grid-cols-5">
           {SLOTS.slice(0, 2).map((slot) => (
             <NavItem
               key={slot.key}
@@ -78,6 +85,7 @@ export function BottomNav() {
               slot={slot}
               active={isSlotActive(pathname, slot, moreOpen)}
               onMoreClick={() => setMoreOpen(true)}
+              badge={slot.key === "services" ? overdue : 0}
             />
           ))}
         </div>
@@ -91,17 +99,28 @@ function NavItem({
   slot,
   active,
   onMoreClick,
+  badge = 0,
 }: {
   slot: Slot;
   active: boolean;
   onMoreClick: () => void;
+  badge?: number;
 }) {
   const Icon = slot.icon;
-  const iconEl = <Icon className="h-5 w-5" aria-hidden="true" />;
-  const labelEl = <span className="text-[10px] font-medium">{slot.label}</span>;
+  const content = (
+    <>
+      <Icon className="size-[22px]" aria-hidden="true" />
+      <span className="text-[13px] font-semibold">{slot.label}</span>
+      {badge > 0 ? (
+        <span className="absolute top-1 right-[calc(50%-24px)] grid h-[18px] min-w-[18px] place-items-center rounded-md bg-destructive px-[5px] font-mono text-xs font-semibold text-white">
+          {badge}
+        </span>
+      ) : null}
+    </>
+  );
   const className = cn(
-    "flex h-14 flex-col items-center justify-center gap-1 text-muted-foreground transition-colors hover:text-foreground",
-    active && "text-primary",
+    "relative flex flex-col items-center justify-center gap-1 text-sidebar-muted transition-colors hover:text-white",
+    active && "text-white",
   );
 
   if (slot.key === "more") {
@@ -114,8 +133,7 @@ function NavItem({
         className={cn(className, "cursor-pointer")}
         onClick={onMoreClick}
       >
-        {iconEl}
-        {labelEl}
+        {content}
       </button>
     );
   }
@@ -130,34 +148,35 @@ function NavItem({
       aria-label={slot.label}
       className={className}
     >
-      {iconEl}
-      {labelEl}
+      {content}
     </Link>
   );
 }
 
 function ScanSlot({ active }: { active: boolean }) {
   return (
-    <div className="relative -mt-5 flex items-end justify-center">
-      <Link
-        href="/scan"
-        data-testid="bottom-nav-scan"
-        aria-label="Scan an asset"
-        aria-current={active ? "page" : undefined}
-        onClick={() => {
-          if (typeof navigator !== "undefined" && "vibrate" in navigator) {
-            navigator.vibrate?.(10);
-          }
-        }}
+    <Link
+      href="/scan"
+      data-testid="bottom-nav-scan"
+      aria-label="Scan a label"
+      aria-current={active ? "page" : undefined}
+      onClick={() => {
+        if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+          navigator.vibrate?.(10);
+        }
+      }}
+      className="flex flex-col items-center justify-center gap-1 text-[13px] font-semibold text-sidebar-foreground"
+    >
+      <span
         className={cn(
-          "flex h-[60px] w-[60px] items-center justify-center rounded-full bg-[var(--scan)] text-[var(--scan-foreground)] shadow-lg ring-4 ring-background transition-transform active:scale-95",
-          "shadow-[var(--scan)]/30",
-          active && "ring-[var(--scan)]/40",
+          "-mt-[30px] grid h-12 w-[60px] place-items-center rounded-md border-4 border-sidebar bg-[var(--scan)] text-[var(--scan-foreground)] shadow-[3px_3px_0_var(--color-sidebar-accent)] transition-transform active:scale-95",
+          active && "outline-2 outline-offset-2 outline-white",
         )}
       >
-        <ScanLine className="h-7 w-7" aria-hidden="true" />
-      </Link>
-    </div>
+        <ScanLine className="size-[26px]" aria-hidden="true" />
+      </span>
+      Scan
+    </Link>
   );
 }
 
@@ -168,32 +187,20 @@ function MoreSheet({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
-  const router = useRouter();
-  const queryClient = useQueryClient();
-  const [loggingOut, setLoggingOut] = useState(false);
-
-  async function handleLogout() {
-    setLoggingOut(true);
-    try {
-      await logout();
-    } catch {
-      toast.error("Could not sign out. Please try again.");
-      setLoggingOut(false);
-      return;
-    }
-    queryClient.clear();
-    onOpenChange(false);
-    // Note: no `finally { setLoggingOut(false) }` — the router.replace below
-    // unmounts this component, and setting state on an unmounted component
-    // warns in React 19.
-    router.replace("/login");
-  }
+  const { setTheme, theme } = useTheme();
+  const { loggingOut, handleLogout } = useLogout();
 
   const items: { label: string; href: string; icon: typeof MapPin }[] = [
     { label: "Locations", href: "/locations", icon: MapPin },
     { label: "Taxonomy", href: "/taxonomy", icon: Layers },
     { label: "Labels", href: "/labels", icon: Printer },
     { label: "Settings", href: "/settings", icon: Settings },
+  ];
+
+  const themes = [
+    { value: "light", label: "Light", icon: Sun },
+    { value: "dark", label: "Dark", icon: Moon },
+    { value: "system", label: "System", icon: Monitor },
   ];
 
   return (
@@ -212,23 +219,33 @@ function MoreSheet({
               href={item.href}
               data-testid={`more-item-${item.href.replace("/", "")}`}
               onClick={() => onOpenChange(false)}
-              className="flex h-20 flex-col items-center justify-center gap-1 rounded-lg border border-border bg-card text-sm font-medium text-foreground transition-colors hover:bg-accent"
+              className="flex h-[72px] flex-col items-center justify-center gap-1.5 rounded-md border border-border bg-card text-sm font-semibold text-foreground hover:bg-secondary"
             >
-              <item.icon className="h-5 w-5" aria-hidden="true" />
+              <item.icon className="size-5" aria-hidden="true" />
               <span>{item.label}</span>
             </Link>
           </li>
         ))}
       </ul>
-      <div className="mt-2 flex items-center justify-between gap-2 rounded-lg border border-border bg-card p-3">
-        <div className="flex items-center gap-2">
-          <LayoutGrid
-            className="h-4 w-4 text-muted-foreground"
-            aria-hidden="true"
-          />
-          <span className="text-sm text-muted-foreground">Appearance</span>
+      <div className="mt-2">
+        <div className="eyebrow mb-1.5">Appearance</div>
+        <div className="grid grid-cols-3 gap-2">
+          {themes.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              aria-pressed={theme === option.value}
+              onClick={() => setTheme(option.value)}
+              className={cn(
+                "flex h-11 cursor-pointer items-center justify-center gap-1.5 rounded-md border border-border bg-card text-sm font-medium",
+                theme === option.value && "border-foreground font-semibold",
+              )}
+            >
+              <option.icon className="size-4" aria-hidden="true" />
+              {option.label}
+            </button>
+          ))}
         </div>
-        <ThemeToggle />
       </div>
       <button
         type="button"
@@ -238,9 +255,9 @@ function MoreSheet({
           event.preventDefault();
           void handleLogout();
         }}
-        className="flex h-12 w-full items-center justify-center gap-2 rounded-lg border border-border bg-card text-sm font-medium text-destructive transition-colors hover:bg-accent disabled:opacity-50"
+        className="mt-2 flex h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-md border-[1.5px] border-foreground bg-card text-sm font-semibold text-foreground hover:bg-secondary disabled:opacity-50"
       >
-        <LogOut className="h-4 w-4" aria-hidden="true" />
+        <LogOut className="size-4" aria-hidden="true" />
         {loggingOut ? "Signing out…" : "Sign out"}
       </button>
     </MobileActionSheet>

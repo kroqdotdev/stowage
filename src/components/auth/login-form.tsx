@@ -1,8 +1,7 @@
 "use client";
 
-import { useQueryClient } from "@tanstack/react-query";
-import { Loader2 } from "lucide-react";
-import Link from "next/link";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { AlertTriangle, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -15,7 +14,6 @@ import {
   useCurrentUser,
 } from "@/hooks/use-current-user";
 import { checkFirstRun, login } from "@/lib/api/auth";
-import { useQuery } from "@tanstack/react-query";
 
 export function LoginForm() {
   const router = useRouter();
@@ -31,6 +29,7 @@ export function LoginForm() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -59,7 +58,7 @@ export function LoginForm() {
   return (
     <AuthPanel
       title="Sign in"
-      description="Use your email and password to access Stowage."
+      description="Use the account your admin set up for you."
       footer={
         firstRun
           ? {
@@ -70,9 +69,12 @@ export function LoginForm() {
           : undefined
       }
     >
-      <form onSubmit={onSubmit} className="space-y-4">
+      <form onSubmit={onSubmit} className="space-y-4" noValidate={false}>
         <div className="space-y-1.5">
-          <label htmlFor="login-email" className="text-sm font-medium">
+          <label
+            htmlFor="login-email"
+            className="block text-[13px] font-semibold text-foreground"
+          >
             Email
           </label>
           <Input
@@ -82,67 +84,82 @@ export function LoginForm() {
             value={email}
             onChange={(event) => setEmail(event.target.value)}
             placeholder="you@example.com"
+            className="h-11"
             required
           />
         </div>
 
         <div className="space-y-1.5">
-          <label htmlFor="login-password" className="text-sm font-medium">
+          <label
+            htmlFor="login-password"
+            className="block text-[13px] font-semibold text-foreground"
+          >
             Password
           </label>
-          <Input
-            id="login-password"
-            type="password"
-            autoComplete="current-password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            placeholder="Enter your password"
-            required
-          />
+          <div className="relative">
+            <Input
+              id="login-password"
+              type={showPassword ? "text" : "password"}
+              autoComplete="current-password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              placeholder="Enter your password"
+              className="h-11 pr-16"
+              aria-invalid={error ? true : undefined}
+              aria-describedby={error ? "login-error" : undefined}
+              required
+            />
+            <button
+              type="button"
+              aria-pressed={showPassword}
+              aria-label={showPassword ? "Hide password" : "Show password"}
+              onClick={() => setShowPassword((value) => !value)}
+              className="absolute top-1/2 right-1.5 h-8 -translate-y-1/2 cursor-pointer rounded-md px-2 font-mono text-[13px] font-medium tracking-[0.02em] text-ink-2 hover:text-foreground"
+            >
+              {showPassword ? "Hide" : "Show"}
+            </button>
+          </div>
+          {error ? (
+            <p
+              id="login-error"
+              role="alert"
+              className="flex items-start gap-1.5 pt-1 text-sm font-medium text-destructive"
+            >
+              <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+              <span>{error}</span>
+            </p>
+          ) : null}
         </div>
-
-        {error ? (
-          <p
-            role="alert"
-            className="rounded-md border border-destructive/20 bg-destructive/5 px-3 py-2 text-sm text-destructive"
-          >
-            {error}
-          </p>
-        ) : null}
 
         {!adminConfigReady ? (
           <p
             role="alert"
-            className="rounded-md border border-destructive/20 bg-destructive/5 px-3 py-2 text-sm text-destructive"
+            className="flex items-start gap-1.5 text-sm font-medium text-destructive"
           >
-            Server setup is incomplete. Set{" "}
-            <code>POCKETBASE_SUPERUSER_EMAIL</code> and{" "}
-            <code>POCKETBASE_SUPERUSER_PASSWORD</code> in your environment, then
-            restart the app.
+            <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+            <span>
+              Server setup is incomplete. Set{" "}
+              <code className="font-mono text-[13px]">
+                POCKETBASE_SUPERUSER_EMAIL
+              </code>{" "}
+              and{" "}
+              <code className="font-mono text-[13px]">
+                POCKETBASE_SUPERUSER_PASSWORD
+              </code>{" "}
+              in your environment, then restart the app.
+            </span>
           </p>
         ) : null}
 
         <Button
           type="submit"
-          className="w-full cursor-pointer"
+          size="lg"
+          className="mt-2 w-full"
           disabled={submitting || isLoading || !adminConfigReady}
         >
           {submitting ? <Loader2 className="animate-spin" /> : null}
-          {submitting ? "Signing in..." : "Sign in"}
+          {submitting ? "Signing in…" : "Sign in"}
         </Button>
-
-        {firstRun ? (
-          <p className="text-center text-xs text-muted-foreground">
-            Setup is not complete yet. Go to{" "}
-            <Link
-              href="/setup"
-              className="underline underline-offset-4 hover:text-foreground"
-            >
-              /setup
-            </Link>
-            .
-          </p>
-        ) : null}
       </form>
     </AuthPanel>
   );

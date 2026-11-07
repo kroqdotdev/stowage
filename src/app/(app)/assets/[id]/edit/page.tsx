@@ -9,13 +9,11 @@ export default async function EditAssetPage({
   const { id } = await params;
 
   return (
-    <div className="space-y-6">
+    <div>
       <PageHeader
         title="Edit asset"
-        description="Update this asset record."
         breadcrumbs={[
-          { label: "Stowage", href: "/dashboard" },
-          { label: "Assets", href: "/assets" },
+          { label: "Asset", href: `/assets/${id}` },
           { label: "Edit asset" },
         ]}
       />

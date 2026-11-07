@@ -2,7 +2,10 @@
 
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 import { LogServiceDialog } from "@/components/services/log-service-dialog";
 import type { ScheduledServiceItem } from "@/components/services/types";
 import { listCalendarMonth } from "@/lib/api/service-schedules";
@@ -46,7 +49,8 @@ function buildCalendarDays({ year, month }: MonthState) {
     (_, index) => index + 1,
   );
 
-  return [...leadingSlots, ...monthDays];
+  const trailing = (7 - ((leadingSlots.length + monthDays.length) % 7)) % 7;
+  return [...leadingSlots, ...monthDays, ...Array.from({ length: trailing }, () => null)];
 }
 
 function toIsoDate({
@@ -62,7 +66,7 @@ function toIsoDate({
 }
 
 function monthLabel({ year, month }: MonthState) {
-  return new Intl.DateTimeFormat("en-US", {
+  return new Intl.DateTimeFormat("en-GB", {
     month: "long",
     year: "numeric",
     timeZone: "UTC",
@@ -95,116 +99,127 @@ export function ServicesCalendarMonth() {
   const today = useTodayIsoDate();
 
   return (
-    <section className="space-y-4">
-      <div className="flex items-center justify-between gap-2">
+    <section>
+      <div className="mb-3 flex items-center justify-between gap-2">
         <h2
           data-testid="calendar-month-heading"
-          className="text-base font-semibold tracking-tight"
+          className="wide text-xl font-bold text-foreground"
         >
           {monthLabel(state)}
         </h2>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
           <Button
             type="button"
             variant="outline"
-            className="cursor-pointer"
+            size="icon"
+            aria-label="Previous month"
             onClick={() => setState((previous) => shiftMonth(previous, -1))}
           >
-            Previous
+            <ChevronLeft />
           </Button>
           <Button
             type="button"
             variant="outline"
-            className="cursor-pointer"
+            size="icon"
+            aria-label="Next month"
             onClick={() => setState((previous) => shiftMonth(previous, 1))}
           >
-            Next
+            <ChevronRight />
           </Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-7 gap-2 text-xs font-medium text-muted-foreground">
-        {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((dayName) => (
-          <div key={dayName} className="px-1 py-1">
-            {dayName}
-          </div>
-        ))}
-      </div>
-
-      {rowsQuery.isPending ? (
-        <div className="rounded-xl border border-border/70 bg-background p-5 text-sm text-muted-foreground">
-          Loading calendar...
+      <div className="overflow-hidden rounded-md border border-border bg-card">
+        <div className="grid grid-cols-7 rule-ink text-[13px] font-semibold text-foreground">
+          {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((dayName) => (
+            <div key={dayName} className="px-2 py-2 md:px-2.5">
+              <span className="md:hidden">{dayName.slice(0, 1)}</span>
+              <span className="max-md:hidden">{dayName}</span>
+            </div>
+          ))}
         </div>
-      ) : (
-        <div className="grid grid-cols-7 gap-2">
-          {days.map((day, index) => {
-            if (!day) {
+
+        {rowsQuery.isPending ? (
+          <div className="space-y-3 p-5" aria-busy="true">
+            <span className="sr-only">Loading calendar...</span>
+            <Skeleton className="h-2.5 w-1/2" />
+            <Skeleton className="h-2.5 w-1/3" />
+          </div>
+        ) : (
+          <div className="grid grid-cols-7">
+            {days.map((day, index) => {
+              const edge = cn(
+                "border-b border-border",
+                index % 7 !== 6 && "border-r",
+              );
+              if (!day) {
+                return <div key={`empty-${index}`} className={cn(edge, "min-h-16 bg-secondary/50 md:min-h-28")} />;
+              }
+
+              const dateKey = toIsoDate({
+                year: state.year,
+                month: state.month,
+                day,
+              });
+              const dayRows = rowsByDate.get(dateKey) ?? [];
+              const isToday = dateKey === today;
+              const overdue = dateKey < today;
+
               return (
                 <div
-                  key={`empty-${index}`}
-                  className="min-h-24 rounded-lg border border-transparent"
-                />
-              );
-            }
-
-            const dateKey = toIsoDate({
-              year: state.year,
-              month: state.month,
-              day,
-            });
-            const dayRows = rowsByDate.get(dateKey) ?? [];
-            const isToday = dateKey === today;
-
-            return (
-              <div
-                key={dateKey}
-                data-testid="calendar-day-cell"
-                className={`min-h-28 rounded-lg border p-2 ${
-                  isToday
-                    ? "border-primary/50 bg-orange-50/50 dark:bg-stone-800/50"
-                    : "border-border/70 bg-background"
-                }`}
-              >
-                <p
-                  className={`text-xs font-medium ${
-                    isToday ? "text-primary" : "text-muted-foreground"
-                  }`}
+                  key={dateKey}
+                  data-testid="calendar-day-cell"
+                  aria-current={isToday ? "date" : undefined}
+                  className={cn(
+                    edge,
+                    "min-h-16 min-w-0 p-1 md:min-h-28 md:p-2",
+                    isToday && "shadow-[inset_0_3px_0_var(--amber-ink)]",
+                  )}
                 >
-                  {day}
-                </p>
-                <div className="mt-2 space-y-1.5">
-                  {dayRows.slice(0, 3).map((row) => (
-                    <button
-                      key={row.scheduleId}
-                      type="button"
-                      className="block w-full rounded bg-primary/10 px-1.5 py-1 text-left text-xs text-foreground transition hover:bg-primary/20"
-                      onClick={() =>
-                        setActiveTarget({
-                          scheduleId: row.scheduleId,
-                          assetId: row.assetId,
-                          assetName: row.assetName,
-                        })
-                      }
-                    >
-                      <span className="font-medium">{row.assetTag}</span>
-                      {row.lastServiceDate ? (
-                        <span className="mt-0.5 block text-[10px] text-muted-foreground">
-                          Last {row.lastServiceDate}
-                        </span>
-                      ) : null}
-                    </button>
-                  ))}
-                  {dayRows.length > 3 ? (
-                    <p className="text-[11px] text-muted-foreground">
-                      +{dayRows.length - 3} more
-                    </p>
-                  ) : null}
+                  <p
+                    className={cn(
+                      "font-mono text-[13px] font-medium",
+                      isToday ? "font-bold text-foreground" : "text-muted-foreground",
+                    )}
+                  >
+                    {day}
+                  </p>
+                  <div className="mt-1.5 space-y-1">
+                    {dayRows.slice(0, 3).map((row) => (
+                      <button
+                        key={row.scheduleId}
+                        type="button"
+                        aria-label={`Log service for ${row.assetTag}, ${row.assetName}`}
+                        title={row.assetName}
+                        className={cn(
+                          "block w-full cursor-pointer truncate rounded-xs border px-1 py-0.5 text-left font-mono text-[11px] font-semibold tracking-[0.02em] md:px-1.5 md:text-xs",
+                          overdue
+                            ? "border-destructive bg-destructive text-white"
+                            : "border-foreground bg-card text-foreground hover:bg-secondary",
+                        )}
+                        onClick={() =>
+                          setActiveTarget({
+                            scheduleId: row.scheduleId,
+                            assetId: row.assetId,
+                            assetName: row.assetName,
+                          })
+                        }
+                      >
+                        {row.assetTag}
+                      </button>
+                    ))}
+                    {dayRows.length > 3 ? (
+                      <p className="text-[11px] text-muted-foreground">
+                        +{dayRows.length - 3} more
+                      </p>
+                    ) : null}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
+              );
+            })}
+          </div>
+        )}
+      </div>
 
       <LogServiceDialog
         open={activeTarget !== null}

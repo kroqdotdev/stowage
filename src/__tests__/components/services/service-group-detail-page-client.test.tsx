@@ -66,10 +66,10 @@ describe("ServiceGroupDetailPageClient", () => {
     renderWithClient(<ServiceGroupDetailPageClient groupId="group1" />);
 
     await waitFor(() => {
-      expect(screen.getByText("Group not found")).toBeInTheDocument();
+      expect(screen.getByText("Plan not found")).toBeInTheDocument();
     });
     expect(
-      screen.getByRole("link", { name: "Back to groups" }),
+      screen.getByRole("link", { name: "Back to service plans" }),
     ).toHaveAttribute("href", "/services/groups");
   });
 
@@ -87,7 +87,7 @@ describe("ServiceGroupDetailPageClient", () => {
     });
     expect(screen.getByText("Quarterly maintenance")).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "Edit group" }),
+      screen.getByRole("button", { name: "Edit…" }),
     ).toBeInTheDocument();
     expect(screen.getByText("FieldsPanel")).toBeInTheDocument();
     expect(screen.getByText("AssetsPanel")).toBeInTheDocument();

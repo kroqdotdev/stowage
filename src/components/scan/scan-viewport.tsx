@@ -44,7 +44,7 @@ export function ScanViewport({
     <div
       ref={containerRef}
       className={cn(
-        "relative aspect-square w-full max-w-md overflow-hidden rounded-2xl bg-black",
+        "relative aspect-square w-full max-w-md overflow-hidden rounded-md bg-black",
         className,
       )}
       data-testid="scan-viewport"

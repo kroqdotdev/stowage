@@ -2,15 +2,23 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { Plus, Trash2 } from "lucide-react";
+import { ClipboardList, MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/crud/confirm-dialog";
 import { getApiErrorMessage } from "@/components/crud/error-messages";
 import { ServiceGroupEditor } from "@/components/services/service-group-editor";
 import type { ServiceGroupSummary } from "@/components/services/types";
-import { ServicesNavTabs } from "@/components/services/services-nav-tabs";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { EmptyState } from "@/components/ui/empty-state";
+import { SheetHeading } from "@/components/ui/sheet-heading";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { ApiRequestError } from "@/lib/api-client";
 import {
@@ -23,10 +31,10 @@ import {
 function mapGroupError(error: unknown, fallback: string) {
   if (error instanceof ApiRequestError) {
     if (error.status === 403) {
-      return "Only admins can manage service groups.";
+      return "Only admins can manage service plans.";
     }
     if (error.status === 409) {
-      return "This service group is in use and cannot be deleted.";
+      return "This service plan is in use and cannot be deleted.";
     }
     return error.message || fallback;
   }
@@ -84,7 +92,7 @@ export function ServiceGroupsList() {
           name: values.name,
           description: values.description.trim() ? values.description : null,
         });
-        toast.success("Service group created");
+        toast.success("Service plan created");
       } else if (activeGroup) {
         await updateMutation.mutateAsync({
           groupId: activeGroup.id,
@@ -93,7 +101,7 @@ export function ServiceGroupsList() {
             description: values.description.trim() ? values.description : null,
           },
         });
-        toast.success("Service group updated");
+        toast.success("Service plan updated");
       }
       setEditorOpen(false);
       setActiveGroup(null);
@@ -103,8 +111,8 @@ export function ServiceGroupsList() {
         mapGroupError(
           error,
           editorMode === "create"
-            ? "Unable to create service group"
-            : "Unable to update service group",
+            ? "Unable to create service plan"
+            : "Unable to update service plan",
         ),
       );
     }
@@ -117,225 +125,145 @@ export function ServiceGroupsList() {
 
     try {
       await deleteMutation.mutateAsync(deleteGroupId);
-      toast.success("Service group deleted");
+      toast.success("Service plan deleted");
       setDeleteGroupId(null);
       void queryClient.invalidateQueries({ queryKey: ["service-groups"] });
     } catch (error) {
-      toast.error(mapGroupError(error, "Unable to delete service group"));
+      toast.error(mapGroupError(error, "Unable to delete service plan"));
     }
   }
 
   const submitting = createMutation.isPending || updateMutation.isPending;
 
-  return (
-    <div className="space-y-4">
-      <ServicesNavTabs />
+  const openCreate = () => {
+    setEditorMode("create");
+    setActiveGroup(null);
+    setEditorOpen(true);
+  };
+  const openEdit = (group: (typeof rows)[number]) => {
+    setEditorMode("edit");
+    setActiveGroup(group);
+    setEditorOpen(true);
+  };
 
-      <section className="rounded-xl border border-border/70 bg-background p-5 shadow-sm">
-        <div className="flex items-center justify-between gap-2">
-          <div>
-            <h2 className="text-sm font-semibold tracking-tight">
-              Service groups
-            </h2>
-            <p className="text-xs text-muted-foreground">
-              Configure reusable service requirements and assign one group per
-              asset.
-            </p>
-          </div>
-          {canManage ? (
-            <Button
-              type="button"
-              className="cursor-pointer"
-              onClick={() => {
-                setEditorMode("create");
-                setActiveGroup(null);
-                setEditorOpen(true);
-              }}
-            >
-              <Plus className="h-4 w-4" />
-              Create group
-            </Button>
-          ) : null}
-        </div>
+  return (
+    <div>
+      <section>
+        <SheetHeading
+          title="Service plans"
+          count={groupsQuery.isPending ? undefined : rows.length}
+          aside={
+            canManage ? (
+              <Button type="button" size="sm" onClick={openCreate}>
+                <Plus />
+                New service plan…
+              </Button>
+            ) : null
+          }
+        />
+        <p className="mt-2 mb-3 max-w-[70ch] text-sm text-ink-2">
+          A plan names a kind of service and the fields to fill in when it is
+          logged. Each asset follows at most one plan.
+        </p>
 
         {groupsQuery.isPending ? (
-          <p className="mt-4 text-sm text-muted-foreground md:hidden">
-            Loading service groups...
-          </p>
+          <div className="space-y-3 py-3" aria-busy="true">
+            <span className="sr-only">Loading service plans...</span>
+            <Skeleton className="h-2.5 w-1/2" />
+            <Skeleton className="h-2.5 w-1/3" />
+          </div>
         ) : rows.length === 0 ? (
-          <p className="mt-4 text-sm text-muted-foreground md:hidden">
-            No service groups yet.
-          </p>
+          <EmptyState
+            icon={ClipboardList}
+            title="No service plans yet."
+            description="Create one, for example “Quarterly inspection”, then assign assets to it."
+            action={
+              canManage ? (
+                <Button type="button" onClick={openCreate}>
+                  <Plus />
+                  New service plan…
+                </Button>
+              ) : null
+            }
+          />
         ) : (
-          <ul
-            className="mt-4 flex flex-col gap-2 md:hidden"
-            data-testid="service-groups-card-list"
-          >
-            {rows.map((group) => (
-              <li
-                key={group.id}
-                data-testid={`service-group-card-${group.id}`}
-                className="rounded-lg border border-border/70 bg-card p-3 shadow-sm"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0 flex-1 space-y-1">
+          <>
+            <ul className="md:hidden" data-testid="service-groups-card-list">
+              {rows.map((group) => (
+                <li
+                  key={group.id}
+                  data-testid={`service-group-card-${group.id}`}
+                  className="flex items-start gap-3 border-b border-border py-3"
+                >
+                  <div className="min-w-0 flex-1">
                     <Link
                       href={`/services/groups/${group.id}`}
-                      className="block truncate text-sm font-semibold hover:text-primary"
+                      className="block truncate text-[15px] font-semibold text-foreground"
                     >
                       {group.name}
                     </Link>
                     {group.description ? (
-                      <p className="line-clamp-2 text-xs text-muted-foreground">
-                        {group.description}
-                      </p>
+                      <p className="line-clamp-2 text-sm text-ink-2">{group.description}</p>
                     ) : null}
-                    <p className="text-[11px] text-muted-foreground">
-                      {group.fieldCount} field
-                      {group.fieldCount === 1 ? "" : "s"} · {group.assetCount}{" "}
-                      asset
-                      {group.assetCount === 1 ? "" : "s"}
+                    <p className="mt-0.5 text-[13px] text-muted-foreground">
+                      {group.fieldCount} field{group.fieldCount === 1 ? "" : "s"} ·{" "}
+                      {group.assetCount} asset{group.assetCount === 1 ? "" : "s"}
                     </p>
                   </div>
-                  <div className="flex shrink-0 flex-col items-end gap-1">
-                    <Button
-                      asChild
-                      variant="ghost"
-                      size="sm"
-                      className="cursor-pointer"
-                    >
-                      <Link href={`/services/groups/${group.id}`}>Open</Link>
-                    </Button>
-                    {canManage ? (
-                      <div className="flex items-center gap-1">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="cursor-pointer"
-                          onClick={() => {
-                            setEditorMode("edit");
-                            setActiveGroup(group);
-                            setEditorOpen(true);
-                          }}
-                        >
-                          Edit
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon-sm"
-                          className="cursor-pointer text-destructive"
-                          onClick={() => setDeleteGroupId(group.id)}
-                          aria-label={`Delete ${group.name}`}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ) : null}
-                  </div>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
+                  {canManage ? (
+                    <GroupActions
+                      name={group.name}
+                      onEdit={() => openEdit(group)}
+                      onDelete={() => setDeleteGroupId(group.id)}
+                    />
+                  ) : null}
+                </li>
+              ))}
+            </ul>
 
-        <div className="mt-4 hidden overflow-x-auto rounded-lg border border-border/60 md:block">
-          <table
-            className="min-w-full text-sm"
-            data-testid="service-groups-table"
-          >
-            <thead className="bg-muted/40 text-left">
-              <tr>
-                <th className="px-3 py-2 font-medium">Name</th>
-                <th className="px-3 py-2 font-medium">Description</th>
-                <th className="px-3 py-2 font-medium">Fields</th>
-                <th className="px-3 py-2 font-medium">Assets</th>
-                <th className="px-3 py-2 font-medium text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {groupsQuery.isPending ? (
-                <tr>
-                  <td
-                    colSpan={5}
-                    className="px-3 py-8 text-center text-muted-foreground"
-                  >
-                    Loading service groups...
-                  </td>
+            <table className="w-full border-collapse text-sm max-md:hidden" data-testid="service-groups-table">
+              <thead>
+                <tr className="text-left text-[13px]">
+                  <th className="h-10 border-b border-border px-0.5 font-semibold">Name</th>
+                  <th className="h-10 border-b border-border px-3 font-semibold">Description</th>
+                  <th className="h-10 border-b border-border px-3 text-right font-semibold">Fields</th>
+                  <th className="h-10 border-b border-border px-3 text-right font-semibold">Assets</th>
+                  <th className="h-10 w-11 border-b border-border">
+                    <span className="sr-only">Actions</span>
+                  </th>
                 </tr>
-              ) : rows.length === 0 ? (
-                <tr>
-                  <td
-                    colSpan={5}
-                    className="px-3 py-8 text-center text-muted-foreground"
-                  >
-                    No service groups yet.
-                  </td>
-                </tr>
-              ) : (
-                rows.map((group) => (
-                  <tr key={group.id} className="border-t border-border/50">
-                    <td className="px-3 py-2 font-medium">
+              </thead>
+              <tbody>
+                {rows.map((group) => (
+                  <tr key={group.id} className="border-b border-border">
+                    <td className="px-0.5 py-3 font-semibold">
                       <Link
                         href={`/services/groups/${group.id}`}
-                        className="underline-offset-2 hover:underline"
+                        className="text-foreground hover:underline hover:underline-offset-[3px]"
                       >
                         {group.name}
                       </Link>
                     </td>
-                    <td className="px-3 py-2 text-muted-foreground">
-                      {group.description ?? "—"}
+                    <td className="px-3 py-3 text-ink-2">
+                      {group.description ?? <span className="text-muted-foreground">—</span>}
                     </td>
-                    <td className="px-3 py-2">{group.fieldCount}</td>
-                    <td className="px-3 py-2">{group.assetCount}</td>
-                    <td className="px-3 py-2 text-right">
-                      <div className="inline-flex items-center gap-1">
-                        <Button
-                          asChild
-                          variant="ghost"
-                          size="sm"
-                          className="cursor-pointer"
-                        >
-                          <Link href={`/services/groups/${group.id}`}>
-                            Open
-                          </Link>
-                        </Button>
-                        {canManage ? (
-                          <>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              className="cursor-pointer"
-                              onClick={() => {
-                                setEditorMode("edit");
-                                setActiveGroup(group);
-                                setEditorOpen(true);
-                              }}
-                            >
-                              Edit
-                            </Button>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon-sm"
-                              className="cursor-pointer text-destructive"
-                              onClick={() => setDeleteGroupId(group.id)}
-                              aria-label={`Delete ${group.name}`}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </>
-                        ) : null}
-                      </div>
+                    <td className="px-3 py-3 text-right font-mono text-[13px] text-ink-2">{group.fieldCount}</td>
+                    <td className="px-3 py-3 text-right font-mono text-[13px] text-ink-2">{group.assetCount}</td>
+                    <td className="py-2 pr-0.5 text-right">
+                      {canManage ? (
+                        <GroupActions
+                          name={group.name}
+                          onEdit={() => openEdit(group)}
+                          onDelete={() => setDeleteGroupId(group.id)}
+                        />
+                      ) : null}
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+                ))}
+              </tbody>
+            </table>
+          </>
+        )}
       </section>
 
       <ServiceGroupEditor
@@ -353,9 +281,9 @@ export function ServiceGroupsList() {
 
       <ConfirmDialog
         open={deleteGroupId !== null}
-        title="Delete service group"
-        description={`Delete ${activeDeleteGroup?.name ?? "this group"}?`}
-        confirmLabel="Delete group"
+        title="Delete service plan?"
+        description={`${activeDeleteGroup?.name ?? "This plan"} is deleted.`}
+        confirmLabel="Delete plan"
         busy={deleteMutation.isPending}
         onConfirm={() => {
           void handleDelete();
@@ -367,5 +295,35 @@ export function ServiceGroupsList() {
         }}
       />
     </div>
+  );
+}
+
+function GroupActions({
+  name,
+  onEdit,
+  onDelete,
+}: {
+  name: string;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button type="button" variant="ghost" size="icon-sm" aria-label={`Actions for ${name}`}>
+          <MoreHorizontal />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem onSelect={onEdit}>
+          <Pencil />
+          Edit…
+        </DropdownMenuItem>
+        <DropdownMenuItem variant="destructive" onSelect={onDelete}>
+          <Trash2 />
+          Delete…
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

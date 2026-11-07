@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { CrudModal } from "@/components/crud/modal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { SheetHeading } from "@/components/ui/sheet-heading";
 import {
   Select,
   SelectContent,
@@ -18,6 +19,7 @@ import { ApiRequestError } from "@/lib/api-client";
 import { createUser, listUsers, updateUserRole } from "@/lib/api/users";
 import { formatDateFromTimestamp, type AppDateFormat } from "@/lib/date-format";
 import { useAppDateFormat } from "@/lib/use-app-date-format";
+import { cn } from "@/lib/utils";
 
 type CreateUserFormState = {
   name: string;
@@ -175,54 +177,42 @@ export function UserManagementSection({
     }
   }
 
+  const th =
+    "h-10 border-b border-border px-3 text-left text-[13px] font-semibold whitespace-nowrap text-foreground";
+
   return (
-    <section
-      aria-labelledby="settings-user-management-title"
-      className="rounded-xl border border-border/70 bg-background p-5 shadow-sm"
-    >
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div className="space-y-1">
-          <h2
-            id="settings-user-management-title"
-            className="text-lg font-semibold tracking-tight"
+    <section aria-labelledby="settings-user-management-title">
+      <SheetHeading
+        title={<span id="settings-user-management-title">Users</span>}
+        count={usersQuery.isSuccess ? rows.length : undefined}
+        aside={
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            onClick={openDialog}
           >
-            User management
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            Add team members and manage access roles.
-          </p>
-        </div>
-        <Button
-          type="button"
-          variant="outline"
-          onClick={openDialog}
-          className="cursor-pointer"
-        >
-          <Plus className="h-4 w-4" />
-          Add User
-        </Button>
-      </div>
+            <Plus />
+            Add user…
+          </Button>
+        }
+      />
 
       {usersQuery.isPending ? (
-        <p className="mt-4 text-sm text-muted-foreground md:hidden">
+        <p className="py-4 text-sm text-muted-foreground md:hidden">
           Loading users...
         </p>
       ) : usersQuery.isError ? (
         <p
           role="alert"
-          className="mt-4 rounded-md border border-destructive/20 bg-destructive/5 px-3 py-2 text-sm text-destructive md:hidden"
+          className="py-4 text-sm font-medium text-destructive md:hidden"
         >
           Could not load users. Please try again.
         </p>
       ) : rows.length === 0 ? (
-        <p className="mt-4 text-sm text-muted-foreground md:hidden">
-          No users found.
-        </p>
+        <p className="py-4 text-sm text-ink-2 md:hidden">No users found.</p>
       ) : (
-        <ul
-          className="mt-4 flex flex-col gap-2 md:hidden"
-          data-testid="users-card-list"
-        >
+        <ul className="md:hidden" data-testid="users-card-list">
           {rows.map((user) => {
             const pendingRole = roleEdits[user.id] ?? user.role;
             const roleChanged = pendingRole !== user.role;
@@ -231,27 +221,23 @@ export function UserManagementSection({
               <li
                 key={user.id}
                 data-testid={`user-card-${user.id}`}
-                className="space-y-2 rounded-lg border border-border/70 bg-card p-3 shadow-sm"
+                className="space-y-2.5 border-b border-border px-0.5 py-3"
               >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="truncate text-sm font-semibold">
-                        {user.name}
+                <div className="min-w-0">
+                  <div className="flex items-baseline gap-2">
+                    <span className="truncate text-sm font-semibold text-foreground">
+                      {user.name}
+                    </span>
+                    {user.id === currentUserId ? (
+                      <span className="shrink-0 text-[13px] text-muted-foreground">
+                        You
                       </span>
-                      {user.id === currentUserId ? (
-                        <span className="rounded-full border border-border/70 bg-muted/40 px-2 py-0.5 text-[11px] text-muted-foreground">
-                          You
-                        </span>
-                      ) : null}
-                    </div>
-                    <p className="truncate text-xs text-muted-foreground">
-                      {user.email}
-                    </p>
-                    <p className="text-[11px] text-muted-foreground">
-                      Created {formatCreatedDate(user.createdAt, dateFormat)}
-                    </p>
+                    ) : null}
                   </div>
+                  <p className="truncate text-sm text-ink-2">{user.email}</p>
+                  <p className="text-[13px] text-muted-foreground">
+                    Created {formatCreatedDate(user.createdAt, dateFormat)}
+                  </p>
                 </div>
                 <div className="flex items-center gap-2">
                   <Select
@@ -265,7 +251,7 @@ export function UserManagementSection({
                     disabled={isSaving}
                   >
                     <SelectTrigger
-                      className="h-9 flex-1"
+                      className="h-10 flex-1"
                       aria-label={`Role for ${user.name}`}
                     >
                       <SelectValue />
@@ -278,14 +264,11 @@ export function UserManagementSection({
                   <Button
                     type="button"
                     variant="outline"
-                    size="sm"
-                    className="cursor-pointer"
+                    className="h-10"
                     disabled={!roleChanged || isSaving}
                     onClick={() => void handleSaveRole(user.id, user.role)}
                   >
-                    {isSaving ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : null}
+                    {isSaving ? <Loader2 className="animate-spin" /> : null}
                     Save
                   </Button>
                 </div>
@@ -295,15 +278,20 @@ export function UserManagementSection({
         </ul>
       )}
 
-      <div className="mt-4 hidden overflow-x-auto rounded-lg border border-border/60 md:block">
-        <table className="min-w-full text-sm" data-testid="users-table">
-          <thead className="bg-muted/40 text-left">
+      <div className="hidden md:block">
+        <table
+          className="w-full border-collapse text-sm"
+          data-testid="users-table"
+        >
+          <thead>
             <tr>
-              <th className="px-3 py-2 font-medium">Name</th>
-              <th className="px-3 py-2 font-medium">Email</th>
-              <th className="px-3 py-2 font-medium">Role</th>
-              <th className="px-3 py-2 font-medium">Created</th>
-              <th className="px-3 py-2 font-medium text-right">Actions</th>
+              <th className={cn(th, "pl-0.5")}>Name</th>
+              <th className={th}>Email</th>
+              <th className={th}>Role</th>
+              <th className={cn(th, "hidden lg:table-cell")}>Created</th>
+              <th className={cn(th, "pr-0.5 text-right")}>
+                <span className="sr-only">Actions</span>
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -311,17 +299,14 @@ export function UserManagementSection({
               <tr>
                 <td
                   colSpan={5}
-                  className="px-3 py-6 text-center text-destructive"
+                  className="px-0.5 py-6 font-medium text-destructive"
                 >
                   Could not load users. Please try again.
                 </td>
               </tr>
             ) : rows.length === 0 ? (
               <tr>
-                <td
-                  colSpan={5}
-                  className="px-3 py-6 text-center text-muted-foreground"
-                >
+                <td colSpan={5} className="px-0.5 py-6 text-ink-2">
                   No users found.
                 </td>
               </tr>
@@ -331,16 +316,18 @@ export function UserManagementSection({
                 const roleChanged = pendingRole !== user.role;
                 const isSaving = savingRoleUserId === user.id;
                 return (
-                  <tr key={user.id} className="border-t border-border/50">
-                    <td className="px-3 py-2">
-                      <div className="font-medium">{user.name}</div>
+                  <tr key={user.id} className="border-b border-border">
+                    <td className="py-2.5 pr-3 pl-0.5">
+                      <span className="font-medium text-foreground">
+                        {user.name}
+                      </span>
                       {user.id === currentUserId ? (
-                        <div className="text-xs text-muted-foreground">You</div>
+                        <span className="ml-2 text-[13px] text-muted-foreground">
+                          You
+                        </span>
                       ) : null}
                     </td>
-                    <td className="px-3 py-2 text-muted-foreground">
-                      {user.email}
-                    </td>
+                    <td className="px-3 py-2.5 text-ink-2">{user.email}</td>
                     <td className="px-3 py-2">
                       <Select
                         value={pendingRole}
@@ -353,7 +340,8 @@ export function UserManagementSection({
                         disabled={isSaving}
                       >
                         <SelectTrigger
-                          className="h-8 w-28"
+                          size="sm"
+                          className="w-28"
                           aria-label={`Role for ${user.name}`}
                         >
                           <SelectValue />
@@ -364,21 +352,18 @@ export function UserManagementSection({
                         </SelectContent>
                       </Select>
                     </td>
-                    <td className="px-3 py-2 text-muted-foreground">
+                    <td className="hidden px-3 py-2.5 whitespace-nowrap text-ink-2 lg:table-cell">
                       {formatCreatedDate(user.createdAt, dateFormat)}
                     </td>
-                    <td className="px-3 py-2 text-right">
+                    <td className="py-2 pr-0.5 pl-3 text-right">
                       <Button
                         type="button"
                         variant="outline"
                         size="sm"
-                        className="cursor-pointer"
                         disabled={!roleChanged || isSaving}
                         onClick={() => void handleSaveRole(user.id, user.role)}
                       >
-                        {isSaving ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : null}
+                        {isSaving ? <Loader2 className="animate-spin" /> : null}
                         Save
                       </Button>
                     </td>
@@ -400,7 +385,6 @@ export function UserManagementSection({
             <Button
               type="button"
               variant="outline"
-              className="cursor-pointer"
               onClick={closeDialog}
               disabled={createMutation.isPending}
             >
@@ -409,11 +393,10 @@ export function UserManagementSection({
             <Button
               form="create-user-form"
               type="submit"
-              className="cursor-pointer"
               disabled={createMutation.isPending}
             >
               {createMutation.isPending ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <Loader2 className="animate-spin" />
               ) : null}
               {createMutation.isPending ? "Creating..." : "Create user"}
             </Button>
@@ -426,7 +409,7 @@ export function UserManagementSection({
           className="space-y-4"
         >
           <div className="space-y-1.5">
-            <label htmlFor="new-user-name" className="text-sm font-medium">
+            <label htmlFor="new-user-name" className="text-sm font-semibold">
               Full name
             </label>
             <Input
@@ -444,7 +427,7 @@ export function UserManagementSection({
           </div>
 
           <div className="space-y-1.5">
-            <label htmlFor="new-user-email" className="text-sm font-medium">
+            <label htmlFor="new-user-email" className="text-sm font-semibold">
               Email
             </label>
             <Input
@@ -463,7 +446,10 @@ export function UserManagementSection({
           </div>
 
           <div className="space-y-1.5">
-            <label htmlFor="new-user-password" className="text-sm font-medium">
+            <label
+              htmlFor="new-user-password"
+              className="text-sm font-semibold"
+            >
               Temporary password
             </label>
             <Input
@@ -482,7 +468,9 @@ export function UserManagementSection({
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-sm font-medium">Role</label>
+            <label id="new-user-role-label" className="text-sm font-semibold">
+              Role
+            </label>
             <Select
               value={createForm.role}
               onValueChange={(value) =>
@@ -492,7 +480,10 @@ export function UserManagementSection({
                 }))
               }
             >
-              <SelectTrigger className="w-full">
+              <SelectTrigger
+                className="w-full"
+                aria-labelledby="new-user-role-label"
+              >
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

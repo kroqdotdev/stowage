@@ -5,17 +5,18 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
 const tabs = [
-  { href: "/services", label: "List" },
+  { href: "/services", label: "Schedule" },
   { href: "/services/calendar", label: "Calendar" },
-  { href: "/services/groups", label: "Groups" },
+  { href: "/services/groups", label: "Service plans" },
   { href: "/services/providers", label: "Providers" },
 ];
 
+/* The Services sections as text tabs; the current one carries the mark. */
 export function ServicesNavTabs() {
   const pathname = usePathname() ?? "";
 
   return (
-    <div className="inline-flex rounded-lg border border-border/70 bg-muted/20 p-1">
+    <nav aria-label="Services sections" className="mb-6 flex gap-0.5 overflow-x-auto border-b border-border">
       {tabs.map((tab) => {
         const active =
           tab.href === "/services"
@@ -25,17 +26,16 @@ export function ServicesNavTabs() {
           <Link
             key={tab.href}
             href={tab.href}
+            aria-current={active ? "page" : undefined}
             className={cn(
-              "rounded-md px-3 py-1.5 text-sm transition-colors",
-              active
-                ? "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground",
+              "-mb-px border-b-[3px] border-transparent px-3 pt-2 pb-2.5 text-sm font-medium whitespace-nowrap text-ink-2 hover:text-foreground",
+              active && "border-amber-ink font-semibold text-foreground",
             )}
           >
             {tab.label}
           </Link>
         );
       })}
-    </div>
+    </nav>
   );
 }

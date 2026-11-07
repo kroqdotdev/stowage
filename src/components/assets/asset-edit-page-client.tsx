@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { PackageX } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -20,6 +21,9 @@ import type {
 } from "@/components/assets/types";
 import type { FieldDefinition } from "@/components/fields/types";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
+import { SheetHeading } from "@/components/ui/sheet-heading";
+import { Skeleton } from "@/components/ui/skeleton";
 import { getAppSettings } from "@/lib/api/app-settings";
 import { getAsset, getAssetFilterOptions, updateAsset } from "@/lib/api/assets";
 import { listCustomFields } from "@/lib/api/custom-fields";
@@ -191,60 +195,67 @@ export function AssetEditPageClient({ assetId }: { assetId: string }) {
 
   if (loading) {
     return (
-      <div className="rounded-xl border border-border/70 bg-background p-6 text-sm text-muted-foreground shadow-sm">
-        Loading asset...
+      <div className="max-w-[880px]">
+        <span className="sr-only">Loading asset...</span>
+        <Skeleton className="mb-5 h-4 w-28 rounded-md" />
+        <div className="grid gap-x-6 gap-y-5 sm:grid-cols-2" aria-hidden="true">
+          {[0, 1, 2, 3].map((index) => (
+            <Skeleton key={index} className="h-9 rounded-md" />
+          ))}
+        </div>
       </div>
     );
   }
 
   if (!detail || !initialValues) {
     return (
-      <div className="rounded-xl border border-border/70 bg-background p-6 shadow-sm">
-        <h2 className="text-lg font-semibold tracking-tight">
-          Asset not found
-        </h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          The asset may have been deleted.
-        </p>
-        <Button asChild className="mt-4 cursor-pointer" variant="outline">
-          <Link href="/assets">Back to assets</Link>
-        </Button>
-      </div>
+      <EmptyState
+        icon={PackageX}
+        title="Asset not found."
+        description="The asset may have been deleted."
+        action={
+          <Button asChild variant="outline">
+            <Link href="/assets">Back to assets</Link>
+          </Button>
+        }
+      />
     );
   }
 
   return (
-    <div className="space-y-4">
-      <section className="rounded-xl border border-border/70 bg-background p-5 shadow-sm">
-        <AssetForm
-          mode="edit"
-          categories={options.categories}
-          locations={options.locations}
-          serviceGroups={options.serviceGroups}
-          tags={options.tags}
-          fieldDefinitions={customFieldDefinitions}
-          initialValues={initialValues}
-          assetTag={detail.assetTag}
-          submitLabel="Save changes"
-          submitting={submitting}
-          serviceSchedulingEnabled={serviceSchedulingEnabled}
-          serviceScheduleDraft={serviceScheduleDraft}
-          onServiceScheduleChange={setServiceScheduleDraft}
-          onClearServiceSchedule={() =>
-            setServiceScheduleDraft(getDefaultServiceScheduleDraft())
-          }
-          onSubmit={handleSubmit}
-        />
-      </section>
+    <div className="space-y-10">
+      <AssetForm
+        mode="edit"
+        categories={options.categories}
+        locations={options.locations}
+        serviceGroups={options.serviceGroups}
+        tags={options.tags}
+        fieldDefinitions={customFieldDefinitions}
+        initialValues={initialValues}
+        assetTag={detail.assetTag}
+        submitLabel="Save changes"
+        cancelHref={`/assets/${assetId}`}
+        submitting={submitting}
+        serviceSchedulingEnabled={serviceSchedulingEnabled}
+        serviceScheduleDraft={serviceScheduleDraft}
+        onServiceScheduleChange={setServiceScheduleDraft}
+        onClearServiceSchedule={() =>
+          setServiceScheduleDraft(getDefaultServiceScheduleDraft())
+        }
+        onSubmit={handleSubmit}
+      />
 
-      <section className="rounded-xl border border-border/70 bg-background p-5 shadow-sm">
-        <div className="mb-4">
-          <h3 className="text-sm font-semibold tracking-tight">Attachments</h3>
-          <p className="text-xs text-muted-foreground">
-            Upload files immediately. Images and PDFs are optimized in the
-            background.
-          </p>
-        </div>
+      <section
+        aria-labelledby="asset-edit-attachments"
+        className="max-w-[880px]"
+      >
+        <SheetHeading
+          title={<span id="asset-edit-attachments">Attachments</span>}
+        />
+        <p className="px-0.5 pt-1.5 pb-3 text-[13px] text-muted-foreground">
+          Files upload straight away. Images and PDFs are optimized in the
+          background.
+        </p>
         <AttachmentsPanel assetId={assetId} />
       </section>
     </div>

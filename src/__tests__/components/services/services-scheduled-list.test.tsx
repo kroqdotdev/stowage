@@ -60,12 +60,12 @@ describe("ServicesScheduledList", () => {
       expect(screen.getByText("Main Engine")).toBeInTheDocument();
     });
     expect(screen.getByText("ENG-0001")).toBeInTheDocument();
-    // 2026-03-06 is 5 days from mocked today 2026-03-01 → "Due in 5 days"
-    expect(screen.getByText("Due in 5 days")).toBeInTheDocument();
+    // 2026-03-06 is 5 days from mocked today 2026-03-01
+    expect(screen.getAllByText("In 5 days").length).toBeGreaterThan(0);
     // Group header for "Due this week" is shown with a count of 1
     expect(screen.getByTestId("services-group-thisWeek")).toBeInTheDocument();
     expect(
-      screen.getByText("Last service 01-02-2026 • Dockside Repair"),
+      screen.getByText("Last 01-02-2026 by Dockside Repair"),
     ).toBeInTheDocument();
     expect(screen.getByTestId("log-service-schedule1")).toBeInTheDocument();
   });
@@ -162,7 +162,7 @@ describe("ServicesScheduledList", () => {
     expect(
       within(screen.getByTestId("services-group-upcoming")).getByText("Far"),
     ).toBeInTheDocument();
-    expect(screen.getAllByText(/days overdue/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/^Overdue \d+ days?$/).length).toBeGreaterThan(0);
   });
 
   it("keeps future reminder-window rows in upcoming", async () => {
@@ -191,7 +191,9 @@ describe("ServicesScheduledList", () => {
       expect(screen.getByTestId("services-group-upcoming")).toBeInTheDocument();
     });
     expect(screen.queryByTestId("services-group-thisWeek")).toBeNull();
-    expect(screen.getByText("Scheduled")).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId("services-group-upcoming")).getByText("Not Ready"),
+    ).toBeInTheDocument();
   });
 
   it("renders empty state when no schedules exist", async () => {

@@ -20,10 +20,12 @@ describe("TagPicker", () => {
   it("shows empty message when no tags defined", () => {
     render(<TagPicker value={[]} options={[]} onChange={vi.fn()} />);
 
-    expect(screen.getByText("No tags defined.")).toBeInTheDocument();
+    expect(
+      screen.getByText("No keywords yet. Add them under Taxonomy."),
+    ).toBeInTheDocument();
   });
 
-  it("renders selected tag badges", () => {
+  it("marks selected keywords as pressed", () => {
     render(
       <TagPicker
         value={["tag1", "tag3"]}
@@ -32,9 +34,17 @@ describe("TagPicker", () => {
       />,
     );
 
-    const fragileElements = screen.getAllByText("Fragile");
-    expect(fragileElements.length).toBeGreaterThanOrEqual(2);
-    const expensiveElements = screen.getAllByText("Expensive");
-    expect(expensiveElements.length).toBeGreaterThanOrEqual(2);
+    expect(screen.getByRole("button", { name: /Fragile/ })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(screen.getByRole("button", { name: /Expensive/ })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(screen.getByRole("button", { name: /Heavy/ })).toHaveAttribute(
+      "aria-pressed",
+      "false",
+    );
   });
 });

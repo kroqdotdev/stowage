@@ -61,8 +61,8 @@ describe("ServiceProvidersPageClient", () => {
       expect(screen.getByText("No service providers yet.")).toBeInTheDocument();
     });
     expect(
-      screen.getByRole("button", { name: /Add provider/ }),
-    ).toBeInTheDocument();
+      screen.getAllByRole("button", { name: /New provider…/ }).length,
+    ).toBeGreaterThan(0);
   });
 
   it("renders provider list and opens create dialog for admins", async () => {
@@ -89,7 +89,7 @@ describe("ServiceProvidersPageClient", () => {
     });
     expect(screen.getByText("dock@example.com")).toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: /Add provider/ }));
-    expect(screen.getByRole("heading", { name: "Add provider" })).toBeVisible();
+    await user.click(screen.getByRole("button", { name: /New provider…/ }));
+    expect(screen.getByRole("heading", { name: "New provider" })).toBeVisible();
   });
 });

@@ -1,8 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Loader2, Plus, Trash2 } from "lucide-react";
+import { Loader2, Plus, Trash2, TriangleAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { CrudModal } from "@/components/crud/modal";
 import {
@@ -10,6 +11,16 @@ import {
   type FieldDefinition,
   type FieldType,
 } from "./types";
+
+const TYPE_LABELS: Record<FieldType, string> = {
+  text: "Text",
+  number: "Number",
+  date: "Date",
+  dropdown: "Dropdown",
+  checkbox: "Checkbox",
+  url: "URL",
+  currency: "Currency",
+};
 
 type FieldDefinitionFormValues = {
   name: string;
@@ -86,14 +97,12 @@ export function FieldDefinitionForm({
           onClose();
         }
       }}
-      title={mode === "create" ? "Add field" : "Edit field"}
-      description="Define custom fields used by assets."
+      title={mode === "create" ? "New field" : "Edit field"}
       footer={
         <>
           <Button
             type="button"
             variant="outline"
-            className="cursor-pointer"
             disabled={submitting}
             onClick={onClose}
           >
@@ -102,17 +111,16 @@ export function FieldDefinitionForm({
           <Button
             type="submit"
             form="field-definition-form"
-            className="cursor-pointer"
             disabled={submitting}
           >
-            {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+            {submitting ? <Loader2 className="animate-spin" /> : null}
             {submitting
               ? mode === "create"
                 ? "Creating..."
                 : "Saving..."
               : mode === "create"
                 ? "Create field"
-                : "Save changes"}
+                : "Save field"}
           </Button>
         </>
       }
@@ -123,7 +131,7 @@ export function FieldDefinitionForm({
         onSubmit={handleSubmit}
       >
         <div className="space-y-1.5">
-          <label htmlFor="field-name" className="text-sm font-medium">
+          <label htmlFor="field-name" className="text-sm font-semibold">
             Name
           </label>
           <Input
@@ -136,42 +144,47 @@ export function FieldDefinitionForm({
         </div>
 
         <div className="space-y-1.5">
-          <label htmlFor="field-type" className="text-sm font-medium">
+          <label htmlFor="field-type" className="text-sm font-semibold">
             Type
           </label>
           <select
             id="field-type"
-            className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+            className="h-9 w-full cursor-pointer rounded-md border-[1.5px] border-input bg-card px-3 text-sm appearance-none bg-[url('data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%2714%27%20height=%2714%27%20viewBox=%270%200%2024%2024%27%20fill=%27none%27%20stroke=%27%234e524b%27%20stroke-width=%272.5%27%20stroke-linecap=%27round%27%20stroke-linejoin=%27round%27%3E%3Cpath%20d=%27m6%209%206%206%206-6%27/%3E%3C/svg%3E')] bg-[length:14px] bg-[position:right_10px_center] bg-no-repeat pr-8 font-medium text-foreground outline-none focus-visible:border-foreground"
             value={fieldType}
             onChange={(event) => setFieldType(event.target.value as FieldType)}
           >
             {FIELD_TYPE_OPTIONS.map((typeOption) => (
               <option key={typeOption} value={typeOption}>
-                {typeOption}
+                {TYPE_LABELS[typeOption]}
               </option>
             ))}
           </select>
         </div>
 
         {showTypeChangeWarning ? (
-          <div className="rounded-md border border-amber-400/50 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-300">
-            This field already has saved values. Some type changes are blocked
-            to prevent data loss.
-          </div>
+          <p className="flex items-start gap-1.5 text-sm font-medium text-repair">
+            <TriangleAlert
+              className="mt-0.5 size-4 shrink-0"
+              aria-hidden="true"
+            />
+            <span>
+              This field already has saved values. Some type changes are blocked
+              to prevent data loss.
+            </span>
+          </p>
         ) : null}
 
         {isDropdown ? (
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <label className="text-sm font-medium">Dropdown options</label>
+              <label className="text-sm font-semibold">Dropdown options</label>
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
-                className="cursor-pointer"
                 onClick={() => setOptions((prev) => [...prev, ""])}
               >
-                <Plus className="h-4 w-4" />
+                <Plus />
                 Add option
               </Button>
             </div>
@@ -195,7 +208,6 @@ export function FieldDefinitionForm({
                     type="button"
                     variant="ghost"
                     size="icon-sm"
-                    className="cursor-pointer"
                     aria-label={`Remove option ${index + 1}`}
                     onClick={() =>
                       setOptions((prev) => {
@@ -208,7 +220,7 @@ export function FieldDefinitionForm({
                       })
                     }
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <Trash2 />
                   </Button>
                 </div>
               ))}
@@ -216,15 +228,16 @@ export function FieldDefinitionForm({
           </div>
         ) : null}
 
-        <div className="flex items-center gap-2">
-          <input
+        <div className="flex items-center gap-2.5">
+          <Checkbox
             id="field-required"
-            type="checkbox"
-            className="h-4 w-4 rounded border border-input"
             checked={required}
-            onChange={(event) => setRequired(event.target.checked)}
+            onCheckedChange={(checked) => setRequired(checked === true)}
           />
-          <label htmlFor="field-required" className="text-sm font-medium">
+          <label
+            htmlFor="field-required"
+            className="cursor-pointer text-sm font-semibold"
+          >
             Required field
           </label>
         </div>

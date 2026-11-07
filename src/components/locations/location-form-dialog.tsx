@@ -13,7 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import type { LocationTreeItem } from "@/components/locations/location-tree";
+import type { LocationTreeItem } from "@/components/locations/location-utils";
 
 type FormState = {
   name: string;
@@ -23,22 +23,23 @@ type FormState = {
 
 function buildPathPreview(locations: LocationTreeItem[], form: FormState) {
   const name = form.name.trim();
-  if (!name) {
-    return "";
-  }
-
+  if (!name) return "";
   const parentPath =
     form.parentId == null
       ? null
-      : (locations.find((location) => location.id === form.parentId)?.path ??
-        null);
-
+      : (locations.find((location) => location.id === form.parentId)?.path ?? null);
   return parentPath ? `${parentPath} / ${name}` : name;
 }
 
+/*
+  One dialog for creating and editing a location: name, where it sits, an
+  optional description, and the resulting path.
+*/
 export function LocationFormDialog({
   open,
+  mode = "create",
   locations,
+  excludeParentIds,
   values,
   submitting,
   onClose,
@@ -46,7 +47,10 @@ export function LocationFormDialog({
   onSubmit,
 }: {
   open: boolean;
+  mode?: "create" | "edit";
   locations: LocationTreeItem[];
+  /* A location can't sit inside itself or its own descendants. */
+  excludeParentIds?: Set<string>;
   values: FormState;
   submitting: boolean;
   onClose: () => void;
@@ -57,52 +61,45 @@ export function LocationFormDialog({
     description: string | null;
   }) => Promise<void>;
 }) {
-  const sortedLocations = useMemo(
+  const parentOptions = useMemo(
     () =>
       locations
-        .slice()
+        .filter((location) => !excludeParentIds?.has(location.id))
         .sort((a, b) =>
           a.path.localeCompare(b.path, undefined, { sensitivity: "base" }),
         ),
-    [locations],
+    [locations, excludeParentIds],
   );
   const pathPreview = buildPathPreview(locations, values);
+  const editing = mode === "edit";
 
   return (
     <CrudModal
       open={open}
       onClose={() => {
-        if (!submitting) {
-          onClose();
-        }
+        if (!submitting) onClose();
       }}
-      title="Add location"
-      description="Create a root or nested location. You can change the parent later in the details panel."
+      title={editing ? "Edit location" : "New location"}
       footer={
         <>
-          <Button
-            type="button"
-            variant="outline"
-            className="cursor-pointer"
-            onClick={onClose}
-            disabled={submitting}
-          >
+          <Button type="button" variant="outline" onClick={onClose} disabled={submitting}>
             Cancel
           </Button>
-          <Button
-            type="submit"
-            form="create-location-form"
-            className="cursor-pointer"
-            disabled={submitting}
-          >
-            {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-            {submitting ? "Creating..." : "Create location"}
+          <Button type="submit" form="location-form" disabled={submitting}>
+            {submitting ? <Loader2 className="animate-spin" /> : null}
+            {editing
+              ? submitting
+                ? "Saving..."
+                : "Save location"
+              : submitting
+                ? "Creating..."
+                : "Create location"}
           </Button>
         </>
       }
     >
       <form
-        id="create-location-form"
+        id="location-form"
         className="space-y-4"
         onSubmit={(event) => {
           event.preventDefault();
@@ -114,37 +111,34 @@ export function LocationFormDialog({
         }}
       >
         <div className="space-y-1.5">
-          <label htmlFor="create-location-name" className="text-sm font-medium">
+          <label htmlFor="location-form-name" className="text-sm font-semibold">
             Name
           </label>
           <Input
-            id="create-location-name"
+            id="location-form-name"
             value={values.name}
-            onChange={(event) =>
-              onChange({ ...values, name: event.target.value })
-            }
+            onChange={(event) => onChange({ ...values, name: event.target.value })}
             placeholder="Shelf 3"
             required
           />
         </div>
 
         <div className="space-y-1.5">
-          <label className="text-sm font-medium">Parent location</label>
+          <label id="location-form-parent-label" className="text-sm font-semibold">
+            Inside
+          </label>
           <Select
             value={values.parentId ?? "__none__"}
             onValueChange={(value) =>
-              onChange({
-                ...values,
-                parentId: value === "__none__" ? null : value,
-              })
+              onChange({ ...values, parentId: value === "__none__" ? null : value })
             }
           >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="No parent (root)" />
+            <SelectTrigger className="w-full" aria-labelledby="location-form-parent-label">
+              <SelectValue placeholder="Nothing, it is a site" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="__none__">No parent (root)</SelectItem>
-              {sortedLocations.map((location) => (
+              <SelectItem value="__none__">Nothing, it is a site</SelectItem>
+              {parentOptions.map((location) => (
                 <SelectItem key={location.id} value={location.id}>
                   {location.path}
                 </SelectItem>
@@ -154,30 +148,23 @@ export function LocationFormDialog({
         </div>
 
         <div className="space-y-1.5">
-          <label
-            htmlFor="create-location-description"
-            className="text-sm font-medium"
-          >
-            Description
+          <label htmlFor="location-form-description" className="text-sm font-semibold">
+            Description <span className="font-normal text-muted-foreground">optional</span>
           </label>
           <Textarea
-            id="create-location-description"
+            id="location-form-description"
             value={values.description}
-            onChange={(event) =>
-              onChange({ ...values, description: event.target.value })
-            }
-            placeholder="Optional note about this location"
+            onChange={(event) => onChange({ ...values, description: event.target.value })}
+            placeholder="Long bench by the window"
           />
         </div>
 
-        <div className="rounded-md border border-border/70 bg-muted/20 px-3 py-2">
-          <div className="text-xs font-medium text-muted-foreground">
-            Path preview
-          </div>
-          <div className="mt-1 text-sm">
-            {pathPreview || "Enter a name to preview the path"}
-          </div>
-        </div>
+        <p className="text-sm text-ink-2">
+          Path:{" "}
+          <span className="font-medium text-foreground">
+            {pathPreview || "Enter a name to see the path"}
+          </span>
+        </p>
       </form>
     </CrudModal>
   );

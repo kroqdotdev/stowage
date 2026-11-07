@@ -50,7 +50,6 @@ describe("ServicesCalendarPageClient", () => {
     await waitFor(() => {
       expect(screen.getByText("CalendarMonth")).toBeInTheDocument();
     });
-    expect(screen.getByText("NavTabs")).toBeInTheDocument();
   });
 
   it("shows disabled message when service scheduling is off", async () => {
@@ -64,7 +63,7 @@ describe("ServicesCalendarPageClient", () => {
 
     await waitFor(() => {
       expect(
-        screen.getByText(/Service scheduling is disabled/),
+        screen.getByText(/Service scheduling is turned off/),
       ).toBeInTheDocument();
     });
   });

@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import type { AppDateFormat } from "@/lib/date-format";
-import { formatDateFromTimestamp } from "@/lib/date-format";
-import { StatusBadge } from "@/components/assets/status-badge";
+import { StatusText } from "@/components/ui/status-text";
+import { SheetFoot, SheetHeading } from "@/components/ui/sheet-heading";
+import { TagChip } from "@/components/ui/tag-chip";
 import type { AssetStatus } from "@/components/assets/types";
+import { formatRelativeTime } from "@/lib/relative-time";
 
 type RecentAssetItem = {
   id: string;
@@ -14,62 +16,67 @@ type RecentAssetItem = {
   updatedAt: number;
 };
 
+/*
+  Recently updated: the shared chip column, the asset name with its status
+  when it is an exception, and the time at the right (long form on desktop,
+  short form below).
+*/
 export function RecentAssetsCard({
   items,
-  dateFormat,
 }: {
   items: RecentAssetItem[];
-  dateFormat: AppDateFormat;
+  dateFormat?: AppDateFormat;
 }) {
-  return (
-    <section className="flex min-h-0 flex-col rounded-xl border border-border/70 bg-background p-5 shadow-sm">
-      <div className="flex shrink-0 items-center justify-between gap-2">
-        <h2 className="text-base font-semibold tracking-tight">
-          Recent assets
-        </h2>
-        <Link
-          href="/assets"
-          className="text-sm text-primary underline-offset-2 hover:underline"
-        >
-          View all
-        </Link>
-      </div>
+  const visible = items.slice(0, 5);
 
-      {items.length === 0 ? (
-        <p className="mt-3 text-sm text-muted-foreground">
-          No assets have been added yet.
-        </p>
+  return (
+    <section aria-labelledby="recent-heading">
+      <SheetHeading title={<span id="recent-heading">Recently updated</span>} />
+      {visible.length === 0 ? (
+        <p className="py-6 text-sm text-ink-2">No assets have been added yet.</p>
       ) : (
-        <div className="mt-3 min-h-0 flex-1 space-y-2 overflow-y-auto">
-          {items.map((asset) => (
-            <article
-              key={asset.id}
-              className="rounded-xl border border-border/70 bg-card/60 px-3 py-3"
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-sm font-medium">{asset.name}</p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">
-                    {asset.assetTag}
-                  </p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    Updated{" "}
-                    {formatDateFromTimestamp(asset.updatedAt, dateFormat)}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <StatusBadge status={asset.status} />
+        <>
+          <ul>
+            {visible.map((asset) => {
+              const time = formatRelativeTime(asset.updatedAt);
+              return (
+                <li key={asset.id} className="border-b border-border">
                   <Link
                     href={`/assets/${asset.id}`}
-                    className="text-xs text-primary underline-offset-2 hover:underline"
+                    className="grid min-h-12 grid-cols-[84px_minmax(0,1fr)_auto] items-center gap-x-4 px-0.5 py-[9px] text-sm hover:bg-card/60"
                   >
-                    View
+                    <TagChip weight="table" className="justify-self-start">
+                      {asset.assetTag}
+                    </TagChip>
+                    <span className="flex min-w-0 items-center gap-3">
+                      <b className="truncate font-semibold text-foreground">
+                        {asset.name}
+                      </b>
+                      <StatusText
+                        status={asset.status}
+                        hideActive
+                        className="text-[13px]"
+                        data-testid="status-badge"
+                      />
+                    </span>
+                    <span className="text-right text-[13px] whitespace-nowrap text-ink-2">
+                      <span className="hidden lg:inline">{time.long}</span>
+                      <span className="lg:hidden">{time.short}</span>
+                    </span>
                   </Link>
-                </div>
-              </div>
-            </article>
-          ))}
-        </div>
+                </li>
+              );
+            })}
+          </ul>
+          <SheetFoot>
+            {items.length > visible.length ? (
+              <span>
+                {visible.length} of the last {items.length} changes ·{" "}
+              </span>
+            ) : null}
+            <Link href="/assets">Open in Assets</Link>
+          </SheetFoot>
+        </>
       )}
     </section>
   );

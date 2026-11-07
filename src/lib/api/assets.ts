@@ -71,7 +71,7 @@ export type ListAssetsParams = {
   status?: AssetStatus;
   tagIds?: string[];
   search?: string;
-  sortBy?: "createdAt" | "name" | "assetTag" | "status";
+  sortBy?: "createdAt" | "updatedAt" | "name" | "assetTag" | "status";
   sortDirection?: "asc" | "desc";
 };
 

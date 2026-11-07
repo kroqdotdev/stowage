@@ -26,6 +26,7 @@ vi.mock("@/lib/api/service-schedules", () => ({
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: mockPush }),
+  useSearchParams: () => new URLSearchParams(),
 }));
 
 vi.mock("@/components/assets/asset-form", () => ({

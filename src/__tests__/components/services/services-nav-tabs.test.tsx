@@ -14,9 +14,9 @@ describe("ServicesNavTabs", () => {
 
     render(<ServicesNavTabs />);
 
-    const listLink = screen.getByRole("link", { name: "List" });
+    const listLink = screen.getByRole("link", { name: "Schedule" });
     const calendarLink = screen.getByRole("link", { name: "Calendar" });
-    const groupsLink = screen.getByRole("link", { name: "Groups" });
+    const groupsLink = screen.getByRole("link", { name: "Service plans" });
     const providersLink = screen.getByRole("link", { name: "Providers" });
 
     expect(listLink).toHaveAttribute("href", "/services");
@@ -25,15 +25,15 @@ describe("ServicesNavTabs", () => {
     expect(providersLink).toHaveAttribute("href", "/services/providers");
   });
 
-  it("applies active styling to the matching tab", () => {
+  it("marks the matching tab as the current page", () => {
     mockPathname = "/services/groups/group1";
 
     render(<ServicesNavTabs />);
 
-    const groupsLink = screen.getByRole("link", { name: "Groups" });
-    expect(groupsLink.className).toContain("bg-background");
+    const groupsLink = screen.getByRole("link", { name: "Service plans" });
+    expect(groupsLink).toHaveAttribute("aria-current", "page");
 
-    const listLink = screen.getByRole("link", { name: "List" });
-    expect(listLink.className).not.toContain("bg-background");
+    const listLink = screen.getByRole("link", { name: "Schedule" });
+    expect(listLink).not.toHaveAttribute("aria-current");
   });
 });

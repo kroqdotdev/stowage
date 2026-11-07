@@ -75,12 +75,12 @@ describe("TagsPageClient", () => {
     ]);
     renderWithClient();
     expect(await screen.findByText("Fragile")).toBeInTheDocument();
-    expect(screen.getByText("Tags")).toBeInTheDocument();
+    expect(screen.getByText("Keywords")).toBeInTheDocument();
   });
 
   it("shows empty state when no tags exist", async () => {
     listTagsMock.mockResolvedValue([]);
     renderWithClient();
-    expect(await screen.findByText("No tags yet.")).toBeInTheDocument();
+    expect(await screen.findByText("No keywords yet.")).toBeInTheDocument();
   });
 });
