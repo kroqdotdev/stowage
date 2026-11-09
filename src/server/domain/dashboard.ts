@@ -52,6 +52,8 @@ export type DashboardOverview = {
   totalAssets: number;
   statusCounts: StatusCounts;
   recentAssets: RecentAsset[];
+  /** Assets updated in the 24 hours before the overview was built. */
+  changedLastDayCount: number;
   categoryBreakdown: CategoryBreakdownItem[];
   locationBreakdown: LocationBreakdownItem[];
   serviceSchedulingEnabled: boolean;
@@ -140,6 +142,14 @@ function buildRecentAssets(assets: AssetRow[]): RecentAsset[] {
       status: asset.status,
       updatedAt: asset.updatedAt,
     }));
+}
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+function countChangedSince(assets: AssetRow[], since: number) {
+  let count = 0;
+  for (const asset of assets) if (asset.updatedAt >= since) count += 1;
+  return count;
 }
 
 function compareBreakdown<T extends { count: number; name: string }>(
@@ -324,6 +334,7 @@ export async function getOverview(ctx: Ctx): Promise<DashboardOverview> {
     totalAssets: assets.length,
     statusCounts: buildStatusCounts(assets),
     recentAssets: buildRecentAssets(assets),
+    changedLastDayCount: countChangedSince(assets, Date.now() - DAY_MS),
     categoryBreakdown,
     locationBreakdown,
     serviceSchedulingEnabled: upcomingPreview.serviceSchedulingEnabled,

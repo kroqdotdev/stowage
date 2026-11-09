@@ -39,15 +39,23 @@ export function MobileActionSheet({
         aria-label={ariaLabel}
         {...(description ? {} : { "aria-describedby": undefined })}
         className={cn(
-          "gap-0 rounded-t-md border-t pb-[max(1rem,env(safe-area-inset-bottom))]",
+          "gap-0 rounded-t-md border-t pb-[max(1rem,env(safe-area-inset-bottom))] outline-hidden",
           contentClassName,
         )}
         showCloseButton={false}
         // Keep the phone keyboard down on open: focus the sheet, not its
-        // first field.
+        // first field. A field that asks for focus (React's autoFocus, which
+        // focuses on mount, or data-autofocus) keeps it.
         onOpenAutoFocus={(event) => {
           event.preventDefault();
-          (event.currentTarget as HTMLElement | null)?.focus();
+          const content = event.currentTarget as HTMLElement | null;
+          if (!content) return;
+          const active = document.activeElement;
+          if (active && active !== content && content.contains(active)) return;
+          const wanted = content.querySelector<HTMLElement>(
+            "[data-autofocus], [autofocus]",
+          );
+          (wanted ?? content).focus();
         }}
       >
         <div className="flex justify-center pt-2 pb-1">

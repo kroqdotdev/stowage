@@ -121,6 +121,14 @@ test.describe("mobile shell", () => {
     await page.goto("/dashboard");
 
     await expect(page.getByTestId("bottom-nav")).toBeHidden();
-    await expect(page.locator('[data-slot="sidebar-container"]')).toBeVisible();
+    // The full sidebar (desktop) and the rail (tablet) are both labelled
+    // "Main"; exactly one is shown at desktop width, with the full nav.
+    const sidebar = page
+      .getByRole("complementary", { name: "Main" })
+      .filter({ visible: true });
+    await expect(sidebar).toHaveCount(1);
+    await expect(
+      sidebar.getByRole("link", { name: "Locations" }),
+    ).toBeVisible();
   });
 });

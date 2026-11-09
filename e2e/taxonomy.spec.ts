@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { getLanding, signIn } from "./helpers";
+import { getLanding, pageTitle, signIn } from "./helpers";
 
 test.describe.serial("taxonomy page", () => {
   test("protected taxonomy page redirects when unauthenticated", async ({
@@ -29,27 +29,31 @@ test.describe.serial("taxonomy page", () => {
     await signIn(page, email!, password!);
 
     await page.goto("/taxonomy");
-    await expect(page.getByRole("heading", { name: "Taxonomy" })).toBeVisible();
+    await expect(pageTitle(page, "Taxonomy")).toBeVisible();
 
     // Default tab is categories
     await expect(page.getByRole("tab", { name: "Categories" })).toBeVisible();
-    await expect(page.getByRole("tab", { name: "Tags" })).toBeVisible();
-    await expect(page.getByRole("tab", { name: "Fields" })).toBeVisible();
+    await expect(page.getByRole("tab", { name: "Keywords" })).toBeVisible();
+    await expect(
+      page.getByRole("tab", { name: "Custom fields" }),
+    ).toBeVisible();
 
     // Categories tab shows content
     await expect(
-      page.getByRole("heading", { name: "Categories" }),
+      page.getByRole("heading", { name: /^Categories/ }),
     ).toBeVisible();
 
-    // Switch to tags tab
-    await page.getByRole("tab", { name: "Tags" }).click();
-    await expect(page.getByRole("heading", { name: "Tags" })).toBeVisible();
+    // Switch to the keywords tab ("tags" in the URL)
+    await page.getByRole("tab", { name: "Keywords" }).click();
+    await expect(
+      page.getByRole("heading", { name: /^Keywords/ }),
+    ).toBeVisible();
     await expect(page).toHaveURL(/tab=tags/);
 
     // Switch to fields tab
-    await page.getByRole("tab", { name: "Fields" }).click();
+    await page.getByRole("tab", { name: "Custom fields" }).click();
     await expect(
-      page.getByRole("heading", { name: "Field definitions" }),
+      page.getByRole("heading", { name: /^Custom fields/ }),
     ).toBeVisible();
     await expect(page).toHaveURL(/tab=fields/);
   });
@@ -79,28 +83,31 @@ test.describe.serial("taxonomy page", () => {
 
     await page.goto("/taxonomy?tab=fields");
     await expect(
-      page.getByRole("heading", { name: "Field definitions" }),
+      page.getByRole("heading", { name: /^Custom fields/ }),
     ).toBeVisible();
 
-    // Create field — the page renders an "Add field" button in the header
-    // and another in the empty state; click the first one.
-    await page.getByRole("button", { name: "Add field" }).first().click();
-    const dialog = page.getByRole("dialog");
+    // Create field — the header and the empty state can both offer
+    // "New field…"; click the first one.
+    await page.getByRole("button", { name: "New field…" }).first().click();
+    const dialog = page.getByRole("dialog", { name: "New field" });
     await dialog.getByLabel("Name").fill(fieldName);
-    await dialog.getByRole("button", { name: /Create/i }).click();
-    const fieldRow = page.getByRole("cell", { name: fieldName, exact: true });
+    await dialog.getByRole("button", { name: "Create field" }).click();
+    // The fields render as a table on desktop and a list on phones; only
+    // one of them is visible.
+    const fieldRow = page
+      .getByText(fieldName, { exact: true })
+      .filter({ visible: true });
     await expect(fieldRow).toBeVisible({ timeout: 10_000 });
 
     // Delete field via actions menu
     await page
       .getByRole("button", { name: `Actions for ${fieldName}` })
+      .filter({ visible: true })
       .click();
-    await page.getByRole("menuitem", { name: "Delete" }).click();
-    const confirmDialog = page
-      .getByRole("alertdialog")
-      .or(page.getByRole("dialog").filter({ hasText: "Delete" }));
-    await confirmDialog.getByRole("button", { name: /Delete/i }).click();
-    await expect(fieldRow).not.toBeVisible({ timeout: 10_000 });
+    await page.getByRole("menuitem", { name: "Delete…" }).click();
+    const confirmDialog = page.getByRole("dialog", { name: "Delete field?" });
+    await confirmDialog.getByRole("button", { name: "Delete field" }).click();
+    await expect(fieldRow).toHaveCount(0, { timeout: 10_000 });
   });
 
   test("/fields redirects to /taxonomy?tab=fields", async ({ page }) => {
@@ -123,7 +130,7 @@ test.describe.serial("taxonomy page", () => {
     await page.goto("/fields");
     await page.waitForURL(/\/taxonomy\?tab=fields/, { timeout: 10_000 });
     await expect(
-      page.getByRole("heading", { name: "Field definitions" }),
+      page.getByRole("heading", { name: /^Custom fields/ }),
     ).toBeVisible();
   });
 });

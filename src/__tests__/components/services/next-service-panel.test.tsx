@@ -123,6 +123,22 @@ describe("NextServicePanel", () => {
     expect(screen.getByText("1 week before")).toBeInTheDocument();
   });
 
+  it("keeps Log service… disabled until the schedule has loaded", async () => {
+    let resolveSchedule: (value: unknown) => void = () => {};
+    getScheduleByAssetIdMock.mockReturnValue(
+      new Promise((resolve) => {
+        resolveSchedule = resolve;
+      }),
+    );
+    renderPanel();
+
+    expect(screen.getByRole("button", { name: "Log service…" })).toBeDisabled();
+
+    resolveSchedule(makeSchedule());
+    await screen.findByText("In 10 days");
+    expect(screen.getByRole("button", { name: "Log service…" })).toBeEnabled();
+  });
+
   it("offers Log service… and Reschedule… when scheduled", async () => {
     const user = userEvent.setup();
     getScheduleByAssetIdMock.mockResolvedValue(makeSchedule());

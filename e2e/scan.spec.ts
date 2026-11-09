@@ -22,8 +22,10 @@ async function authedScan(page: import("@playwright/test").Page) {
 }
 
 async function readAssetTag(page: import("@playwright/test").Page) {
+  // The hero chip is desktop/tablet only; phones show the tag in the back
+  // bar. Either way the text is in the DOM.
   const tagBadge = page.getByTestId("asset-tag");
-  await expect(tagBadge).toBeVisible();
+  await expect(tagBadge).toBeAttached();
   const assetTag = (await tagBadge.textContent())?.trim() ?? "";
   expect(assetTag.length).toBeGreaterThan(0);
   return assetTag;
@@ -47,10 +49,10 @@ test.describe("scan feature", () => {
     await fillRequiredFields(page);
     await page.getByRole("button", { name: "Create asset" }).click();
     await expect(
-      page.getByRole("heading", { name: `${name} created` }),
+      page.getByRole("heading", { name: name, exact: true }),
     ).toBeVisible({ timeout: 20_000 });
 
-    await page.getByRole("button", { name: "View asset" }).click();
+    await page.getByRole("button", { name: "Open asset" }).click();
     await page.waitForURL(/\/assets\/[^/]+$/, { timeout: 20_000 });
     const assetTag = await readAssetTag(page);
 
@@ -82,9 +84,9 @@ test.describe("scan feature", () => {
     await fillRequiredFields(page);
     await page.getByRole("button", { name: "Create asset" }).click();
     await expect(
-      page.getByRole("heading", { name: `${name} created` }),
+      page.getByRole("heading", { name: name, exact: true }),
     ).toBeVisible({ timeout: 20_000 });
-    await page.getByRole("button", { name: "View asset" }).click();
+    await page.getByRole("button", { name: "Open asset" }).click();
     await page.waitForURL(/\/assets\/[^/]+$/, { timeout: 20_000 });
     const assetTag = await readAssetTag(page);
     const assetUrl = page.url();

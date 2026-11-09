@@ -81,6 +81,7 @@ const overview = {
     disposed: 1,
   },
   recentAssets: [],
+  changedLastDayCount: 0,
   categoryBreakdown: [],
   locationBreakdown: [],
   serviceSchedulingEnabled: true,

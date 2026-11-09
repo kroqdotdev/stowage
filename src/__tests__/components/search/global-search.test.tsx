@@ -14,7 +14,10 @@ vi.mock("@/lib/api/search", () => ({
   searchAssets: (term: string) => searchAssetsMock(term),
 }));
 
-import { GlobalSearch } from "@/components/search/global-search";
+import {
+  GlobalSearch,
+  GlobalSearchDialog,
+} from "@/components/search/global-search";
 
 function createResult(overrides?: Partial<Record<string, unknown>>) {
   return {
@@ -48,7 +51,12 @@ describe("GlobalSearch", () => {
 
     const user = userEvent.setup();
 
-    renderWithClient(<GlobalSearch />);
+    renderWithClient(
+      <>
+        <GlobalSearch />
+        <GlobalSearchDialog />
+      </>,
+    );
 
     await user.click(
       screen.getByRole("button", { name: "Open global search" }),
@@ -77,7 +85,12 @@ describe("GlobalSearch", () => {
 
     const user = userEvent.setup();
 
-    renderWithClient(<GlobalSearch />);
+    renderWithClient(
+      <>
+        <GlobalSearch />
+        <GlobalSearchDialog />
+      </>,
+    );
 
     await act(async () => {
       window.dispatchEvent(
@@ -101,5 +114,51 @@ describe("GlobalSearch", () => {
       },
       { timeout: 2000 },
     );
+  });
+
+  it("opens exactly one dialog from the shortcut with every trigger mounted", async () => {
+    searchAssetsMock.mockResolvedValue([]);
+
+    renderWithClient(
+      <>
+        <GlobalSearch variant="sidebar" />
+        <GlobalSearch variant="rail" />
+        <GlobalSearch variant="icon" />
+        <GlobalSearchDialog />
+      </>,
+    );
+
+    expect(
+      screen.getAllByRole("button", { name: "Open global search" }),
+    ).toHaveLength(3);
+
+    await act(async () => {
+      window.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "k", metaKey: true }),
+      );
+    });
+
+    expect(screen.getAllByRole("dialog")).toHaveLength(1);
+    expect(
+      screen.getAllByPlaceholderText("Search assets by name, tag, or notes..."),
+    ).toHaveLength(1);
+  });
+
+  it("opens the one dialog from any trigger", async () => {
+    searchAssetsMock.mockResolvedValue([]);
+    const user = userEvent.setup();
+
+    renderWithClient(
+      <>
+        <GlobalSearch variant="sidebar" />
+        <GlobalSearch variant="icon" />
+        <GlobalSearchDialog />
+      </>,
+    );
+
+    await user.click(
+      screen.getAllByRole("button", { name: "Open global search" })[1],
+    );
+    expect(screen.getAllByRole("dialog")).toHaveLength(1);
   });
 });

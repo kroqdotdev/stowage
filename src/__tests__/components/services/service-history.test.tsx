@@ -142,6 +142,11 @@ describe("ServiceHistory", () => {
       screen.getByRole("button", { name: "Log other service…" }),
     );
     expect(await screen.findByText("Service record form")).toBeInTheDocument();
+    // Logging any service advances an existing schedule; the copy must say so.
+    expect(
+      screen.getByText(/next service moves to one interval after this service date/),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/without touching its schedule/)).toBeNull();
     unmount();
 
     renderWithClient(<ServiceHistory assetId="asset1" showLogAction={false} />);

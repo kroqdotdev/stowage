@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { Package } from "lucide-react";
+import { MoreHorizontal, Package } from "lucide-react";
 import { AssetActionsSheet } from "@/components/assets/asset-actions-sheet";
 import type { AssetListItem } from "@/components/assets/types";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -55,7 +55,8 @@ function rowToDetailPlaceholder(row: AssetListItem): AssetDetail {
 /*
   Phone list: stacked cards on one card surface. Line one is the tag chip and
   the name; line two is "path · time" on every row; exception statuses take a
-  13px third line. Press and hold a card for quick actions.
+  13px third line. Quick actions open from the "…" button on each card, or
+  by pressing and holding the card.
 */
 export function AssetCardList({
   rows,
@@ -121,7 +122,11 @@ export function AssetCardList({
       >
         {rows.map((row) => (
           <li key={row.id} className="border-b border-border last:border-b-0">
-            <AssetCard row={row} secondary={secondary} onActions={() => setActiveId(row.id)} />
+            <AssetCard
+              row={row}
+              secondary={secondary}
+              onActions={() => setActiveId(row.id)}
+            />
           </li>
         ))}
       </ul>
@@ -155,36 +160,64 @@ function AssetCard({
   const time = formatRelativeTime(row.updatedAt);
 
   return (
-    <a
-      href={`/assets/${row.id}`}
-      data-testid={`asset-card-${row.id}`}
-      aria-label={`${row.assetTag}, ${row.name}`}
-      className="grid min-h-14 grid-cols-[auto_minmax(0,1fr)] items-center gap-x-2.5 gap-y-1 px-3.5 py-2.5 select-none active:bg-secondary [-webkit-touch-callout:none]"
-      {...handlers}
-      onClick={(event) => {
-        event.preventDefault();
-        if (consumeClick()) return;
-        router.push(`/assets/${row.id}`);
-      }}
-    >
-      <TagChip weight="table">{row.assetTag}</TagChip>
-      <span className="truncate text-[15px] leading-snug font-semibold text-foreground">
-        {row.name}
-      </span>
-      <span className="col-start-2 flex min-w-0 items-baseline text-sm whitespace-nowrap">
-        {secondary === "category" ? (
-          <span className="truncate text-ink-2">{row.categoryName ?? "No category"}</span>
-        ) : (
-          <LocationPath path={row.locationPath} compact />
-        )}
-        <span className="shrink-0 whitespace-pre text-muted-foreground">
-          {" · "}
-          {time.short}
+    <div className="flex items-center">
+      <a
+        href={`/assets/${row.id}`}
+        data-testid={`asset-card-${row.id}`}
+        aria-label={`${row.assetTag}, ${row.name}`}
+        className="grid min-h-14 min-w-0 flex-1 grid-cols-[auto_minmax(0,1fr)] items-center gap-x-2.5 gap-y-1 py-2.5 pr-1 pl-3.5 select-none active:bg-secondary [-webkit-touch-callout:none]"
+        {...handlers}
+        onClick={(event) => {
+          // A long press already opened the sheet; swallow its trailing click.
+          if (consumeClick()) {
+            event.preventDefault();
+            return;
+          }
+          // Let the browser handle new-tab and new-window clicks.
+          if (
+            event.button !== 0 ||
+            event.metaKey ||
+            event.ctrlKey ||
+            event.shiftKey ||
+            event.altKey
+          ) {
+            return;
+          }
+          event.preventDefault();
+          router.push(`/assets/${row.id}`);
+        }}
+      >
+        <TagChip weight="table">{row.assetTag}</TagChip>
+        <span className="truncate text-[15px] leading-snug font-semibold text-foreground">
+          {row.name}
         </span>
-      </span>
-      {row.status !== "active" ? (
-        <StatusText status={row.status} className="col-start-2 text-[13px]" />
-      ) : null}
-    </a>
+        <span className="col-start-2 flex min-w-0 items-baseline text-sm whitespace-nowrap">
+          {secondary === "category" ? (
+            <span className="truncate text-ink-2">
+              {row.categoryName ?? "No category"}
+            </span>
+          ) : (
+            <LocationPath path={row.locationPath} compact />
+          )}
+          <span className="shrink-0 whitespace-pre text-muted-foreground">
+            {" · "}
+            {time.short}
+          </span>
+        </span>
+        {row.status !== "active" ? (
+          <StatusText status={row.status} className="col-start-2 text-[13px]" />
+        ) : null}
+      </a>
+      <button
+        type="button"
+        aria-label={`Asset actions, ${row.assetTag}`}
+        aria-haspopup="dialog"
+        data-testid={`asset-card-kebab-${row.id}`}
+        onClick={onActions}
+        className="mr-1.5 inline-flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-md text-ink-2 hover:bg-secondary hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-foreground"
+      >
+        <MoreHorizontal className="size-[18px]" aria-hidden="true" />
+      </button>
+    </div>
   );
 }

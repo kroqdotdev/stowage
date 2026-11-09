@@ -37,6 +37,7 @@ vi.mock("@/components/search/global-search", () => ({
       Search assets...
     </button>
   ),
+  GlobalSearchDialog: () => null,
 }));
 
 import { AppShell } from "@/components/layout/app-shell";

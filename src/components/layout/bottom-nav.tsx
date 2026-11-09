@@ -145,7 +145,7 @@ function NavItem({
       href={slot.href}
       data-testid={`bottom-nav-${slot.key}`}
       aria-current={active ? "page" : undefined}
-      aria-label={slot.label}
+      aria-label={badge > 0 ? `${slot.label}, ${badge} overdue` : slot.label}
       className={className}
     >
       {content}

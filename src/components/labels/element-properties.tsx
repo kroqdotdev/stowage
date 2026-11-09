@@ -229,20 +229,22 @@ export function ElementProperties({
           <span className="text-[13px] text-muted-foreground">
             {dirty ? "Unsaved changes" : "All changes saved"}
           </span>
-          {template.id ? (
+          {template.id && template.isDefault ? (
+            // A disabled button can't explain itself (no hover, often skipped
+            // by screen readers), so the default template says it in text.
+            <span className="ml-auto text-[13px] text-muted-foreground">
+              Default template, can&apos;t be deleted
+            </span>
+          ) : template.id ? (
             <Button
               type="button"
               variant="ghost"
               size="icon-sm"
               className="ml-auto text-destructive hover:text-destructive"
-              disabled={!canEdit || saving || deleting || template.isDefault}
+              disabled={!canEdit || saving || deleting}
               onClick={onDeleteTemplate}
               aria-label={deleting ? "Deleting..." : "Delete template…"}
-              title={
-                template.isDefault
-                  ? "The default template can't be deleted"
-                  : "Delete template…"
-              }
+              title="Delete template…"
             >
               <Trash2 />
             </Button>

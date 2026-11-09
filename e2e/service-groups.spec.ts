@@ -40,31 +40,44 @@ test.describe.serial("phase 7.5 service groups and records", () => {
     const dueDate = getUtcIsoDateWithOffset(-1);
 
     await page.goto("/services/groups");
-    await page.getByRole("button", { name: "Create group" }).click();
-    await page.getByLabel("Name").fill(groupName);
-    await page.getByLabel("Description").fill("Playwright service group");
     await page
-      .getByRole("dialog", { name: "Create service group" })
-      .getByRole("button", { name: "Create group" })
+      .getByRole("button", { name: "New service plan…" })
+      .first()
       .click();
-    await expect(page.getByText(groupName)).toBeVisible();
+    const planDialog = page.getByRole("dialog", { name: "New service plan" });
+    await planDialog.getByLabel("Name").fill(groupName);
+    await planDialog
+      .getByLabel(/^Description/)
+      .fill("Playwright service group");
+    await planDialog.getByRole("button", { name: "Create plan" }).click();
+    // Plans render as a table on desktop and a list on phones.
+    const planLink = page
+      .getByRole("link", { name: groupName })
+      .filter({ visible: true });
+    await expect(planLink).toBeVisible();
 
-    await page.getByRole("link", { name: groupName }).first().click();
+    await planLink.click();
     await page.waitForURL(/\/services\/groups\/[^/]+$/, { timeout: 20_000 });
     await expect(
       page.getByRole("heading", { name: groupName, exact: true }),
     ).toBeVisible();
 
-    await page.getByRole("button", { name: "Add field" }).click();
-    await page.getByLabel("Label").fill("Technician note");
-    await page.getByRole("button", { name: "Create field" }).click();
-    await expect(page.getByText("Technician note")).toBeVisible();
-
-    await page.getByRole("button", { name: "Add field" }).click();
-    await page.getByLabel("Label").fill("Verified");
-    await page.getByLabel("Type").selectOption("checkbox");
-    await page.getByRole("button", { name: "Create field" }).click();
-    await expect(page.getByText("Verified")).toBeVisible();
+    for (const [label, type] of [
+      ["Technician note", null],
+      ["Verified", "checkbox"],
+    ] as const) {
+      await page.getByRole("button", { name: "Add field…" }).first().click();
+      const fieldDialog = page.getByRole("dialog", {
+        name: "Add required field",
+      });
+      await fieldDialog.getByLabel("Label").fill(label);
+      if (type) await fieldDialog.getByLabel("Type").selectOption(type);
+      await fieldDialog.getByRole("button", { name: "Create field" }).click();
+      await expect(fieldDialog).toBeHidden();
+      await expect(
+        page.getByText(label, { exact: true }).filter({ visible: true }),
+      ).toBeVisible();
+    }
 
     await page.goto("/assets/new");
     await page.getByLabel(/Name/i).fill(assetName);
@@ -78,11 +91,11 @@ test.describe.serial("phase 7.5 service groups and records", () => {
     await page.getByRole("button", { name: "Create asset" }).click();
 
     await expect(
-      page.getByRole("heading", { name: `${assetName} created` }),
+      page.getByRole("heading", { name: assetName, exact: true }),
     ).toBeVisible({
       timeout: 20_000,
     });
-    await page.getByRole("button", { name: "View asset" }).click();
+    await page.getByRole("button", { name: "Open asset" }).click();
     await page.waitForURL(/\/assets\/(?!new$)[^/]+$/, { timeout: 20_000 });
     const assetId = page.url().split("/").filter(Boolean).at(-1);
     expect(assetId).toBeTruthy();
@@ -93,9 +106,9 @@ test.describe.serial("phase 7.5 service groups and records", () => {
     });
     const assetLink = page.getByRole("link", { name: assetName, exact: true });
     await expect(assetLink).toBeVisible({ timeout: 20_000 });
-    const scheduleRow = assetLink.locator("xpath=ancestor::article[1]");
-    await expect(scheduleRow).toBeVisible({ timeout: 20_000 });
-    await scheduleRow.getByRole("button", { name: "Log service" }).click();
+    await page
+      .getByRole("button", { name: `Log service for ${assetName}` })
+      .click();
 
     const plannerDialog = page.getByRole("dialog", {
       name: new RegExp(`Log service: ${assetName}`),
@@ -133,29 +146,28 @@ test.describe.serial("phase 7.5 service groups and records", () => {
     await expect(plannerDialog).toBeHidden();
 
     await page.goto(`/assets/${assetId}`);
-    const serviceHistoryHeading = page.getByRole("heading", {
-      name: "Service history",
-      exact: true,
-    });
-    await expect(serviceHistoryHeading).toBeVisible();
-    const serviceHistorySection = serviceHistoryHeading.locator(
-      "xpath=ancestor::section[1]",
-    );
-    const firstHistoryRecord = serviceHistorySection.locator("details").first();
-    await expect(firstHistoryRecord).toBeVisible();
-    await firstHistoryRecord.locator("summary").click();
+    const serviceHistorySection = page.getByTestId("service-history");
     await expect(
-      firstHistoryRecord.getByText("Completed from services list"),
+      serviceHistorySection.getByRole("heading", { name: /^Service history/ }),
     ).toBeVisible();
+    // Each record shows its description; fields and files sit behind a
+    // disclosure.
+    const firstHistoryRecord = serviceHistorySection
+      .getByRole("listitem")
+      .filter({ hasText: "Completed from services list" });
+    await expect(firstHistoryRecord).toBeVisible();
+    await firstHistoryRecord
+      .getByText("Fields and files", { exact: true })
+      .click();
     await expect(
       firstHistoryRecord.getByText("service-report.pdf"),
     ).toBeVisible();
 
     await serviceHistorySection
-      .getByRole("button", { name: "Log manual service" })
+      .getByRole("button", { name: "Log other service…" })
       .click();
     const manualDialog = page.getByRole("dialog", {
-      name: "Log manual service",
+      name: "Log other service",
     });
     await manualDialog
       .getByLabel(/^Description/i)

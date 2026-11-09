@@ -185,6 +185,15 @@ describe("ScanPageClient", () => {
     );
   });
 
+  it("puts the cursor in the tag field when the manual sheet opens", async () => {
+    renderScanPage();
+    fireEvent.click(screen.getByTestId("scan-manual-entry"));
+    const input = await screen.findByTestId("scan-manual-input");
+    await waitFor(() => {
+      expect(input).toHaveFocus();
+    });
+  });
+
   it("shows the unresolved sheet with raw text on a missing asset", async () => {
     resolverMock.mockResolvedValue({
       status: "unresolved",

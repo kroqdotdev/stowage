@@ -11,6 +11,7 @@ import { UpcomingServicesWidget } from "@/components/dashboard/upcoming-services
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCurrentUser } from "@/hooks/use-current-user";
+import { useHydrated } from "@/hooks/use-hydrated";
 import { getDashboardOverview } from "@/lib/api/dashboard";
 
 function partOfDay(date: Date) {
@@ -29,6 +30,9 @@ function todayTitle(date: Date) {
 }
 
 export default function DashboardPage() {
+  // The date and greeting depend on the viewer's clock and time zone, so the
+  // server renders the loading state and the client fills them in.
+  const hydrated = useHydrated();
   const { data: currentUser } = useCurrentUser();
   const {
     data: overview,
@@ -39,7 +43,8 @@ export default function DashboardPage() {
     queryFn: getDashboardOverview,
   });
 
-  const now = new Date();
+  const now = hydrated ? new Date() : null;
+  const title = now ? todayTitle(now) : "Today";
   const firstName = currentUser?.name?.split(/\s+/)[0];
   const actions = (
     <Button asChild>
@@ -50,10 +55,10 @@ export default function DashboardPage() {
     </Button>
   );
 
-  if (isPending) {
+  if (!now || isPending) {
     return (
       <div>
-        <PageHeader title={todayTitle(now)} description="Loading…" actions={actions} />
+        <PageHeader title={title} description="Loading…" actions={actions} />
         <Skeleton className="h-[88px] rounded-md" />
       </div>
     );
@@ -62,7 +67,7 @@ export default function DashboardPage() {
   if (isError || !overview) {
     return (
       <div>
-        <PageHeader title={todayTitle(now)} actions={actions} />
+        <PageHeader title={title} actions={actions} />
         <p role="alert" className="text-sm font-medium text-destructive">
           Could not load the dashboard. Reload to try again.
         </p>
@@ -70,9 +75,7 @@ export default function DashboardPage() {
     );
   }
 
-  const changedToday = overview.recentAssets.filter(
-    (asset) => now.getTime() - asset.updatedAt < 24 * 60 * 60 * 1000,
-  ).length;
+  const changedToday = overview.changedLastDayCount;
   const overdue = overview.serviceSchedulingEnabled
     ? overview.overdueServiceCount
     : 0;
@@ -104,7 +107,7 @@ export default function DashboardPage() {
 
   return (
     <div>
-      <PageHeader title={todayTitle(now)} description={summary} actions={actions} />
+      <PageHeader title={title} description={summary} actions={actions} />
 
       <DashboardStatsBar
         totalAssets={overview.totalAssets}

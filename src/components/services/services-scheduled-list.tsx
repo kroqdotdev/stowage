@@ -12,6 +12,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { StatusText } from "@/components/ui/status-text";
 import { TagChip } from "@/components/ui/tag-chip";
 import { LogServiceDialog } from "@/components/services/log-service-dialog";
+import {
+  BUCKET_LABELS,
+  BUCKET_ORDER,
+  groupByBucket,
+} from "@/components/services/schedule-buckets";
 import type { ScheduledServiceItem } from "@/components/services/types";
 import { listScheduledAssets } from "@/lib/api/service-schedules";
 import {
@@ -27,40 +32,6 @@ type ActiveTarget = {
   assetId: ScheduledServiceItem["assetId"];
   assetName: string;
 };
-
-type BucketKey = "overdue" | "thisWeek" | "thisMonth" | "upcoming";
-
-const BUCKET_ORDER: BucketKey[] = ["overdue", "thisWeek", "thisMonth", "upcoming"];
-
-const BUCKET_LABELS: Record<BucketKey, string> = {
-  overdue: "Overdue",
-  thisWeek: "Due this week",
-  thisMonth: "Due this month",
-  upcoming: "Later",
-};
-
-function bucketForRow(row: ScheduledServiceItem, today: string): BucketKey {
-  const diff = getDaysUntil(row.nextServiceDate, today);
-  if (diff < 0) return "overdue";
-  if (row.reminderStartDate > today) return "upcoming";
-  if (diff <= 7) return "thisWeek";
-  if (diff <= 30) return "thisMonth";
-  return "upcoming";
-}
-
-function groupByBucket(rows: ScheduledServiceItem[], today: string) {
-  const groups: Record<BucketKey, ScheduledServiceItem[]> = {
-    overdue: [],
-    thisWeek: [],
-    thisMonth: [],
-    upcoming: [],
-  };
-  for (const row of rows) groups[bucketForRow(row, today)].push(row);
-  for (const list of Object.values(groups)) {
-    list.sort((a, b) => a.nextServiceDate.localeCompare(b.nextServiceDate));
-  }
-  return groups;
-}
 
 /*
   The service schedule as sheets on the concrete, one per due bucket, most

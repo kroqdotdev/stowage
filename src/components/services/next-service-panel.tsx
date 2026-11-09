@@ -15,10 +15,7 @@ import {
   getScheduleByAssetId,
   type ServiceIntervalUnit,
 } from "@/lib/api/service-schedules";
-import {
-  formatDateFromIsoDateOnly,
-  getDaysUntil,
-} from "@/lib/date-format";
+import { formatDateFromIsoDateOnly, getDaysUntil } from "@/lib/date-format";
 import { useAppDateFormat } from "@/lib/use-app-date-format";
 import { useTodayIsoDate } from "@/lib/use-today-iso-date";
 import { cn } from "@/lib/utils";
@@ -67,7 +64,12 @@ export function NextServicePanel({
     queryFn: () => getScheduleByAssetId(assetId),
   });
 
-  const schedulingEnabled = settingsQuery.data?.serviceSchedulingEnabled ?? true;
+  const schedulingEnabled =
+    settingsQuery.data?.serviceSchedulingEnabled ?? true;
+  // Whether logging completes the schedule or adds a plain record depends on
+  // both queries, so wait for them; otherwise the form would remount and
+  // switch modes mid-entry.
+  const settled = !settingsQuery.isPending && !scheduleQuery.isPending;
   const schedule = schedulingEnabled ? (scheduleQuery.data ?? null) : null;
   const due = schedule
     ? describeDue(getDaysUntil(schedule.nextServiceDate, today))
@@ -77,7 +79,7 @@ export function NextServicePanel({
     <Panel className={className} data-testid="next-service-panel">
       <div className="px-[18px] pt-4 pb-3.5">
         <div className="eyebrow mb-1.5">Next service</div>
-        {scheduleQuery.isPending ? (
+        {!settled ? (
           <div className="space-y-2.5 py-1">
             <Skeleton className="h-4 w-28" />
             <Skeleton className="h-2.5 w-44" />
@@ -100,13 +102,19 @@ export function NextServicePanel({
               <div className="flex justify-between gap-4 border-t border-border py-2">
                 <dt className="text-ink-2">Interval</dt>
                 <dd className="font-semibold text-foreground">
-                  {formatInterval(schedule.intervalValue, schedule.intervalUnit)}
+                  {formatInterval(
+                    schedule.intervalValue,
+                    schedule.intervalUnit,
+                  )}
                 </dd>
               </div>
               <div className="flex justify-between gap-4 border-t border-border pt-2">
                 <dt className="text-ink-2">Reminder</dt>
                 <dd className="font-semibold text-foreground">
-                  {formatReminder(schedule.reminderLeadValue, schedule.reminderLeadUnit)}
+                  {formatReminder(
+                    schedule.reminderLeadValue,
+                    schedule.reminderLeadUnit,
+                  )}
                 </dd>
               </div>
             </dl>
@@ -125,7 +133,11 @@ export function NextServicePanel({
         )}
       </div>
       <PanelFooter className="grid grid-cols-2 gap-2.5 py-3.5">
-        <Button type="button" onClick={() => setLogOpen(true)}>
+        <Button
+          type="button"
+          onClick={() => setLogOpen(true)}
+          disabled={!settled}
+        >
           <Check />
           Log service…
         </Button>

@@ -142,7 +142,11 @@ function RailItem({
     <Link
       href={item.href}
       aria-current={active ? "page" : undefined}
-      aria-label={item.title}
+      aria-label={
+        item.badge === "overdue" && overdue > 0
+          ? `${item.title}, ${overdue} overdue`
+          : item.title
+      }
       className={cn(
         "relative flex h-14 flex-col items-center justify-center gap-1 rounded-md text-[13px] text-sidebar-foreground hover:bg-sidebar-accent hover:text-white",
         active &&

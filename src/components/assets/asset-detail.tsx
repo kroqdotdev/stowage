@@ -288,7 +288,7 @@ export function AssetDetail({
               >
                 <span className="picker-run">{ASSET_STATUS_LABELS[asset.status]}</span>
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent position="popper" align="start">
                 {ASSET_STATUS_OPTIONS.map((status) => (
                   <SelectItem key={status} value={status}>
                     {ASSET_STATUS_LABELS[status]}

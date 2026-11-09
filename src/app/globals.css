@@ -194,6 +194,16 @@
   }
 }
 
+/*
+  Unlayered on purpose: it beats `outline-none` (outline-style: none) from the
+  utilities layer, so no control can drop the keyboard focus outline, and the
+  outline (unlike the shadow) survives forced-colors mode. Containers that
+  should not show it use `outline-hidden`, whose transparent colour stays.
+*/
+:focus-visible {
+  outline-style: solid;
+}
+
 /* Archivo set wide for headings. */
 @utility wide {
   font-stretch: 118%;

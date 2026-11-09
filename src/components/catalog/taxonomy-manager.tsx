@@ -29,6 +29,7 @@ import { SheetHeading } from "@/components/ui/sheet-heading";
 import { Skeleton } from "@/components/ui/skeleton";
 import { KeywordChip } from "@/components/ui/tag-chip";
 import { Textarea } from "@/components/ui/textarea";
+import { ApiRequestError } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
 
 export type TaxonomyFormValues = {
@@ -65,13 +66,18 @@ function normalizeForm(
   };
 }
 
+// The server still requires a hex colour on every category and keyword, but
+// the Workshop design shows neither, so there is no picker: new rows get this
+// neutral grey and edits keep whatever colour is already stored.
+export const DEFAULT_TAXONOMY_COLOR = "#6B6F68";
+
 function createInitialForm(
   variant: "categories" | "tags",
   values?: Partial<TaxonomyFormValues>,
 ): TaxonomyFormValues {
   return {
     name: values?.name ?? "",
-    color: values?.color ?? "#EA580C",
+    color: values?.color ?? DEFAULT_TAXONOMY_COLOR,
     prefix: variant === "categories" ? (values?.prefix ?? "") : "",
     description: variant === "categories" ? (values?.description ?? "") : "",
   };
@@ -181,7 +187,13 @@ export function TaxonomyManager({
       toast.success(`${singularTitle} deleted`);
       setDeleteId(null);
     } catch (error) {
-      toast.error(getApiErrorMessage(error, `Unable to delete ${singular}`));
+      toast.error(
+        error instanceof ApiRequestError && error.status === 409
+          ? variant === "categories"
+            ? "This category is still assigned to assets. Move them to another category first."
+            : "This keyword is still on some assets. Remove it from them first."
+          : getApiErrorMessage(error, `Unable to delete ${singular}`),
+      );
     } finally {
       setDeleting(false);
     }
@@ -465,8 +477,8 @@ export function TaxonomyManager({
         description={
           activeDeleteRow
             ? variant === "categories"
-              ? `${activeDeleteRow.name} is deleted. Its assets keep their records but lose their category.`
-              : `${activeDeleteRow.name} is deleted and removed from every asset that has it.`
+              ? `${activeDeleteRow.name} is deleted. A category that is still assigned to assets cannot be deleted, so move those assets to another category first.`
+              : `${activeDeleteRow.name} is deleted. A keyword that is still on any asset cannot be deleted, so remove it from those assets first.`
             : `This ${singular} is deleted.`
         }
         confirmLabel={`Delete ${singular}`}

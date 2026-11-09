@@ -138,6 +138,14 @@ describe("AppRail", () => {
     ).toHaveAttribute("data-variant", "rail");
   });
 
+  it("announces the overdue count in the Services link name", () => {
+    overdueSpy.mockReturnValue(4);
+    render(<AppRail />);
+    expect(
+      screen.getByRole("link", { name: "Services, 4 overdue" }),
+    ).toHaveAttribute("href", "/services");
+  });
+
   it("marks the current item with aria-current", () => {
     render(<AppRail />);
     expect(screen.getByRole("link", { name: "Assets" })).toHaveAttribute(

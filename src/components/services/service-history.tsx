@@ -79,6 +79,7 @@ export function ServiceHistory({
       void queryClient.invalidateQueries({
         queryKey: ["service-records", "by-asset", assetId],
       });
+      void queryClient.invalidateQueries({ queryKey: ["dashboard"] });
     } catch (error) {
       toast.error(getApiErrorMessage(error, "Unable to delete service record"));
     }
@@ -220,7 +221,7 @@ export function ServiceHistory({
         open={createOpen}
         onClose={() => setCreateOpen(false)}
         title="Log other service"
-        description="Adds an entry to this asset's service history without touching its schedule."
+        description="Adds an entry to this asset's service history. If the asset is on a schedule, the next service moves to one interval after this service date."
       >
         {createOpen ? (
           <ServiceRecordForm

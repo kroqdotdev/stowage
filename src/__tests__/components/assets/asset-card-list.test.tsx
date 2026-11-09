@@ -109,10 +109,9 @@ describe("AssetCardList", () => {
     const drill = screen.getByRole("link", { name: "AST-0047, Drill #47" });
     expect(drill).toHaveAttribute("href", "/assets/a1");
     expect(drill).toHaveAttribute("data-testid", "asset-card-a1");
-    expect(screen.getByRole("link", { name: "AST-0048, Lathe" })).toHaveAttribute(
-      "href",
-      "/assets/a2",
-    );
+    expect(
+      screen.getByRole("link", { name: "AST-0048, Lathe" }),
+    ).toHaveAttribute("href", "/assets/a2");
   });
 
   it("shows the location path and short relative time on line two", () => {
@@ -128,7 +127,11 @@ describe("AssetCardList", () => {
     });
     render(
       <QueryClientProvider client={qc}>
-        <AssetCardList rows={[makeRow()]} loading={false} secondary="category" />
+        <AssetCardList
+          rows={[makeRow()]}
+          loading={false}
+          secondary="category"
+        />
       </QueryClientProvider>,
     );
     const card = screen.getByTestId("asset-card-a1");
@@ -169,12 +172,37 @@ describe("AssetCardList", () => {
     expect(screen.queryByRole("dialog", { name: "Asset actions" })).toBeNull();
   });
 
-  it("has no kebab button; press and hold opens the actions sheet instead", () => {
+  it("leaves modifier and middle clicks to the browser so new tabs work", () => {
+    renderList([makeRow()]);
+    const card = screen.getByTestId("asset-card-a1");
+    for (const init of [
+      { metaKey: true },
+      { ctrlKey: true },
+      { shiftKey: true },
+      { button: 1 },
+    ]) {
+      const notCancelled = fireEvent.click(card, init);
+      expect(notCancelled).toBe(true);
+    }
+    expect(pushSpy).not.toHaveBeenCalled();
+  });
+
+  it("opens the actions sheet from a named button on each card", () => {
+    renderList([makeRow()]);
+    fireEvent.click(
+      screen.getByRole("button", { name: "Asset actions, AST-0047" }),
+    );
+    expect(
+      screen.getByRole("dialog", { name: "Asset actions" }),
+    ).toHaveTextContent("Drill #47");
+    expect(pushSpy).not.toHaveBeenCalled();
+  });
+
+  it("press and hold also opens the actions sheet", () => {
     vi.useFakeTimers({ toFake: ["Date", "setTimeout", "clearTimeout"] });
     vi.setSystemTime(NOW);
     try {
       renderList([makeRow()]);
-      expect(screen.queryByRole("button")).toBeNull();
 
       const card = screen.getByTestId("asset-card-a1");
       fireEvent.pointerDown(card);
@@ -208,7 +236,9 @@ describe("AssetCardList", () => {
       act(() => {
         vi.advanceTimersByTime(1000);
       });
-      expect(screen.queryByRole("dialog", { name: "Asset actions" })).toBeNull();
+      expect(
+        screen.queryByRole("dialog", { name: "Asset actions" }),
+      ).toBeNull();
     } finally {
       vi.useRealTimers();
     }

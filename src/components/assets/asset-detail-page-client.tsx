@@ -62,6 +62,7 @@ export function AssetDetailPageClient({ assetId }: { assetId: string }) {
       });
       void queryClient.invalidateQueries({ queryKey: ["assets", "list"] });
       void queryClient.invalidateQueries({ queryKey: ["locations"] });
+      void queryClient.invalidateQueries({ queryKey: ["dashboard"] });
     },
     onError: (error) => {
       toast.error(getAssetUiErrorMessage(error, "Unable to move asset"));

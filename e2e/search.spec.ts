@@ -8,21 +8,14 @@ async function createAssetForSearch(page: Page, name: string, notes: string) {
   await page.getByLabel("Notes").fill(notes);
   await page.getByRole("button", { name: "Create asset" }).click();
   await expect(
-    page.getByRole("heading", { name: `${name} created` }),
+    page.getByRole("heading", { name: name, exact: true }),
   ).toBeVisible({
     timeout: 20_000,
   });
-  await page.getByRole("button", { name: "View asset" }).click();
+  await page.getByRole("button", { name: "Open asset" }).click();
   await page.waitForURL(/\/assets\/(?!new$)[^/]+$/, { timeout: 20_000 });
 
-  const assetTag = (
-    await page
-      .locator("section")
-      .first()
-      .locator(".font-mono")
-      .first()
-      .textContent()
-  )?.trim();
+  const assetTag = (await page.getByTestId("asset-tag").textContent())?.trim();
   expect(assetTag).toMatch(/[A-Z]{2,4}-\d{4}/);
 
   return {

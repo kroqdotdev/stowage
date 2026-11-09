@@ -30,7 +30,7 @@ test.describe.serial("phase 6 attachments", () => {
     await page.getByRole("button", { name: "Create asset" }).click();
 
     await expect(
-      page.getByRole("heading", { name: `${assetName} created` }),
+      page.getByRole("heading", { name: assetName, exact: true }),
     ).toBeVisible({
       timeout: 20_000,
     });
@@ -83,7 +83,7 @@ test.describe.serial("phase 6 attachments", () => {
       timeout: 15_000,
     });
 
-    await page.getByRole("button", { name: "View asset" }).click();
+    await page.getByRole("button", { name: "Open asset" }).click();
     await page.waitForURL(/\/assets\/.+$/, { timeout: 20_000 });
     await expect(page.getByRole("heading", { name: assetName })).toBeVisible();
   });

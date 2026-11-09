@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ChevronDown,
@@ -21,6 +21,7 @@ import type { AssetListItem } from "@/components/assets/types";
 import { AssetCardList } from "@/components/assets/asset-card-list";
 import { ConfirmDialog } from "@/components/crud/confirm-dialog";
 import { getApiErrorMessage } from "@/components/crud/error-messages";
+import { ApiRequestError } from "@/lib/api-client";
 import { PageHeader } from "@/components/layout/page-header";
 import { MobileTitleCount } from "@/components/layout/mobile-top-bar";
 import { LocationFormDialog } from "@/components/locations/location-form-dialog";
@@ -104,7 +105,11 @@ export function LocationsPageClient() {
     queryFn: listLocations,
   });
   const assetsQuery = useQuery({
-    queryKey: ["assets", "list", { sortBy: "updatedAt", sortDirection: "desc" }],
+    queryKey: [
+      "assets",
+      "list",
+      { sortBy: "updatedAt", sortDirection: "desc" },
+    ],
     queryFn: () => listAssets({ sortBy: "updatedAt", sortDirection: "desc" }),
   });
   const settingsQuery = useQuery({
@@ -112,7 +117,8 @@ export function LocationsPageClient() {
     queryFn: getAppSettings,
     staleTime: 5 * 60_000,
   });
-  const schedulingEnabled = settingsQuery.data?.serviceSchedulingEnabled ?? false;
+  const schedulingEnabled =
+    settingsQuery.data?.serviceSchedulingEnabled ?? false;
   const scheduledQuery = useQuery({
     queryKey: ["service-schedules", "scheduled"],
     queryFn: listScheduledAssets,
@@ -120,18 +126,30 @@ export function LocationsPageClient() {
   });
 
   const rows = useMemo(
-    () => ((hydrated ? locationsQuery.data : undefined) ?? []) as LocationTreeItem[],
+    () =>
+      ((hydrated ? locationsQuery.data : undefined) ??
+        []) as LocationTreeItem[],
     [hydrated, locationsQuery.data],
   );
   const assets = useMemo(
     () => ((hydrated ? assetsQuery.data : undefined) ?? []) as AssetListItem[],
     [hydrated, assetsQuery.data],
   );
-  const loading = !hydrated || locationsQuery.isPending || assetsQuery.isPending;
+  const loading =
+    !hydrated || locationsQuery.isPending || assetsQuery.isPending;
 
-  const rowsById = useMemo(() => new Map(rows.map((row) => [row.id, row])), [rows]);
-  const childrenByParent = useMemo(() => buildLocationChildrenMap(rows), [rows]);
-  const roots = useMemo(() => childrenByParent.get(null) ?? [], [childrenByParent]);
+  const rowsById = useMemo(
+    () => new Map(rows.map((row) => [row.id, row])),
+    [rows],
+  );
+  const childrenByParent = useMemo(
+    () => buildLocationChildrenMap(rows),
+    [rows],
+  );
+  const roots = useMemo(
+    () => childrenByParent.get(null) ?? [],
+    [childrenByParent],
+  );
 
   const assetsByLocation = useMemo(() => {
     const map = new Map<string, AssetListItem[]>();
@@ -169,7 +187,9 @@ export function LocationsPageClient() {
             (totals.get(row.id) ?? 0) === 0 &&
             (childrenByParent.get(row.id) ?? []).length === 0,
         )
-        .sort((a, b) => a.path.localeCompare(b.path, undefined, { sensitivity: "base" })),
+        .sort((a, b) =>
+          a.path.localeCompare(b.path, undefined, { sensitivity: "base" }),
+        ),
     [rows, totals, childrenByParent],
   );
 
@@ -179,23 +199,36 @@ export function LocationsPageClient() {
     paramId && rowsById.has(paramId) ? paramId : (roots[0]?.id ?? null);
   const selected = selectedId ? (rowsById.get(selectedId) ?? null) : null;
 
-  const [expandedIds, setExpandedIds] = useState<Set<string> | null>(null);
+  // expandedIds is null until the user first opens or closes a row.
+  // revealedFor is the selection those choices were made under: when the
+  // selection moves on (a tree click, the empty list, a new location, a
+  // link), its ancestors open again so the current row is always visible.
+  const [expansion, setExpansion] = useState<{
+    ids: Set<string> | null;
+    revealedFor: string | null;
+  }>({ ids: null, revealedFor: null });
   const [query, setQuery] = useState("");
 
-  // Open the path to the selected location the first time the tree has data.
   const effectiveExpanded = useMemo(() => {
-    if (expandedIds) return expandedIds;
-    const next = new Set<string>();
+    const path = new Set<string>();
     let cursor = selected?.parentId ?? null;
-    while (cursor) {
-      next.add(cursor);
+    while (cursor && !path.has(cursor)) {
+      path.add(cursor);
       cursor = rowsById.get(cursor)?.parentId ?? null;
     }
-    if (selected && (childrenByParent.get(selected.id) ?? []).length > 0) {
-      next.add(selected.id);
+    if (!expansion.ids) {
+      if (selected && (childrenByParent.get(selected.id) ?? []).length > 0) {
+        path.add(selected.id);
+      }
+      return path;
     }
-    return next;
-  }, [expandedIds, selected, rowsById, childrenByParent]);
+    if (expansion.revealedFor === selectedId) return expansion.ids;
+    return new Set([...expansion.ids, ...path]);
+  }, [expansion, selected, selectedId, rowsById, childrenByParent]);
+
+  function setExpandedIds(ids: Set<string>) {
+    setExpansion({ ids, revealedFor: selectedId });
+  }
 
   function select(id: string) {
     const params = new URLSearchParams(searchParams.toString());
@@ -205,12 +238,10 @@ export function LocationsPageClient() {
   }
 
   function toggle(id: string) {
-    setExpandedIds(() => {
-      const next = new Set(effectiveExpanded);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
+    const next = new Set(effectiveExpanded);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    setExpandedIds(next);
   }
 
   const flatRows = useMemo(() => {
@@ -234,7 +265,12 @@ export function LocationsPageClient() {
         if (needle && !matches.has(node.id)) continue;
         const children = childrenByParent.get(node.id) ?? [];
         const expanded = needle ? true : effectiveExpanded.has(node.id);
-        out.push({ location: node, depth, hasChildren: children.length > 0, expanded });
+        out.push({
+          location: node,
+          depth,
+          hasChildren: children.length > 0,
+          expanded,
+        });
         if (expanded) walk(children, depth + 1, new Set([...seen, node.id]));
       }
     }
@@ -250,14 +286,18 @@ export function LocationsPageClient() {
     return ids;
   }, [selected, childrenByParent]);
   const subtreeAssets = useMemo(
-    () => assets.filter((asset) => asset.locationId && subtreeIds.has(asset.locationId)),
+    () =>
+      assets.filter(
+        (asset) => asset.locationId && subtreeIds.has(asset.locationId),
+      ),
     [assets, subtreeIds],
   );
   const overdueCount = useMemo(() => {
     if (!schedulingEnabled) return 0;
     const ids = new Set(subtreeAssets.map((asset) => asset.id));
     return (scheduledQuery.data ?? []).filter(
-      (item) => ids.has(item.assetId) && getDaysUntil(item.nextServiceDate, today) < 0,
+      (item) =>
+        ids.has(item.assetId) && getDaysUntil(item.nextServiceDate, today) < 0,
     ).length;
   }, [schedulingEnabled, subtreeAssets, scheduledQuery.data, today]);
 
@@ -265,10 +305,25 @@ export function LocationsPageClient() {
   const [formOpen, setFormOpen] = useState<"create" | "edit" | null>(null);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [showAllFor, setShowAllFor] = useState<string | null>(null);
 
   // The phone top bar's + opens "New location…" with ?new=1.
   const wantsNew = searchParams.get("new") === "1" && canManage;
   const dialogMode = formOpen ?? (wantsNew ? "create" : null);
+
+  // Only admins add locations; anyone else who lands on ?new=1 is told so
+  // and the param is dropped instead of silently doing nothing.
+  const deniedNew =
+    searchParams.get("new") === "1" && Boolean(currentUser) && !canManage;
+  useEffect(() => {
+    if (!deniedNew) return;
+    toast.info("Only admins can add locations.");
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("new");
+    router.replace(`/locations${params.size ? `?${params.toString()}` : ""}`, {
+      scroll: false,
+    });
+  }, [deniedNew, searchParams, router]);
 
   function closeForm() {
     setFormOpen(null);
@@ -276,7 +331,10 @@ export function LocationsPageClient() {
     if (searchParams.get("new")) {
       const params = new URLSearchParams(searchParams.toString());
       params.delete("new");
-      router.replace(`/locations${params.size ? `?${params.toString()}` : ""}`, { scroll: false });
+      router.replace(
+        `/locations${params.size ? `?${params.toString()}` : ""}`,
+        { scroll: false },
+      );
     }
   }
 
@@ -285,8 +343,10 @@ export function LocationsPageClient() {
     onSuccess: () => qc.invalidateQueries({ queryKey: LOCATIONS_QUERY_KEY }),
   });
   const updateM = useMutation({
-    mutationFn: (vars: { id: string; input: Parameters<typeof updateLocation>[1] }) =>
-      updateLocation(vars.id, vars.input),
+    mutationFn: (vars: {
+      id: string;
+      input: Parameters<typeof updateLocation>[1];
+    }) => updateLocation(vars.id, vars.input),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: LOCATIONS_QUERY_KEY });
       void qc.invalidateQueries({ queryKey: ["assets"] });
@@ -336,7 +396,9 @@ export function LocationsPageClient() {
       toast.error(
         getApiErrorMessage(
           error,
-          dialogMode === "edit" ? "Unable to save location" : "Unable to create location",
+          dialogMode === "edit"
+            ? "Unable to save location"
+            : "Unable to create location",
         ),
       );
     }
@@ -350,9 +412,16 @@ export function LocationsPageClient() {
       setDeleteOpen(false);
       const params = new URLSearchParams(searchParams.toString());
       params.delete("location");
-      router.replace(`/locations${params.size ? `?${params.toString()}` : ""}`, { scroll: false });
+      router.replace(
+        `/locations${params.size ? `?${params.toString()}` : ""}`,
+        { scroll: false },
+      );
     } catch (error) {
-      toast.error(getApiErrorMessage(error, "Unable to delete location"));
+      toast.error(
+        error instanceof ApiRequestError && error.status === 409
+          ? "This location still holds assets or sub-locations. Move them out first."
+          : getApiErrorMessage(error, "Unable to delete location"),
+      );
     }
   }
 
@@ -371,9 +440,12 @@ export function LocationsPageClient() {
     </Button>
   ) : null;
 
+  const placedCount = assets.filter(
+    (asset) => asset.locationId && rowsById.has(asset.locationId),
+  ).length;
   const subline = loading
     ? " "
-    : `${assets.length} ${assets.length === 1 ? "asset" : "assets"} across ${roots.length} ${roots.length === 1 ? "site" : "sites"}`;
+    : `${placedCount} ${placedCount === 1 ? "asset" : "assets"} across ${roots.length} ${roots.length === 1 ? "site" : "sites"}`;
 
   const dialogs = (
     <>
@@ -393,7 +465,7 @@ export function LocationsPageClient() {
         title="Delete location?"
         description={
           selected
-            ? `${selected.path} is deleted. Assets in it keep their records but lose their location.`
+            ? `${selected.path} is deleted. It holds no assets or sub-locations, so nothing else changes.`
             : "This location is deleted."
         }
         confirmLabel="Delete location"
@@ -409,7 +481,11 @@ export function LocationsPageClient() {
   if (!loading && rows.length === 0) {
     return (
       <div data-testid="locations-page">
-        <PageHeader title="Locations" className="max-md:hidden" actions={newLocationButton} />
+        <PageHeader
+          title="Locations"
+          className="max-md:hidden"
+          actions={newLocationButton}
+        />
         <EmptyState
           icon={MapPin}
           title="No locations yet."
@@ -421,9 +497,30 @@ export function LocationsPageClient() {
     );
   }
 
-  const selectedChildren = selected ? (childrenByParent.get(selected.id) ?? []) : [];
+  const selectedChildren = selected
+    ? (childrenByParent.get(selected.id) ?? [])
+    : [];
   const parent = selected?.parentId ? rowsById.get(selected.parentId) : null;
-  const shownAssets = subtreeAssets.slice(0, SHEET_LIMIT);
+  const directAssetCount = selected
+    ? (assetsByLocation.get(selected.id)?.length ?? 0)
+    : 0;
+  const deleteBlockedReason =
+    selectedChildren.length > 0 || directAssetCount > 0
+      ? `Move out its ${[
+          directAssetCount > 0
+            ? `${directAssetCount} ${directAssetCount === 1 ? "asset" : "assets"}`
+            : null,
+          selectedChildren.length > 0
+            ? `${selectedChildren.length} ${selectedChildren.length === 1 ? "sub-location" : "sub-locations"}`
+            : null,
+        ]
+          .filter(Boolean)
+          .join(" and ")} first`
+      : null;
+  const showAll = showAllFor !== null && showAllFor === selectedId;
+  const shownAssets = showAll
+    ? subtreeAssets
+    : subtreeAssets.slice(0, SHEET_LIMIT);
 
   const detailCard = selected ? (
     <Panel className="overflow-hidden" data-testid="location-detail">
@@ -431,14 +528,17 @@ export function LocationsPageClient() {
         <div className="min-w-0 flex-1 basis-60">
           <h2 className="wide text-2xl leading-tight font-bold text-foreground">
             {selected.name}
+            {parent ? " " : null}
             {parent ? (
-              <span className="ml-2 text-lg font-normal tracking-normal text-ink-2 [font-stretch:100%]">
+              <span className="ml-1 text-lg font-normal tracking-normal text-ink-2 [font-stretch:100%]">
                 in {parent.name}
               </span>
             ) : null}
           </h2>
           {selected.description ? (
-            <p className="mt-1 max-w-[60ch] text-sm text-ink-2">{selected.description}</p>
+            <p className="mt-1 max-w-[60ch] text-sm text-ink-2">
+              {selected.description}
+            </p>
           ) : null}
         </div>
         <div className="flex items-center gap-2">
@@ -450,7 +550,12 @@ export function LocationsPageClient() {
           </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button type="button" variant="outline" size="icon" aria-label="Location actions">
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                aria-label="Location actions"
+              >
                 <MoreHorizontal />
               </Button>
             </DropdownMenuTrigger>
@@ -476,10 +581,25 @@ export function LocationsPageClient() {
                     Edit…
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem variant="destructive" onSelect={() => setDeleteOpen(true)}>
-                    <Trash2 />
-                    Delete…
-                  </DropdownMenuItem>
+                  {deleteBlockedReason ? (
+                    <DropdownMenuItem disabled className="items-start">
+                      <Trash2 className="mt-0.5" />
+                      <span>
+                        Delete…
+                        <span className="block text-[13px] text-muted-foreground">
+                          {deleteBlockedReason}
+                        </span>
+                      </span>
+                    </DropdownMenuItem>
+                  ) : (
+                    <DropdownMenuItem
+                      variant="destructive"
+                      onSelect={() => setDeleteOpen(true)}
+                    >
+                      <Trash2 />
+                      Delete…
+                    </DropdownMenuItem>
+                  )}
                 </>
               ) : null}
             </DropdownMenuContent>
@@ -501,14 +621,18 @@ export function LocationsPageClient() {
             key: "under_repair",
             label: "Under repair",
             shortLabel: "In repair",
-            value: subtreeAssets.filter((asset) => asset.status === "under_repair").length,
+            value: subtreeAssets.filter(
+              (asset) => asset.status === "under_repair",
+            ).length,
             tone: "repair",
           },
           {
             key: "in_storage",
             label: "In storage",
             shortLabel: "Stored",
-            value: subtreeAssets.filter((asset) => asset.status === "in_storage").length,
+            value: subtreeAssets.filter(
+              (asset) => asset.status === "in_storage",
+            ).length,
             tone: "slate",
           },
           {
@@ -543,18 +667,30 @@ export function LocationsPageClient() {
           </Link>
         </p>
       ) : isPhone ? (
-        <AssetCardList rows={shownAssets} loading={false} secondary="category" />
+        <AssetCardList
+          rows={shownAssets}
+          loading={false}
+          secondary="category"
+        />
       ) : (
         <table className="w-full border-collapse text-sm">
           <thead>
             <tr>
-              <th className="h-10 border-b border-border px-0.5 text-left text-[13px] font-semibold">Tag</th>
-              <th className="h-10 border-b border-border px-3 text-left text-[13px] font-semibold">Name</th>
+              <th className="h-10 border-b border-border px-0.5 text-left text-[13px] font-semibold">
+                Tag
+              </th>
+              <th className="h-10 border-b border-border px-3 text-left text-[13px] font-semibold">
+                Name
+              </th>
               <th className="hidden h-10 border-b border-border px-3 text-left text-[13px] font-semibold lg:table-cell">
                 Category
               </th>
-              <th className="h-10 border-b border-border pl-[30px] text-left text-[13px] font-semibold">Status</th>
-              <th className="h-10 border-b border-border pr-0.5 text-right text-[13px] font-semibold">Updated</th>
+              <th className="h-10 border-b border-border pl-[30px] text-left text-[13px] font-semibold">
+                Status
+              </th>
+              <th className="h-10 border-b border-border pr-0.5 text-right text-[13px] font-semibold">
+                Updated
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -582,14 +718,22 @@ export function LocationsPageClient() {
                       {asset.name}
                     </Link>
                     {nested ? (
-                      <span className="block text-[13px] text-ink-2">in {nested}</span>
+                      <span className="block text-[13px] text-ink-2">
+                        in {nested}
+                      </span>
                     ) : null}
                   </td>
                   <td className="hidden px-3 whitespace-nowrap text-foreground lg:table-cell">
-                    {asset.categoryName ?? <span className="text-muted-foreground">—</span>}
+                    {asset.categoryName ?? (
+                      <span className="text-muted-foreground">—</span>
+                    )}
                   </td>
                   <td className="px-3 whitespace-nowrap">
-                    <StatusText status={asset.status} inTable className="max-lg:text-[13px]" />
+                    <StatusText
+                      status={asset.status}
+                      inTable
+                      className="max-lg:text-[13px]"
+                    />
                   </td>
                   <td className="pr-0.5 pl-3 text-right whitespace-nowrap text-ink-2">
                     <span className="hidden lg:inline">{time.long}</span>
@@ -603,7 +747,21 @@ export function LocationsPageClient() {
       )}
       {subtreeAssets.length > SHEET_LIMIT ? (
         <SheetFoot>
-          Showing the {SHEET_LIMIT} most recently updated of {subtreeAssets.length}.
+          {showAll ? (
+            <>All {subtreeAssets.length}, most recently updated first.</>
+          ) : (
+            <>
+              Showing the {SHEET_LIMIT} most recently updated of{" "}
+              {subtreeAssets.length}.{" "}
+              <button
+                type="button"
+                onClick={() => setShowAllFor(selectedId)}
+                className="cursor-pointer font-medium text-foreground underline underline-offset-[3px]"
+              >
+                Show all {subtreeAssets.length}
+              </button>
+            </>
+          )}
         </SheetFoot>
       ) : null}
     </section>
@@ -641,7 +799,9 @@ export function LocationsPageClient() {
                       {splitPath(selected.path).ancestors
                         ? `${splitPath(selected.path).ancestors} / `
                         : null}
-                      <b className="font-semibold text-foreground">{selected.name}</b>
+                      <b className="font-semibold text-foreground">
+                        {selected.name}
+                      </b>
                     </>
                   ) : (
                     "Choose a location"
@@ -672,7 +832,9 @@ export function LocationsPageClient() {
                 type="button"
                 onClick={() =>
                   setExpandedIds(
-                    effectiveExpanded.size > 0 ? new Set() : new Set(rows.map((row) => row.id)),
+                    effectiveExpanded.size > 0
+                      ? new Set()
+                      : new Set(rows.map((row) => row.id)),
                   )
                 }
                 className="shrink-0 cursor-pointer text-sm font-medium text-ink-2 underline underline-offset-[3px] hover:text-foreground max-lg:hidden"
@@ -684,11 +846,17 @@ export function LocationsPageClient() {
             {loading ? (
               <div className="space-y-4 p-4">
                 {[70, 50, 60, 45].map((width) => (
-                  <Skeleton key={width} className="h-2.5" style={{ width: `${width}%` }} />
+                  <Skeleton
+                    key={width}
+                    className="h-2.5"
+                    style={{ width: `${width}%` }}
+                  />
                 ))}
               </div>
             ) : flatRows.length === 0 ? (
-              <p className="px-4 py-6 text-sm text-ink-2">No location matches “{query.trim()}”.</p>
+              <p className="px-4 py-6 text-sm text-ink-2">
+                No location matches “{query.trim()}”.
+              </p>
             ) : (
               <ul className="py-1.5" aria-label="Location tree">
                 {flatRows.map(({ location, depth, hasChildren, expanded }) => {
@@ -737,7 +905,9 @@ export function LocationsPageClient() {
                         className={cn(
                           "flex h-full min-w-0 flex-1 cursor-pointer items-center gap-2 pl-1.5 text-left text-sm",
                           depth === 0 ? "font-semibold" : "font-medium",
-                          current ? "text-foreground" : "text-ink-2 hover:text-foreground",
+                          current
+                            ? "text-foreground"
+                            : "text-ink-2 hover:text-foreground",
                           depth === 0 && !current && "text-foreground",
                         )}
                       >
@@ -759,8 +929,14 @@ export function LocationsPageClient() {
                   {emptyLocations.map((location) => {
                     const { ancestors, leaf } = splitPath(location.path);
                     return (
-                      <li key={location.id} className="flex min-h-[34px] items-center gap-2">
-                        <MapPin className="size-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
+                      <li
+                        key={location.id}
+                        className="flex min-h-[34px] items-center gap-2"
+                      >
+                        <MapPin
+                          className="size-3.5 shrink-0 text-muted-foreground"
+                          aria-hidden="true"
+                        />
                         <button
                           type="button"
                           onClick={() => select(location.id)}
@@ -786,7 +962,9 @@ export function LocationsPageClient() {
             {loading ? null : (
               <div className="border-t border-border px-3.5 py-3 text-[13px] text-muted-foreground">
                 {rows.length} {rows.length === 1 ? "location" : "locations"}
-                {emptyLocations.length > 0 ? ` · ${emptyLocations.length} empty` : null}
+                {emptyLocations.length > 0
+                  ? ` · ${emptyLocations.length} empty`
+                  : null}
               </div>
             )}
           </Panel>

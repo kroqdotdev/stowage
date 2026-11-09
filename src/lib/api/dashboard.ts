@@ -40,6 +40,8 @@ export type DashboardOverview = {
   totalAssets: number;
   statusCounts: StatusCounts;
   recentAssets: RecentAsset[];
+  /** Assets updated in the 24 hours before the overview was built. */
+  changedLastDayCount: number;
   categoryBreakdown: CategoryBreakdownItem[];
   locationBreakdown: LocationBreakdownItem[];
   serviceSchedulingEnabled: boolean;

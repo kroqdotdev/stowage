@@ -139,6 +139,16 @@ describe("UserManagementSection", () => {
     ).toHaveLength(2);
   });
 
+  it("shows a loading state in the table while users load", () => {
+    listUsersMock.mockReturnValue(new Promise(() => {}));
+
+    renderWithClient(<UserManagementSection currentUserId={adminUser.id} />);
+
+    const table = screen.getByTestId("users-table");
+    expect(within(table).getByText("Loading users...")).toBeInTheDocument();
+    expect(within(table).getAllByRole("row").length).toBeGreaterThan(1);
+  });
+
   it("shows an error state when users fail to load", async () => {
     listUsersMock.mockRejectedValue(new Error("database is gone"));
 

@@ -1,6 +1,7 @@
 import { AppRail, AppSidebar } from "@/components/layout/app-sidebar";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { MobileTopBar } from "@/components/layout/mobile-top-bar";
+import { GlobalSearchDialog } from "@/components/search/global-search";
 
 /*
   The Workshop shell: a charcoal sidebar on desktop, an 88px labelled rail on
@@ -18,6 +19,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </main>
         <BottomNav />
       </div>
+      <GlobalSearchDialog />
     </div>
   );
 }

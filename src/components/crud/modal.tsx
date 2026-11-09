@@ -102,7 +102,7 @@ export function CrudModal({
         data-testid="crud-modal-surface"
         tabIndex={-1}
         className={cn(
-          "flex w-full flex-col border border-border bg-card shadow-[0_24px_48px_rgba(0,0,0,.18)] outline-none",
+          "flex w-full flex-col border border-border bg-card shadow-[0_24px_48px_rgba(0,0,0,.18)] outline-hidden",
           "max-h-[90svh] rounded-t-md animate-in slide-in-from-bottom-8 duration-200",
           "pb-[env(safe-area-inset-bottom)]",
           "md:max-h-[calc(100dvh-3rem)] md:max-w-lg md:rounded-md md:pb-0 md:slide-in-from-bottom-0 md:zoom-in-95",

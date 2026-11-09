@@ -221,6 +221,7 @@ export function ServiceRecordForm({
         void queryClient.invalidateQueries({
           queryKey: ["service-records", "by-asset", assetId],
         });
+        void queryClient.invalidateQueries({ queryKey: ["dashboard"] });
         return;
       }
 
@@ -242,6 +243,7 @@ export function ServiceRecordForm({
         void queryClient.invalidateQueries({
           queryKey: ["service-schedules"],
         });
+        void queryClient.invalidateQueries({ queryKey: ["dashboard"] });
         return;
       }
 
@@ -262,6 +264,7 @@ export function ServiceRecordForm({
       void queryClient.invalidateQueries({
         queryKey: ["service-schedules"],
       });
+      void queryClient.invalidateQueries({ queryKey: ["dashboard"] });
     } catch (error) {
       toast.error(getApiErrorMessage(error, "Unable to save service record"));
     }

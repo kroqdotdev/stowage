@@ -8,6 +8,7 @@ import { CrudModal } from "@/components/crud/modal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SheetHeading } from "@/components/ui/sheet-heading";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
   SelectContent,
@@ -295,7 +296,24 @@ export function UserManagementSection({
             </tr>
           </thead>
           <tbody>
-            {usersQuery.isPending ? null : usersQuery.isError ? (
+            {usersQuery.isPending ? (
+              <>
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <tr
+                    key={`loading-${i}`}
+                    className="border-b border-border"
+                    aria-hidden={i > 0 ? true : undefined}
+                  >
+                    <td colSpan={5} className="py-3.5 pl-0.5">
+                      {i === 0 ? (
+                        <span className="sr-only">Loading users...</span>
+                      ) : null}
+                      <Skeleton className="h-2.5 w-1/2" />
+                    </td>
+                  </tr>
+                ))}
+              </>
+            ) : usersQuery.isError ? (
               <tr>
                 <td
                   colSpan={5}

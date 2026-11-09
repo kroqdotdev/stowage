@@ -34,6 +34,9 @@ export function FeaturesSection() {
         enabled ? "Service scheduling enabled" : "Service scheduling disabled",
       );
       void queryClient.invalidateQueries({ queryKey: ["app-settings"] });
+      // The nav overdue badge reads the dashboard overview.
+      void queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      void queryClient.invalidateQueries({ queryKey: ["service-schedules"] });
     },
     onError: (error) => {
       toast.error(mapError(error, "Unable to update feature setting"));

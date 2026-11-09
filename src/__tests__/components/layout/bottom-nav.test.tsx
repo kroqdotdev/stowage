@@ -134,6 +134,9 @@ describe("BottomNav", () => {
     expect(screen.getByTestId("bottom-nav-services")).toHaveTextContent(
       "Services2",
     );
+    expect(
+      screen.getByRole("link", { name: "Services, 2 overdue" }),
+    ).toBe(screen.getByTestId("bottom-nav-services"));
   });
 
   it("marks More active on pages that live in the More sheet", () => {

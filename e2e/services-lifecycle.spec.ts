@@ -64,12 +64,12 @@ async function createScheduledAsset(
   await page.getByRole("button", { name: "Create asset" }).click();
 
   await expect(
-    page.getByRole("heading", { name: `${assetName} created` }),
+    page.getByRole("heading", { name: assetName, exact: true }),
   ).toBeVisible({
     timeout: 20_000,
   });
 
-  await page.getByRole("button", { name: "View asset" }).click();
+  await page.getByRole("button", { name: "Open asset" }).click();
   await page.waitForURL(/\/assets\/(?!new$)[^/]+$/, { timeout: 20_000 });
 
   const assetId = page.url().split("/").filter(Boolean).at(-1);
@@ -77,11 +77,17 @@ async function createScheduledAsset(
   return assetId!;
 }
 
+function providerRow(page: Page, name: string) {
+  return page.getByRole("listitem").filter({
+    has: page.getByRole("heading", { name, exact: true }),
+  });
+}
+
 async function createProvider(page: Page, name: string) {
   const normalizedEmailSeed = name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
   await page.goto("/services/providers");
-  await page.getByRole("button", { name: "Add provider" }).click();
-  const dialog = page.getByRole("dialog", { name: "Add provider" });
+  await page.getByRole("button", { name: "New provider…" }).first().click();
+  const dialog = page.getByRole("dialog", { name: "New provider" });
   await dialog.getByLabel("Name").fill(name);
   await dialog
     .getByLabel("Contact email")
@@ -90,38 +96,37 @@ async function createProvider(page: Page, name: string) {
   await dialog.getByLabel("Notes").fill("Playwright provider");
   await dialog.getByRole("button", { name: "Create provider" }).click();
   await expect(page.getByText("Service provider created")).toBeVisible();
-  await expect(
-    page.locator("article").filter({ hasText: name }).first(),
-  ).toBeVisible();
+  await expect(providerRow(page, name)).toBeVisible();
 }
 
 async function editProvider(page: Page, name: string, nextName: string) {
-  const providerCard = page
-    .locator("article")
-    .filter({ hasText: name })
-    .first();
-  await providerCard.getByRole("button", { name: "Edit" }).click();
+  await providerRow(page, name).getByRole("button", { name: "Edit…" }).click();
   const dialog = page.getByRole("dialog", { name: "Edit provider" });
   await dialog.getByLabel("Name").fill(nextName);
   await dialog.getByLabel("Notes").fill("Edited by Playwright");
   await dialog.getByRole("button", { name: "Save provider" }).click();
   await expect(page.getByText("Service provider updated")).toBeVisible();
-  await expect(
-    page.locator("article").filter({ hasText: nextName }).first(),
-  ).toBeVisible();
+  await expect(providerRow(page, nextName)).toBeVisible();
 }
 
 async function deleteProvider(page: Page, name: string) {
-  const providerCard = page
-    .locator("article")
-    .filter({ hasText: name })
-    .first();
-  await providerCard.getByRole("button", { name: "Delete" }).click();
-  await page.getByRole("button", { name: "Delete provider" }).click();
+  await page
+    .getByRole("button", { name: `Delete ${name}`, exact: true })
+    .click();
+  await page
+    .getByRole("dialog", { name: "Delete provider?" })
+    .getByRole("button", { name: "Delete provider" })
+    .click();
   await expect(page.getByText("Service provider deleted")).toBeVisible();
-  await expect(page.locator("article").filter({ hasText: name })).toHaveCount(
-    0,
-  );
+  await expect(providerRow(page, name)).toHaveCount(0);
+}
+
+function scheduleRowFor(page: Page, assetName: string) {
+  return page
+    .getByTestId("services-scheduled-list")
+    .getByRole("listitem")
+    .filter({ hasText: assetName })
+    .first();
 }
 
 async function completeScheduledService({
@@ -139,7 +144,9 @@ async function completeScheduledService({
   providerName?: string;
   cost?: string;
 }) {
-  await row.getByRole("button", { name: "Log service" }).click();
+  await row
+    .getByRole("button", { name: `Log service for ${assetName}` })
+    .click();
   const dialog = page.getByRole("dialog", {
     name: new RegExp(`Log service: ${escapeRegex(assetName)}`),
   });
@@ -168,18 +175,13 @@ async function logManualService({
   providerName?: string;
   cost?: string;
 }) {
-  const serviceHistorySection = page
-    .locator("section")
-    .filter({
-      has: page.getByRole("heading", { name: "Service history", exact: true }),
-    })
-    .first();
+  const serviceHistorySection = page.getByTestId("service-history");
 
   await serviceHistorySection
-    .getByRole("button", { name: "Log manual service" })
+    .getByRole("button", { name: "Log other service…" })
     .click();
 
-  const dialog = page.getByRole("dialog", { name: "Log manual service" });
+  const dialog = page.getByRole("dialog", { name: "Log other service" });
   await dialog.getByLabel(/^Description/i).fill(description);
   if (providerName) {
     await dialog.getByLabel(/^Provider$/i).click();
@@ -237,10 +239,7 @@ test.describe.serial("phase 8 service lifecycle", () => {
     const assetId = await createScheduledAsset(page, assetName, dueDate);
 
     await page.goto("/services");
-    const scheduleRow = page
-      .locator("article")
-      .filter({ hasText: assetName })
-      .first();
+    const scheduleRow = scheduleRowFor(page, assetName);
     await expect(scheduleRow).toBeVisible({ timeout: 20_000 });
     await expect(scheduleRow).toContainText(getDisplayDatePattern(dueDate));
 
@@ -256,20 +255,14 @@ test.describe.serial("phase 8 service lifecycle", () => {
     await expect(scheduleRow).toContainText(
       getDisplayDatePattern(expectedNextDue),
     );
-    await expect(scheduleRow).toContainText(description);
+    // The row now reads "Last <date> by <provider>".
     await expect(scheduleRow).toContainText(providerName);
-    await expect(scheduleRow.getByText(/^Overdue$/)).toHaveCount(0);
+    await expect(scheduleRow.getByText(/^Overdue \d+( days?|d)$/)).toHaveCount(
+      0,
+    );
 
     await page.goto(`/assets/${assetId}`);
-    const serviceHistorySection = page
-      .locator("section")
-      .filter({
-        has: page.getByRole("heading", {
-          name: "Service history",
-          exact: true,
-        }),
-      })
-      .first();
+    const serviceHistorySection = page.getByTestId("service-history");
     await expect(serviceHistorySection).toBeVisible();
     await expect(serviceHistorySection.getByText(description)).toBeVisible();
     await expect(serviceHistorySection.getByText(providerName)).toBeVisible();
@@ -314,18 +307,12 @@ test.describe.serial("phase 8 service lifecycle", () => {
       cost: "88.00",
     });
 
-    const serviceHistorySection = page
-      .locator("section")
-      .filter({
-        has: page.getByRole("heading", {
-          name: "Service history",
-          exact: true,
-        }),
-      })
-      .first();
-    await expect(serviceHistorySection).toContainText(
+    // Logging a record moves the schedule on; the next service card shows
+    // the new date.
+    await expect(page.getByTestId("next-service-panel")).toContainText(
       getDisplayDatePattern(expectedNextDue),
     );
+    const serviceHistorySection = page.getByTestId("service-history");
     await expect(serviceHistorySection.getByText(providerName)).toBeVisible();
     await expect(
       serviceHistorySection.getByText(/Cost 88([.,]00)?/),
@@ -364,12 +351,14 @@ test.describe.serial("phase 8 service lifecycle", () => {
     await createScheduledAsset(page, assetName, dueDate);
 
     await page.goto("/services");
-    const scheduleRow = page
-      .locator("article")
-      .filter({ hasText: assetName })
-      .first();
+    const scheduleRow = scheduleRowFor(page, assetName);
     await expect(scheduleRow).toBeVisible({ timeout: 20_000 });
-    await expect(scheduleRow).toContainText("Overdue");
+    // The row carries a due tag per layout; one is visible.
+    await expect(
+      scheduleRow
+        .getByText(/^Overdue \d+( days?|d)$/)
+        .filter({ visible: true }),
+    ).toBeVisible();
 
     await completeScheduledService({
       page,
@@ -381,8 +370,9 @@ test.describe.serial("phase 8 service lifecycle", () => {
     await expect(scheduleRow).toContainText(
       getDisplayDatePattern(expectedNextDue),
     );
-    await expect(scheduleRow.getByText(/^Overdue$/)).toHaveCount(0);
-    await expect(scheduleRow.getByText(/day[s]? overdue/i)).toHaveCount(0);
-    await expect(scheduleRow).toContainText(description);
+    await expect(scheduleRow.getByText(/^Overdue \d+( days?|d)$/)).toHaveCount(
+      0,
+    );
+    await expect(scheduleRow).toContainText(/Last /);
   });
 });

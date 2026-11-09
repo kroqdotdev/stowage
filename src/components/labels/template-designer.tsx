@@ -387,49 +387,53 @@ export function TemplateDesigner({
               </div>
             ) : (
               <div className="flex items-stretch gap-3 border-b border-border">
-                <div
+                <ul
                   className="-mb-px flex min-w-0 flex-1 items-stretch gap-0.5 overflow-x-auto"
-                  role="list"
+                  aria-label="Label templates"
                 >
                   {templates.map((template) => {
                     const active = activeTemplate.id === template.id;
                     return (
-                      <button
+                      <li
                         key={template.id}
-                        type="button"
-                        role="listitem"
-                        aria-current={active ? "true" : undefined}
-                        className={cn(
-                          "flex shrink-0 cursor-pointer flex-col items-start border-b-[3px] px-3 pt-1 pb-2 text-left transition-colors first:pl-0.5",
-                          active
-                            ? "border-amber-ink text-foreground"
-                            : "border-transparent text-ink-2 hover:text-foreground",
-                        )}
-                        onClick={() => handleSelectTemplate(template)}
+                        className="flex shrink-0 first:[&>button]:pl-0.5"
                       >
-                        <span
+                        <button
+                          type="button"
+                          aria-current={active ? "true" : undefined}
                           className={cn(
-                            "text-sm whitespace-nowrap",
-                            active ? "font-semibold" : "font-medium",
+                            "flex shrink-0 cursor-pointer flex-col items-start border-b-[3px] px-3 pt-1 pb-2 text-left transition-colors",
+                            active
+                              ? "border-amber-ink text-foreground"
+                              : "border-transparent text-ink-2 hover:text-foreground",
                           )}
+                          onClick={() => handleSelectTemplate(template)}
                         >
-                          {template.name}
-                        </span>
-                        <span className="text-[13px] whitespace-nowrap text-muted-foreground">
-                          <span className="font-mono font-medium">
-                            {formatLabelDimensions(
-                              template.widthMm,
-                              template.heightMm,
+                          <span
+                            className={cn(
+                              "text-sm whitespace-nowrap",
+                              active ? "font-semibold" : "font-medium",
                             )}
+                          >
+                            {template.name}
                           </span>
-                          {template.isDefault ? <span> · Default</span> : null}
-                        </span>
-                      </button>
+                          <span className="text-[13px] whitespace-nowrap text-muted-foreground">
+                            <span className="font-mono font-medium">
+                              {formatLabelDimensions(
+                                template.widthMm,
+                                template.heightMm,
+                              )}
+                            </span>
+                            {template.isDefault ? (
+                              <span> · Default</span>
+                            ) : null}
+                          </span>
+                        </button>
+                      </li>
                     );
                   })}
                   {selectedTemplateId === "new" ? (
-                    <span
-                      role="listitem"
+                    <li
                       aria-current="true"
                       className="flex shrink-0 flex-col items-start border-b-[3px] border-amber-ink px-3 pt-1 pb-2"
                     >
@@ -439,9 +443,9 @@ export function TemplateDesigner({
                       <span className="text-[13px] whitespace-nowrap text-muted-foreground">
                         Not saved yet
                       </span>
-                    </span>
+                    </li>
                   ) : null}
-                </div>
+                </ul>
                 {canManage ? (
                   <div className="flex shrink-0 items-center pb-2">
                     <Button

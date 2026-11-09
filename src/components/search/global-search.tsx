@@ -54,6 +54,40 @@ function useIsMacPlatform() {
   );
 }
 
+/*
+  One search dialog for the whole shell. The sidebar, the tablet rail and the
+  phone top bar each render a trigger, but only GlobalSearchDialog (mounted
+  once in the shell) owns the dialog and the Ctrl/Cmd+K listener. The open
+  flag lives in a tiny module store so every trigger reaches the same dialog.
+*/
+let searchOpen = false;
+const searchListeners = new Set<() => void>();
+
+function subscribeSearchOpen(listener: () => void) {
+  searchListeners.add(listener);
+  return () => {
+    searchListeners.delete(listener);
+  };
+}
+
+function setSearchOpen(next: boolean) {
+  if (searchOpen === next) return;
+  searchOpen = next;
+  for (const listener of searchListeners) listener();
+}
+
+export function openGlobalSearch() {
+  setSearchOpen(true);
+}
+
+function useSearchOpen() {
+  return useSyncExternalStore(
+    subscribeSearchOpen,
+    () => searchOpen,
+    () => false,
+  );
+}
+
 export function GlobalSearch({
   variant = "sidebar",
   className,
@@ -61,9 +95,69 @@ export function GlobalSearch({
   variant?: GlobalSearchVariant;
   className?: string;
 }) {
-  const router = useRouter();
   const isMac = useIsMacPlatform();
-  const [open, setOpen] = useState(false);
+
+  if (variant === "icon") {
+    return (
+      <button
+        type="button"
+        onClick={openGlobalSearch}
+        aria-label="Open global search"
+        aria-keyshortcuts="Control+K Meta+K"
+        className={cn(
+          "grid size-11 cursor-pointer place-items-center rounded-md text-sidebar-foreground hover:bg-sidebar-accent",
+          className,
+        )}
+        data-global-search-trigger
+      >
+        <Search className="size-5" />
+      </button>
+    );
+  }
+
+  if (variant === "rail") {
+    return (
+      <button
+        type="button"
+        onClick={openGlobalSearch}
+        aria-label="Open global search"
+        aria-keyshortcuts="Control+K Meta+K"
+        className={cn(
+          "flex h-12 w-full cursor-pointer flex-col items-center justify-center gap-1 rounded-md border border-sidebar-muted text-[13px] text-sidebar-foreground hover:bg-sidebar-accent",
+          className,
+        )}
+        data-global-search-trigger
+      >
+        <Search className="size-[18px] text-white" />
+        Search
+      </button>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={openGlobalSearch}
+      aria-label="Open global search"
+      aria-keyshortcuts="Control+K Meta+K"
+      className={cn(
+        "flex h-9 w-full cursor-pointer items-center gap-2 rounded-md bg-sidebar-accent px-2.5 text-left text-sm text-sidebar-muted hover:text-sidebar-foreground",
+        className,
+      )}
+      data-global-search-trigger
+    >
+      <Search className="size-4 shrink-0" />
+      <span className="min-w-0 truncate">Search assets, locations</span>
+      <kbd className="ml-auto shrink-0 font-mono text-[13px] font-medium">
+        {isMac ? "⌘K" : "Ctrl K"}
+      </kbd>
+    </button>
+  );
+}
+
+export function GlobalSearchDialog() {
+  const router = useRouter();
+  const open = useSearchOpen();
   const [searchValue, setSearchValue] = useState("");
   const deferredSearchValue = useDeferredValue(searchValue.trim());
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
@@ -98,7 +192,7 @@ export function GlobalSearch({
     }
 
     event.preventDefault();
-    setOpen(true);
+    setSearchOpen(true);
   });
 
   useEffect(() => {
@@ -109,13 +203,14 @@ export function GlobalSearch({
     window.addEventListener("keydown", handleKeyDown);
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
+      setSearchOpen(false);
     };
   }, []);
 
   const isLoading = hasSearchTerm && resultsQuery.isPending;
 
   function handleOpenChange(nextOpen: boolean) {
-    setOpen(nextOpen);
+    setSearchOpen(nextOpen);
     if (!nextOpen) {
       setSearchValue("");
       setDebouncedSearchTerm("");
@@ -129,55 +224,6 @@ export function GlobalSearch({
 
   return (
     <>
-      {variant === "icon" ? (
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          aria-label="Open global search"
-          aria-keyshortcuts="Control+K Meta+K"
-          className={cn(
-            "grid size-11 cursor-pointer place-items-center rounded-md text-sidebar-foreground hover:bg-sidebar-accent",
-            className,
-          )}
-          data-global-search-trigger
-        >
-          <Search className="size-5" />
-        </button>
-      ) : variant === "rail" ? (
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          aria-label="Open global search"
-          aria-keyshortcuts="Control+K Meta+K"
-          className={cn(
-            "flex h-12 w-full cursor-pointer flex-col items-center justify-center gap-1 rounded-md border border-sidebar-muted text-[13px] text-sidebar-foreground hover:bg-sidebar-accent",
-            className,
-          )}
-          data-global-search-trigger
-        >
-          <Search className="size-[18px] text-white" />
-          Search
-        </button>
-      ) : (
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          aria-label="Open global search"
-          aria-keyshortcuts="Control+K Meta+K"
-          className={cn(
-            "flex h-9 w-full cursor-pointer items-center gap-2 rounded-md bg-sidebar-accent px-2.5 text-left text-sm text-sidebar-muted hover:text-sidebar-foreground",
-            className,
-          )}
-          data-global-search-trigger
-        >
-          <Search className="size-4 shrink-0" />
-          <span className="min-w-0 truncate">Search assets, locations</span>
-          <kbd className="ml-auto shrink-0 font-mono text-[13px] font-medium">
-            {isMac ? "⌘K" : "Ctrl K"}
-          </kbd>
-        </button>
-      )}
-
       <CommandDialog
         open={open}
         onOpenChange={handleOpenChange}

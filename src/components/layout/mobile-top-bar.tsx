@@ -1,16 +1,45 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ArrowLeft, Plus } from "lucide-react";
 import { StowageMark } from "@/components/brand/stowage-mark";
+import { useCurrentUser } from "@/hooks/use-current-user";
 import { GlobalSearch } from "@/components/search/global-search";
 import { UserMenu } from "@/components/layout/user-menu";
 import { NAV_GROUPS, SETTINGS_ITEM, isNavItemActive } from "@/components/layout/nav-config";
 
 const SLOT_ID = "mobile-top-bar-slot";
+
+/*
+  How many <MobileBar>s are mounted. While one covers the top bar, the bar's
+  own controls underneath are made inert so keyboard and screen-reader users
+  do not land on buttons they cannot see.
+*/
+let coveringBars = 0;
+const coverListeners = new Set<() => void>();
+
+function setCoveringBars(next: number) {
+  coveringBars = next;
+  for (const listener of coverListeners) listener();
+}
+
+function subscribeCover(listener: () => void) {
+  coverListeners.add(listener);
+  return () => {
+    coverListeners.delete(listener);
+  };
+}
+
+function useTopBarCovered() {
+  return useSyncExternalStore(
+    subscribeCover,
+    () => coveringBars > 0,
+    () => false,
+  );
+}
 
 function pageTitle(pathname: string) {
   if (pathname === "/dashboard") return null;
@@ -26,11 +55,19 @@ function pageTitle(pathname: string) {
 export function MobileTopBar() {
   const pathname = usePathname();
   const title = pageTitle(pathname);
-  const onLocations = pathname.startsWith("/locations");
+  const { data: currentUser } = useCurrentUser();
+  // Only admins can add locations; everyone else gets New asset here too.
+  const onLocations =
+    pathname.startsWith("/locations") && currentUser?.role === "admin";
+  const covered = useTopBarCovered();
 
   return (
     <header className="on-charcoal sticky top-0 z-30 h-14 bg-sidebar text-white md:hidden">
-      <div className="flex h-full items-center gap-2 pr-2 pl-4">
+      <div
+        className="flex h-full items-center gap-2 pr-2 pl-4"
+        inert={covered}
+        data-testid="mobile-top-bar-controls"
+      >
         <Link
           href="/dashboard"
           className="wide mr-auto flex min-w-0 items-center gap-[9px] text-base font-bold"
@@ -79,6 +116,11 @@ export function MobileBar({
   actions?: React.ReactNode;
 }) {
   const slot = useSlot(SLOT_ID);
+  useEffect(() => {
+    if (!slot) return;
+    setCoveringBars(coveringBars + 1);
+    return () => setCoveringBars(coveringBars - 1);
+  }, [slot]);
   if (!slot) return null;
   return createPortal(
     <div className="pointer-events-auto flex h-full items-center gap-1 bg-sidebar px-2">

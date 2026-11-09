@@ -2,21 +2,22 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Printer } from "lucide-react";
 import type { FieldDefinition } from "@/components/fields/types";
 import { MM_TO_PX } from "@/components/labels/helpers";
 import { LabelPreview } from "@/components/labels/label-preview";
-import type { LabelPreviewAsset, LabelTemplate } from "@/components/labels/types";
+import type {
+  LabelPreviewAsset,
+  LabelTemplate,
+} from "@/components/labels/types";
 import { Button } from "@/components/ui/button";
 import { Panel, PanelFooter } from "@/components/ui/panel";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  ensureDefaultLabelTemplates,
   getDefaultLabelTemplate,
   getLabelUrlBase,
 } from "@/lib/api/label-templates";
-import { useCurrentUser } from "@/hooks/use-current-user";
 import { cn } from "@/lib/utils";
 
 function useElementWidth<T extends HTMLElement>() {
@@ -59,25 +60,11 @@ export function AssetLabelPanel({
 
   const template = (templateQuery.data ?? null) as LabelTemplate | null;
 
-  // Same as the print page: a fresh install gets the built-in templates the
-  // first time a label is shown.
-  const queryClient = useQueryClient();
-  const ensureMutation = useMutation({
-    mutationFn: ensureDefaultLabelTemplates,
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["label-templates"] });
-    },
-  });
-  const { data: currentUser } = useCurrentUser();
-  const isAdmin = currentUser?.role === "admin";
-  const seededRef = useRef(false);
-  useEffect(() => {
-    if (!isAdmin || seededRef.current || templateQuery.isPending || templateQuery.data) return;
-    seededRef.current = true;
-    ensureMutation.mutate();
-  }, [isAdmin, templateQuery.isPending, templateQuery.data, ensureMutation]);
+  // No seeding here: a template the admin deleted must stay deleted. The
+  // Labels page sets up the built-in templates on a fresh install.
   const labelPx = template ? template.widthMm * MM_TO_PX : 0;
-  const scale = template && wellWidth > 0 ? Math.min(1, wellWidth / labelPx) : 0;
+  const scale =
+    template && wellWidth > 0 ? Math.min(1, wellWidth / labelPx) : 0;
 
   return (
     <Panel className={className} data-testid="asset-label-panel">
@@ -102,12 +89,15 @@ export function AssetLabelPanel({
 
       <div className="mx-[18px] rounded-xs bg-secondary p-4">
         <div ref={wellRef} className="flex min-h-16 justify-center">
-          {templateQuery.isPending || ensureMutation.isPending ? (
+          {templateQuery.isPending ? (
             <Skeleton className="h-16 w-full rounded-xs" />
           ) : !template ? (
             <p className="self-center text-sm text-ink-2">
               No label template yet.{" "}
-              <Link href="/labels" className="font-medium text-foreground underline underline-offset-[3px]">
+              <Link
+                href="/labels"
+                className="font-medium text-foreground underline underline-offset-[3px]"
+              >
                 Set one up…
               </Link>
             </p>
@@ -129,7 +119,9 @@ export function AssetLabelPanel({
         </div>
       </div>
       {template && scale > 0 && scale < 1 ? (
-        <p className="px-[18px] pt-2 text-[13px] text-muted-foreground">Scaled to fit</p>
+        <p className="px-[18px] pt-2 text-[13px] text-muted-foreground">
+          Scaled to fit
+        </p>
       ) : null}
 
       <PanelFooter className={cn("mt-3.5 justify-end py-3.5")}>
