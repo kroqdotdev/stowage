@@ -36,11 +36,15 @@ describe("updater client", () => {
   });
 
   it("reads status with the bearer token and normalises unknown states", async () => {
-    const fetchImpl = vi
-      .fn()
-      .mockResolvedValue(
-        json({ state: "weird", log: ["a", 2], targetVersion: "0.3.0" }),
-      );
+    const fetchImpl = vi.fn().mockResolvedValue(
+      json({
+        state: "weird",
+        log: ["a", 2],
+        targetVersion: "0.3.0",
+        startedAt: "soon",
+        error: { nested: true },
+      }),
+    );
     const view = await getUpdaterView(fetchImpl as unknown as typeof fetch);
     expect(view).toEqual({
       configured: true,

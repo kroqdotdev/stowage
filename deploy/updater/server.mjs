@@ -17,12 +17,13 @@
   the new updater instance reports the run that replaced it.
 
   The helper:
-    1. pins STOWAGE_VERSION=<version> in the project's .env
-    2. docker compose pull <running services>
-    3. docker compose up -d --no-deps <running services except updater>
+    1. docker compose pull <project services>
+    2. pins STOWAGE_VERSION=<version> in the project's env file(s)
+    3. docker compose up -d --no-deps <project services except updater>
     4. docker compose up -d --no-deps updater (recreates this container)
 */
 import { spawn } from "node:child_process";
+import { timingSafeEqual } from "node:crypto";
 import { promises as fs } from "node:fs";
 import http from "node:http";
 import os from "node:os";
@@ -35,6 +36,8 @@ const PORT = Number(process.env.STOWAGE_UPDATER_PORT ?? 9876);
 const TOKEN = (process.env.STOWAGE_UPDATER_TOKEN ?? "").trim();
 const VERSION_RE = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/;
 const LOG_LINES = 200;
+// A run that has not reported in this long is force-stopped and failed.
+const RUN_TIMEOUT_MS = 30 * 60 * 1000;
 
 // ---------------------------------------------------------------------------
 // Docker Engine API over the unix socket (no dependencies).
@@ -105,14 +108,16 @@ function composeLabels(info) {
   };
 }
 
-async function runningServices(project) {
+// Every service of the project with a container, whatever its state: a
+// service that is restarting at that moment must move with the others.
+async function projectServices(project) {
   const filters = encodeURIComponent(
-    JSON.stringify({
-      label: [`com.docker.compose.project=${project}`],
-      status: ["running"],
-    }),
+    JSON.stringify({ label: [`com.docker.compose.project=${project}`] }),
   );
-  const containers = await docker("GET", `/containers/json?filters=${filters}`);
+  const containers = await docker(
+    "GET",
+    `/containers/json?all=true&filters=${filters}`,
+  );
   const services = new Set();
   for (const container of containers) {
     const service = container.Labels?.["com.docker.compose.service"];
@@ -162,7 +167,9 @@ async function writeState(state) {
 
 function authorized(req) {
   const header = req.headers.authorization ?? "";
-  return header === `Bearer ${TOKEN}`;
+  const expected = Buffer.from(`Bearer ${TOKEN}`);
+  const given = Buffer.from(header);
+  return given.length === expected.length && timingSafeEqual(given, expected);
 }
 
 function send(res, status, body) {
@@ -190,10 +197,10 @@ let starting = false;
 async function startUpdate(version) {
   const self = await inspectSelf();
   const labels = composeLabels(self);
-  const services = await runningServices(labels.project);
+  const services = await projectServices(labels.project);
   if (!services.length) {
     throw new Error(
-      `No running services found for compose project "${labels.project}".`,
+      `No services found for compose project "${labels.project}".`,
     );
   }
   const stateMount = (self.Mounts ?? []).find(
@@ -227,8 +234,11 @@ async function startUpdate(version) {
         labels.workingDir,
         "--config-files",
         labels.configFiles.join(","),
-        "--env-file",
-        labels.envFiles[0] ?? path.join(labels.workingDir, ".env"),
+        "--env-files",
+        (labels.envFiles.length
+          ? labels.envFiles
+          : [path.join(labels.workingDir, ".env")]
+        ).join(","),
         "--services",
         services.join(","),
         "--self",
@@ -244,10 +254,18 @@ async function startUpdate(version) {
       // not run.
       Healthcheck: { Test: ["NONE"] },
       HostConfig: {
-        Binds: [
-          `${socketSource}:${SOCKET}`,
-          `${stateSource}:${STATE_DIR}`,
-          `${labels.workingDir}:${labels.workingDir}`,
+        Mounts: [
+          { Type: "bind", Source: socketSource, Target: SOCKET },
+          {
+            Type: stateMount.Type === "volume" ? "volume" : "bind",
+            Source: stateSource,
+            Target: STATE_DIR,
+          },
+          ...hostDirs(labels).map((dir) => ({
+            Type: "bind",
+            Source: dir,
+            Target: dir,
+          })),
         ],
       },
     },
@@ -263,6 +281,21 @@ async function startUpdate(version) {
   });
   await docker("POST", `/containers/${created.Id}/start`);
   return { id: created.Id, services };
+}
+
+// The project directory, plus the directories of compose and env files that
+// live outside it (`-f ../stack.yml`), each at its own host path so compose
+// resolves relative paths exactly as it does on the host.
+function hostDirs(labels) {
+  const dirs = new Set([labels.workingDir]);
+  for (const file of [...labels.configFiles, ...labels.envFiles]) {
+    const dir = path.dirname(file);
+    const inside = [...dirs].some(
+      (known) => dir === known || dir.startsWith(`${known}${path.sep}`),
+    );
+    if (!inside) dirs.add(dir);
+  }
+  return [...dirs];
 }
 
 async function helperLogs(id) {
@@ -306,14 +339,18 @@ async function reconcile(state) {
     info = null;
   }
   if (state.state === "running") {
-    if (info && info.State?.Running) return state;
+    const alive = Boolean(info && info.State?.Running);
+    const timedOut =
+      Date.now() - (state.startedAt ?? Date.now()) > RUN_TIMEOUT_MS;
+    if (alive && !timedOut) return state;
     const logs = info ? await helperLogs(state.runId) : [];
     const next = {
       ...state,
       state: "failed",
       finishedAt: Date.now(),
-      error:
-        "The update helper stopped before finishing. Check the services with `docker compose ps` on the host.",
+      error: timedOut
+        ? "The update did not finish within 30 minutes and was stopped. Check the services with `docker compose ps` on the host."
+        : "The update helper stopped before finishing. Check the services with `docker compose ps` on the host.",
       log: [...state.log, ...logs.map((line) => `helper: ${line}`)].slice(
         -LOG_LINES,
       ),
@@ -363,8 +400,14 @@ function serve() {
         return;
       }
       if (req.method === "POST" && url.pathname === "/update") {
-        const body = JSON.parse((await readBody(req)) || "{}");
-        const version = String(body.version ?? "").trim();
+        let body;
+        try {
+          body = JSON.parse((await readBody(req)) || "{}");
+        } catch {
+          send(res, 400, { error: "Invalid JSON body" });
+          return;
+        }
+        const version = String(body?.version ?? "").trim();
         if (!VERSION_RE.test(version)) {
           send(res, 400, { error: "Invalid version" });
           return;
@@ -390,8 +433,9 @@ function serve() {
       send(res, 404, { error: "Not found" });
     } catch (error) {
       console.error(error);
+      // Details go to the container log, not to the caller.
       send(res, 500, {
-        error: error instanceof Error ? error.message : "Updater error",
+        error: "The updater could not start the update. See its container log.",
       });
     }
   });
@@ -448,7 +492,22 @@ function runCommand(state, cmd, args, env) {
     child.on("error", reject);
     child.on("close", (code) => {
       if (code === 0) resolve();
-      else reject(new Error(`${cmd} ${args.join(" ")} exited with ${code}`));
+      else {
+        // "docker compose pull" rather than the whole argv with host paths.
+        const verb =
+          args.find(
+            (arg, i) =>
+              i > 0 &&
+              !args[i - 1].startsWith("--") &&
+              !arg.startsWith("--") &&
+              arg !== "compose",
+          ) ?? "";
+        reject(
+          new Error(
+            `${cmd} compose ${verb} exited with ${code}`.replace(/\s+/g, " "),
+          ),
+        );
+      }
     });
   });
 }
@@ -483,6 +542,7 @@ async function apply(args) {
   const services = (args.services ?? "").split(",").filter(Boolean);
   const self = args.self ?? "updater";
   const others = services.filter((s) => s !== self);
+  const envFiles = (args["env-files"] ?? "").split(",").filter(Boolean);
   const compose = [
     "compose",
     "--project-name",
@@ -493,6 +553,10 @@ async function apply(args) {
       .split(",")
       .filter(Boolean)
       .flatMap((f) => ["--file", f]),
+    // The same env files the operator started the stack with, so secrets
+    // interpolate the same way. Variables exported only in their shell are
+    // not available here; .env is the place for them.
+    ...envFiles.flatMap((f) => ["--env-file", f]),
   ];
   const env = {
     STOWAGE_VERSION: version,
@@ -504,14 +568,15 @@ async function apply(args) {
   state.targetVersion = version;
   state.error = null;
   try {
-    await appendLog(
-      state,
-      `Pinning STOWAGE_VERSION=${version} in ${args["env-file"]}`,
-    );
-    await pinVersion(args["env-file"], version);
-
+    // Pull first: a bad tag or an unreachable registry leaves both the
+    // containers and the .env pin exactly as they were.
     await appendLog(state, `Pulling images for: ${services.join(", ")}`);
     await runCommand(state, "docker", [...compose, "pull", ...services], env);
+
+    for (const file of envFiles) {
+      await appendLog(state, `Pinning STOWAGE_VERSION=${version} in ${file}`);
+      await pinVersion(file, version);
+    }
 
     if (others.length) {
       await appendLog(state, `Recreating: ${others.join(", ")}`);
@@ -528,13 +593,22 @@ async function apply(args) {
     await appendLog(state, `Stowage is now on ${version}.`);
 
     if (services.includes(self)) {
-      await appendLog(state, `Recreating the updater (${self}) last.`);
-      await runCommand(
-        state,
-        "docker",
-        [...compose, "up", "-d", "--no-deps", self],
-        env,
-      );
+      // The app is already updated; a problem here is only the updater's.
+      try {
+        await appendLog(state, `Recreating the updater (${self}) last.`);
+        await runCommand(
+          state,
+          "docker",
+          [...compose, "up", "-d", "--no-deps", self],
+          env,
+        );
+      } catch (error) {
+        const reason = error instanceof Error ? error.message : String(error);
+        await appendLog(
+          state,
+          `The updater itself could not be recreated (${reason}). Stowage is on ${version}; run \`docker compose up -d ${self}\` on the host.`,
+        );
+      }
     }
   } catch (error) {
     state.state = "failed";

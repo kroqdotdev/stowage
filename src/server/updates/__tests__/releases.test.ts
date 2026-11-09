@@ -44,6 +44,9 @@ describe("releases", () => {
     });
     expect(toRelease(gh("v0.3.0", { draft: true }))).toBeNull();
     expect(toRelease(gh("nightly"))).toBeNull();
+    expect(
+      toRelease(gh("v0.3.0", { html_url: "javascript:alert(1)" })),
+    ).toBeNull();
     expect(toRelease(gh("v0.4.0-rc.1"))?.prerelease).toBe(true);
     expect(toRelease(gh("v0.4.0", { prerelease: true }))?.prerelease).toBe(
       true,
@@ -133,9 +136,13 @@ describe("releases", () => {
     expect(third.releases).toHaveLength(2);
     expect(fetchImpl).toHaveBeenCalledTimes(2);
 
-    // Expired and GitHub down: the stale list is returned.
+    // Expired and GitHub down: the stale list is returned, and says so.
     const fourth = await getReleases({ fetchImpl, now: t0 + 3 * 3_600_000 });
     expect(fourth.releases).toHaveLength(2);
+    expect(fourth.stale).toBe(true);
+    expect(fourth.error).toMatch(/Could not reach GitHub/);
+    expect(fourth.fetchedAt).toBe(t0 + 2 * 60_000);
+    expect(third.stale).toBe(false);
     expect(fetchImpl).toHaveBeenCalledTimes(3);
   });
 

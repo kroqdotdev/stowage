@@ -1,5 +1,7 @@
 import "server-only";
 
+import { z } from "zod";
+
 /*
   Talks to the updater sidecar (deploy/updater/server.mjs) when the release
   compose project runs it. Without STOWAGE_UPDATER_URL and a token the app
@@ -43,27 +45,28 @@ export function isUpdaterConfigured() {
   return config() !== null;
 }
 
-function normalizeStatus(raw: unknown): UpdaterStatus {
-  const data = (raw ?? {}) as Partial<UpdaterStatus>;
-  const state: UpdaterState =
-    data.state === "running" ||
-    data.state === "succeeded" ||
-    data.state === "failed"
-      ? data.state
-      : "idle";
-  return {
-    state,
-    targetVersion: data.targetVersion ?? null,
-    startedAt: data.startedAt ?? null,
-    finishedAt: data.finishedAt ?? null,
-    log: Array.isArray(data.log) ? data.log.map(String) : [],
-    error: data.error ?? null,
-  };
+const StatusSchema = z.object({
+  state: z.enum(["idle", "running", "succeeded", "failed"]).catch("idle"),
+  targetVersion: z.string().nullable().catch(null),
+  startedAt: z.number().nullable().catch(null),
+  finishedAt: z.number().nullable().catch(null),
+  log: z.array(z.unknown()).catch([]),
+  error: z.string().nullable().catch(null),
+});
+
+export function normalizeStatus(raw: unknown): UpdaterStatus {
+  const parsed = StatusSchema.safeParse(raw ?? {});
+  const data = parsed.success ? parsed.data : StatusSchema.parse({});
+  return { ...data, log: data.log.map(String) };
 }
+
+const TOKEN_REJECTED =
+  "The updater rejected the app's token. Set the same STOWAGE_UPDATER_TOKEN for both services.";
+const NOT_REACHABLE = "Updater is not reachable";
 
 async function call(
   path: string,
-  init: { method?: "GET" | "POST"; body?: unknown } = {},
+  init: { method?: "GET" | "POST"; body?: unknown; timeoutMs?: number } = {},
   fetchImpl: typeof fetch = fetch,
 ): Promise<unknown> {
   const cfg = config();
@@ -77,17 +80,18 @@ async function call(
         ...(init.body ? { "content-type": "application/json" } : {}),
       },
       body: init.body ? JSON.stringify(init.body) : undefined,
-      signal: AbortSignal.timeout(4000),
+      signal: AbortSignal.timeout(init.timeoutMs ?? 4000),
       cache: "no-store",
     });
   } catch {
-    throw new UpdaterError("Updater is not reachable", 502);
+    throw new UpdaterError(NOT_REACHABLE, 502);
   }
   const data = (await res.json().catch(() => ({}))) as { error?: string };
+  if (res.status === 401) throw new UpdaterError(TOKEN_REJECTED, 502);
   if (!res.ok) {
     throw new UpdaterError(
       data.error ?? `Updater answered ${res.status}`,
-      res.status === 401 ? 502 : res.status,
+      res.status,
     );
   }
   return data;
@@ -105,11 +109,11 @@ export async function getUpdaterView(
       configured: true,
       reachable: false,
       reason:
-        error instanceof UpdaterError && error.status === 502
-          ? error.message === "Updater is not reachable"
-            ? "The updater service is not running or not reachable from the app."
-            : "The updater rejected the app's token. Set the same STOWAGE_UPDATER_TOKEN for both services."
-          : "The updater returned an error.",
+        error instanceof UpdaterError && error.message === NOT_REACHABLE
+          ? "The updater service is not running or not reachable from the app."
+          : error instanceof UpdaterError
+            ? error.message
+            : "The updater returned an error.",
     };
   }
 }
@@ -118,9 +122,11 @@ export async function requestUpdate(
   version: string,
   fetchImpl: typeof fetch = fetch,
 ): Promise<UpdaterStatus> {
+  // Starting an update means inspecting containers and creating the helper;
+  // give a slow host time to answer so the UI follows the run it started.
   const data = await call(
     "/update",
-    { method: "POST", body: { version } },
+    { method: "POST", body: { version }, timeoutMs: 30_000 },
     fetchImpl,
   );
   return normalizeStatus(data);

@@ -46,6 +46,7 @@ function view(overrides: Partial<UpdatesView> = {}): UpdatesView {
     updateAvailable: false,
     checkedAt: Date.now(),
     checkError: null,
+    checkWarning: null,
     updater: { configured: false, reason: "not-configured" },
     ...overrides,
   };
@@ -153,6 +154,117 @@ describe("UpdatesSection", () => {
 
     expect(await screen.findByText("0.3.0 is available")).toBeInTheDocument();
     expect(getUpdatesMock).toHaveBeenLastCalledWith({ refresh: true });
+  });
+
+  it("shows a warning when the list is from an earlier check", async () => {
+    getUpdatesMock.mockResolvedValue(
+      view({
+        checkWarning:
+          "GitHub rate limit reached. Showing the list from the last successful check.",
+      }),
+    );
+    renderWithClient(<UpdatesSection />);
+
+    expect(
+      await screen.findByText(
+        /Showing the list from the last successful check/,
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Stowage is up to date.")).toBeInTheDocument();
+  });
+
+  it("reloads once the health endpoint answers with another version", async () => {
+    const reload = vi.fn();
+    const original = window.location;
+    Object.defineProperty(window, "location", {
+      configurable: true,
+      value: { ...original, reload },
+    });
+    try {
+      getUpdatesMock.mockResolvedValue(
+        view({
+          latest: release,
+          newer: [release],
+          updateAvailable: true,
+          updater: {
+            configured: true,
+            reachable: true,
+            status: {
+              state: "running",
+              targetVersion: "0.3.0",
+              startedAt: Date.now(),
+              finishedAt: null,
+              log: ["Recreating: app"],
+              error: null,
+            },
+          },
+        }),
+      );
+      getHealthMock.mockResolvedValue({ status: "ok", version: "0.3.0" });
+      renderWithClient(<UpdatesSection />);
+
+      expect(await screen.findByText("Updating to 0.3.0…")).toBeInTheDocument();
+      await waitFor(() => expect(reload).toHaveBeenCalled());
+    } finally {
+      Object.defineProperty(window, "location", {
+        configurable: true,
+        value: original,
+      });
+    }
+  });
+
+  it("offers Reload after success and lets you stop following a run", async () => {
+    getUpdatesMock.mockResolvedValue(
+      view({
+        latest: release,
+        newer: [release],
+        updateAvailable: true,
+        updater: {
+          configured: true,
+          reachable: true,
+          status: {
+            state: "running",
+            targetVersion: "0.3.0",
+            startedAt: Date.now(),
+            finishedAt: null,
+            log: [],
+            error: null,
+          },
+        },
+      }),
+    );
+    getHealthMock.mockResolvedValue({ status: "ok", version: "0.2.0" });
+    renderWithClient(<UpdatesSection />);
+    expect(await screen.findByText("Updating to 0.3.0…")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Stop following" }),
+    ).toBeInTheDocument();
+
+    getUpdatesMock.mockResolvedValue(
+      view({
+        latest: release,
+        newer: [release],
+        updateAvailable: true,
+        updater: {
+          configured: true,
+          reachable: true,
+          status: {
+            state: "succeeded",
+            targetVersion: "0.3.0",
+            startedAt: Date.now() - 20_000,
+            finishedAt: Date.now(),
+            log: ["Stowage is now on 0.3.0."],
+            error: null,
+          },
+        },
+      }),
+    );
+    expect(
+      await screen.findByText("Updated to 0.3.0", {}, { timeout: 6000 }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Reload" })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Dismiss" }));
+    expect(screen.queryByText("Updated to 0.3.0")).not.toBeInTheDocument();
   });
 
   it("confirms, starts the update and follows its log", async () => {

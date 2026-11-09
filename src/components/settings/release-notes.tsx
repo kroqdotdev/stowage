@@ -7,7 +7,12 @@ import * as React from "react";
 */
 
 function inline(text: string, key: string): React.ReactNode {
-  const parts = text.split(/(`[^`]+`)/g);
+  // Links keep their text, emphasis markers are dropped; both would
+  // otherwise show as raw Markdown.
+  const plain = text
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
+    .replace(/\*\*([^*]+)\*\*/g, "$1");
+  const parts = plain.split(/(`[^`]+`)/g);
   if (parts.length === 1) return text;
   return parts.map((part, index) =>
     part.startsWith("`") && part.endsWith("`") ? (

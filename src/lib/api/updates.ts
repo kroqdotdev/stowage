@@ -32,6 +32,7 @@ export type UpdatesView = {
   updateAvailable: boolean;
   checkedAt: number | null;
   checkError: string | null;
+  checkWarning: string | null;
   updater: UpdaterView;
 };
 

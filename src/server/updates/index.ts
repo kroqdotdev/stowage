@@ -22,8 +22,12 @@ export type UpdatesView = {
   latest: Release | null;
   newer: Release[];
   updateAvailable: boolean;
+  /** When the release list was last fetched from GitHub. */
   checkedAt: number | null;
+  /** Set when there is no release list at all. */
   checkError: string | null;
+  /** Set when the list is from an earlier check because GitHub failed now. */
+  checkWarning: string | null;
   updater: UpdaterView;
 };
 
@@ -67,6 +71,10 @@ export async function getUpdatesView(
     updateAvailable: newer.length > 0,
     checkedAt: releaseResult.ok ? releaseResult.fetchedAt : null,
     checkError: releaseResult.ok ? null : releaseResult.error,
+    checkWarning:
+      releaseResult.ok && releaseResult.stale
+        ? `${releaseResult.error} Showing the list from the last successful check.`
+        : null,
     updater,
   };
 }

@@ -64,8 +64,8 @@ on GitHub's runners.
 ## Release checklist
 
 1. Make sure `main` is green and ready to ship.
-2. Update [CHANGELOG.md](/Users/sauer/Documents/cc/stowage.cc/CHANGELOG.md) by moving release-worthy items out of `Unreleased`.
-3. Bump the version in [package.json](/Users/sauer/Documents/cc/stowage.cc/package.json).
+2. Update [CHANGELOG.md](CHANGELOG.md) by moving release-worthy items out of `Unreleased`.
+3. Bump the version in [package.json](package.json).
 4. Commit the version/changelog update.
 5. Create and push the release tag:
 

@@ -33,6 +33,9 @@ import { cn } from "@/lib/utils";
 const POLL_MS = 2000;
 const LOG_TAIL = 12;
 const PREVIEW_RELEASES = 3;
+// After this long without a verdict the controls come back and the copy
+// says what to check, rather than spinning forever.
+const SLOW_UPDATE_MS = 10 * 60 * 1000;
 
 type Tracking = { from: string; target: string; startedAt: number };
 
@@ -127,15 +130,22 @@ export function UpdatesSection() {
     },
     onError: (error) => {
       toast.error(mapError(error, "Unable to start the update"));
+      // A timeout or "already running" may mean the run did start; the
+      // refetch lets the tracking effect above pick it up.
+      void queryClient.invalidateQueries({ queryKey: ["updates"] });
     },
   });
 
   const checkNow = async () => {
     setChecking(true);
     try {
+      const before = data?.checkedAt ?? null;
       const fresh = await getUpdates({ refresh: true });
       queryClient.setQueryData(["updates"], fresh);
       if (fresh.checkError) toast.error(fresh.checkError);
+      else if (fresh.checkWarning) toast.error(fresh.checkWarning);
+      else if (fresh.checkedAt === before)
+        toast.message("Checked less than a minute ago");
       else if (!fresh.updateAvailable) toast.success("Stowage is up to date");
     } catch (error) {
       toast.error(mapError(error, "Unable to check for updates"));
@@ -203,6 +213,9 @@ export function UpdatesSection() {
                     ? `Checked ${formatRelativeTime(data.checkedAt).long.toLowerCase()}`
                     : "Not checked yet"}
               </p>
+              {data.checkWarning ? (
+                <p className="mt-0.5 text-sm text-ink-2">{data.checkWarning}</p>
+              ) : null}
             </div>
             <Button
               type="button"
@@ -387,6 +400,20 @@ function UpdateProgress({
   const target = tracking?.target || status?.targetVersion || "";
   const log = status?.log.slice(-LOG_TAIL) ?? [];
   const busy = phase === "updating" || phase === "restarting";
+  const [slow, setSlow] = React.useState(false);
+  React.useEffect(() => {
+    if (!busy || !tracking) {
+      setSlow(false);
+      return;
+    }
+    const remaining = tracking.startedAt + SLOW_UPDATE_MS - Date.now();
+    if (remaining <= 0) {
+      setSlow(true);
+      return;
+    }
+    const timer = setTimeout(() => setSlow(true), remaining);
+    return () => clearTimeout(timer);
+  }, [busy, tracking]);
 
   const title =
     phase === "failed"
@@ -402,9 +429,11 @@ function UpdateProgress({
         "The updater reported a failure. Check the log and the container logs on the host.")
       : phase === "succeeded"
         ? "Waiting for the new version to answer. Reload if this page does not refresh on its own."
-        : phase === "restarting"
-          ? "The containers are being recreated. This page reloads when the app is back."
-          : "Pulling images and recreating services. Keep this page open.";
+        : slow
+          ? "This is taking longer than expected. Check `docker compose ps` and the container logs on the host; reload once the app answers."
+          : phase === "restarting"
+            ? "The containers are being recreated. This page reloads when the app is back."
+            : "Pulling images and recreating services. Keep this page open.";
 
   return (
     <div
@@ -427,25 +456,26 @@ function UpdateProgress({
           </p>
           <p className="mt-0.5 text-sm text-ink-2">{detail}</p>
         </div>
-        {phase === "failed" ? (
+        <div className="flex shrink-0 items-center gap-2">
+          {phase === "succeeded" || slow ? (
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={() => window.location.reload()}
+            >
+              Reload
+            </Button>
+          ) : null}
           <Button
             type="button"
-            variant="secondary"
+            variant={phase === "failed" ? "secondary" : "ghost"}
             size="sm"
             onClick={onDismiss}
           >
-            Dismiss
+            {busy ? "Stop following" : "Dismiss"}
           </Button>
-        ) : phase === "succeeded" ? (
-          <Button
-            type="button"
-            variant="secondary"
-            size="sm"
-            onClick={() => window.location.reload()}
-          >
-            Reload
-          </Button>
-        ) : null}
+        </div>
       </div>
       {log.length ? (
         <pre

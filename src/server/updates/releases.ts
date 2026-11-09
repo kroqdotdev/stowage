@@ -55,6 +55,8 @@ export function toRelease(raw: GitHubRelease): Release | null {
   if (raw.draft) return null;
   const parsed = parseVersion(raw.tag_name);
   if (!parsed) return null;
+  // The link is rendered as an href; only accept GitHub's own release pages.
+  if (!/^https:\/\/github\.com\//.test(raw.html_url ?? "")) return null;
   const version = raw.tag_name.replace(/^v/, "");
   return {
     version,
@@ -95,19 +97,31 @@ export async function fetchReleasesFromGitHub(
     .filter((release): release is Release => release !== null);
 }
 
+export type ReleaseList = {
+  releases: Release[];
+  /** When the list was fetched from GitHub. */
+  fetchedAt: number;
+  /** True when GitHub could not be reached and this is the previous list. */
+  stale: boolean;
+  /** Why the latest attempt failed, when `stale`. */
+  error: string | null;
+};
+
 export async function getReleases(
   options: {
     refresh?: boolean;
     now?: number;
     fetchImpl?: typeof fetch;
   } = {},
-): Promise<{ releases: Release[]; fetchedAt: number }> {
+): Promise<ReleaseList> {
   const now = options.now ?? Date.now();
   if (cache) {
     const age = now - cache.fetchedAt;
     const fresh = age < CACHE_TTL_MS;
     const refreshable = age >= REFRESH_MIN_INTERVAL_MS;
-    if (fresh && !(options.refresh && refreshable)) return cache;
+    if (fresh && !(options.refresh && refreshable)) {
+      return { ...cache, stale: false, error: null };
+    }
   }
   if (!inflight) {
     inflight = fetchReleasesFromGitHub(options.fetchImpl).finally(() => {
@@ -117,10 +131,19 @@ export async function getReleases(
   try {
     const releases = await inflight;
     cache = { releases, fetchedAt: now };
-    return cache;
+    return { ...cache, stale: false, error: null };
   } catch (error) {
-    // Stale is better than nothing when GitHub is unreachable.
-    if (cache) return cache;
+    // Stale is better than nothing when GitHub is unreachable, but say so.
+    if (cache) {
+      return {
+        ...cache,
+        stale: true,
+        error:
+          error instanceof ReleaseFetchError
+            ? error.message
+            : "Could not reach GitHub to check for updates.",
+      };
+    }
     throw error;
   }
 }
