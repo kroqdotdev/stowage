@@ -256,7 +256,10 @@ jobs:
             exit 1
           fi
 
+          # Changelog first: Settings > Updates shows this body to admins.
           {
+            cat "$CHANGELOG_SECTION"
+            echo
             echo "## Docker images"
             echo
             echo "- \`ghcr.io/$OWNER/stowage-app:$VERSION\`"
@@ -267,8 +270,6 @@ jobs:
             echo "## Deployment bundle"
             echo
             echo "- \`docker-compose.release.yml\`"
-            echo
-            cat "$CHANGELOG_SECTION"
           } > release-notes.md
 
       - name: Create GitHub Release
