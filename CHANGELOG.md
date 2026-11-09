@@ -11,6 +11,24 @@ Until then, version numbers still communicate upgrade risk:
 
 ## [Unreleased]
 
+### Added
+
+- Settings > Updates for admins: the installed version and build, newer
+  releases with their notes, and a one-click update when the optional
+  `updater` sidecar runs (`--profile updater`), with the compose commands shown
+  otherwise.
+- Published `stowage-updater` release image.
+- `/api/health` now reports the running version.
+
+### Changed
+
+- Rebuilt the UI in the Workshop design: concrete background, charcoal
+  sidebar, one amber primary, cards for objects and sheets for lists, a
+  phone layout with bottom navigation, and an asset scan flow.
+- Release images are built natively per platform (amd64 on the self-hosted
+  runner, arm64 on GitHub's arm runner) and merged into multi-arch manifests,
+  with layer caches kept in GHCR.
+
 ## [0.2.0] - 2026-04-21
 
 ### Added

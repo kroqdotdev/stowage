@@ -3,6 +3,7 @@
 import { FeaturesSection } from "@/components/settings/features-section";
 import { PasswordChangeSection } from "@/components/settings/password-change-section";
 import { RegionalSettingsSection } from "@/components/settings/regional-settings-section";
+import { UpdatesSection } from "@/components/settings/updates-section";
 import { UserManagementSection } from "@/components/settings/user-management-section";
 import { SheetHeading } from "@/components/ui/sheet-heading";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -47,12 +48,13 @@ export function SettingsPageClient() {
           <RegionalSettingsSection />
           <FeaturesSection />
           <UserManagementSection currentUserId={currentUser.id} />
+          <UpdatesSection />
         </>
       ) : (
         <section>
           <SheetHeading title="Administration" />
           <p className="py-4 text-sm text-ink-2">
-            Only admins can manage date format, features, and users.
+            Only admins can manage date format, features, users, and updates.
           </p>
         </section>
       )}

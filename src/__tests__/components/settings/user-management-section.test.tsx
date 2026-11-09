@@ -27,6 +27,21 @@ vi.mock("@/lib/api/app-settings", () => ({
   setServiceSchedulingEnabled: vi.fn(),
 }));
 
+vi.mock("@/lib/api/updates", () => ({
+  getUpdates: vi.fn().mockResolvedValue({
+    repo: "kroqdotdev/stowage",
+    current: { version: "0.2.0", build: null },
+    latest: null,
+    newer: [],
+    updateAvailable: false,
+    checkedAt: null,
+    checkError: null,
+    updater: { configured: false, reason: "not-configured" },
+  }),
+  applyUpdate: vi.fn(),
+  getHealth: vi.fn(),
+}));
+
 vi.mock("@/lib/use-app-date-format", () => ({
   useAppDateFormat: () => "DD-MM-YYYY",
 }));
@@ -177,7 +192,7 @@ describe("SettingsPageClient with non-admin", () => {
     await waitFor(() => {
       expect(
         screen.getByText(
-          "Only admins can manage date format, features, and users.",
+          "Only admins can manage date format, features, users, and updates.",
         ),
       ).toBeInTheDocument();
     });

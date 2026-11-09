@@ -1,0 +1,16 @@
+# syntax=docker/dockerfile:1.6
+
+# The updater sidecar: a small Node HTTP server plus the Docker CLI and the
+# compose plugin. The app calls it to pull a published release and recreate
+# the compose services. It needs the Docker socket mounted (see
+# docker-compose.release.yml, profile "updater").
+FROM node:22-alpine
+RUN apk add --no-cache docker-cli docker-cli-compose
+WORKDIR /updater
+COPY deploy/updater/server.mjs ./server.mjs
+ENV NODE_ENV=production
+VOLUME ["/state"]
+EXPOSE 9876
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s \
+  CMD wget -q --spider http://127.0.0.1:9876/health || exit 1
+CMD ["node", "/updater/server.mjs", "serve"]

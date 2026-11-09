@@ -18,10 +18,13 @@ RUN pnpm build
 # Stage 3 — runtime
 FROM node:22-alpine AS runner
 ARG APP_PORT=3000
+# Short git sha of the build; shown next to the version in Settings > Updates.
+ARG GIT_SHA=
 WORKDIR /app
 ENV NODE_ENV=production \
     HOSTNAME=0.0.0.0 \
-    PORT=${APP_PORT}
+    PORT=${APP_PORT} \
+    STOWAGE_BUILD_SHA=${GIT_SHA}
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
 COPY --from=builder /app/.next/standalone ./
