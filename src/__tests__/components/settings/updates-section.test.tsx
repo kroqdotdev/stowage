@@ -33,7 +33,8 @@ const release = {
   name: "Stowage 0.3.0",
   publishedAt: Date.parse("2026-11-02T09:00:00Z"),
   url: "https://github.com/kroqdotdev/stowage/releases/tag/v0.3.0",
-  notes: "## Added\n\n- In-app updates\n- A `thing`",
+  notes:
+    "## Added\n\n- In-app updates\n- A `thing` that wraps onto\n  the next line\n- Last",
   prerelease: false,
 };
 
@@ -98,6 +99,13 @@ describe("UpdatesSection", () => {
     ).toHaveAttribute("href", release.url);
     expect(within(list).getByText("In-app updates")).toBeInTheDocument();
     expect(within(list).getByText("thing")).toBeInTheDocument();
+    // The wrapped bullet stays one item; its continuation is not a paragraph.
+    const items = within(list).getAllByRole("listitem");
+    const wrapped = items.find((item) =>
+      item.textContent?.includes("that wraps onto the next line"),
+    );
+    expect(wrapped?.tagName).toBe("LI");
+    expect(within(list).queryByText(/^the next line$/)).not.toBeInTheDocument();
 
     expect(screen.getByText("Update by hand")).toBeInTheDocument();
     expect(

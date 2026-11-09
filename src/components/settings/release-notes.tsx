@@ -62,7 +62,11 @@ export function ReleaseNotes({
     const line = raw.trimEnd();
     const heading = /^(#{1,6})\s+(.*)$/.exec(line);
     const bullet = /^\s*[-*]\s+(.*)$/.exec(line);
-    if (heading) {
+    // A wrapped bullet continues on indented lines in the changelog.
+    const continuation = /^\s+\S/.test(line) && bullets.length && !bullet;
+    if (continuation) {
+      bullets[bullets.length - 1] += ` ${line.trim()}`;
+    } else if (heading) {
       flushBullets();
       flushParagraph();
       const title = heading[2].replace(/^\[([^\]]+)\].*$/, "$1");
