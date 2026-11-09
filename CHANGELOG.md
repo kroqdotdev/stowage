@@ -11,6 +11,8 @@ Until then, version numbers still communicate upgrade risk:
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-11-09
+
 ### Added
 
 - Settings > Updates for admins: the installed version and build, newer
