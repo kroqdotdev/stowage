@@ -11,6 +11,11 @@ services:
       POCKETBASE_SUPERUSER_PASSWORD: ${POCKETBASE_SUPERUSER_PASSWORD}
       STORAGE_LIMIT_GB: ${STORAGE_LIMIT_GB:-}
       SITE_URL: ${SITE_URL:-http://localhost:3000}
+      # In-app updates (Settings > Updates). The app checks GitHub Releases
+      # for new versions on its own; applying one needs the "updater"
+      # profile below and the same token in both services.
+      STOWAGE_UPDATER_URL: ${STOWAGE_UPDATER_URL:-http://updater:9876}
+      STOWAGE_UPDATER_TOKEN: ${STOWAGE_UPDATER_TOKEN:-}
     ports:
       - "${APP_HOST_BIND:-127.0.0.1}:${APP_HOST_PORT:-3000}:${APP_PORT:-3000}"
 
@@ -53,6 +58,23 @@ services:
       - caddy_data:/data
       - caddy_config:/config
 
+  # One-click updates from Settings > Updates. Opt in with
+  # `--profile updater` (combine with the other profiles you use). The
+  # sidecar needs the Docker socket to pull images and recreate the services
+  # of this compose project, so only run it on a host you control. Set
+  # STOWAGE_UPDATER_TOKEN to a long random string in .env.
+  updater:
+    profiles: ["updater"]
+    image: ghcr.io/kroqdotdev/stowage-updater:${STOWAGE_VERSION:-latest}
+    restart: unless-stopped
+    environment:
+      STOWAGE_UPDATER_TOKEN: ${STOWAGE_UPDATER_TOKEN:-}
+      COMPOSE_PROFILES: ${COMPOSE_PROFILES:-}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - updater_state:/state
+
 volumes:
   caddy_data:
   caddy_config:
+  updater_state:

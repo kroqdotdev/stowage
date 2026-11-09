@@ -6,7 +6,7 @@ export default function SettingsPage() {
     <div>
       <PageHeader
         title="Settings"
-        description="Date format, features, users and your password."
+        description="Date format, features, users, updates and your password."
         className="max-md:hidden"
       />
       <SettingsPageClient />

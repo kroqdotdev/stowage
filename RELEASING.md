@@ -22,6 +22,7 @@ Each tagged release publishes:
 - a multi-arch app image at `ghcr.io/kroqdotdev/stowage-app:<version>`
 - a multi-arch PocketBase image at `ghcr.io/kroqdotdev/stowage-pocketbase:<version>`
 - a multi-arch Caddy image at `ghcr.io/kroqdotdev/stowage-caddy:<version>`
+- a multi-arch updater image at `ghcr.io/kroqdotdev/stowage-updater:<version>`
 - the release deployment bundle file `docker-compose.release.yml`
 
 Those image tags are meant to be pinned in deployment config so upgrades happen
@@ -35,6 +36,30 @@ Image contents:
   bundled `pb_migrations/`; persistent user data still lives in `/pb_data`
 - `stowage-caddy` contains the repo's Caddyfile for TLS termination and `/pb`
   reverse proxy routing, while certificate state lives in `/data` and `/config`
+- `stowage-updater` contains the sidecar from `deploy/updater/` that applies
+  in-app updates (Settings > Updates) by pulling a release and recreating the
+  compose services
+
+The in-app update check reads the GitHub Releases of this repo, so the release
+notes admins see are the changelog section the workflow copies into the
+release. Draft releases are ignored; prereleases are only offered to
+installations already running a prerelease.
+
+## Where builds run
+
+The `Release` workflow builds each image natively per platform and merges the
+results into one multi-arch manifest, so nothing runs under QEMU:
+
+- `linux/amd64` builds run on the self-hosted runner named by the `CI_RUNNER`
+  repository variable (label `proxmox`, runner `gh-runner-stowage` in Proxmox
+  CT 105). Delete the variable to send them back to GitHub's runners.
+- `linux/arm64` builds run on GitHub's `ubuntu-24.04-arm` runner, which is
+  free for public repositories.
+- Layer caches live in GHCR as `<image>:buildcache-linux-amd64` and
+  `<image>:buildcache-linux-arm64` tags; they can be deleted at any time.
+
+The verify step (lint, typecheck, tests) and the GitHub Release step still run
+on GitHub's runners.
 
 ## Release checklist
 
@@ -52,7 +77,7 @@ git push origin main --tags
 6. Wait for the `Release` GitHub Actions workflow to:
    - verify the tag matches `package.json`
    - run lint, typecheck, and tests
-   - build and publish app, PocketBase, and Caddy images to GHCR
+   - build and publish the app, PocketBase, Caddy, and updater images to GHCR
    - create the GitHub Release from the matching changelog section
 
 ## Prereleases

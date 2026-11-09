@@ -115,6 +115,7 @@ Each release publishes:
 - `ghcr.io/kroqdotdev/stowage-app:<version>`
 - `ghcr.io/kroqdotdev/stowage-pocketbase:<version>`
 - `ghcr.io/kroqdotdev/stowage-caddy:<version>`
+- `ghcr.io/kroqdotdev/stowage-updater:<version>`
 - `docker-compose.release.yml` as a release deployment bundle
 
 For production/self-hosted deploys, pin exact image tags instead of floating to a
@@ -125,7 +126,8 @@ Image contents:
 - `stowage-app` contains the production Next.js standalone server plus static/public assets
 - `stowage-pocketbase` contains the pinned PocketBase binary plus this repo's `pb_migrations/`
 - `stowage-caddy` contains the bundled Caddy config for TLS termination and `/pb` proxying
-- neither image contains your persistent PocketBase data; that still lives in `pb_data/`
+- `stowage-updater` is the optional sidecar behind one-click updates (see [Updating](#updating))
+- none of the images contain your persistent PocketBase data; that still lives in `pb_data/`
 
 See [RELEASING.md](/Users/sauer/Documents/cc/stowage.cc/RELEASING.md) for the release checklist and tag flow.
 
@@ -165,24 +167,68 @@ By default, the release compose file binds the app and PocketBase ports to
 `127.0.0.1`; set `APP_HOST_BIND=0.0.0.0` and/or `POCKETBASE_HOST_BIND=0.0.0.0`
 if you intentionally want them reachable off-host without Caddy.
 
+### Updating
+
+Admins see the installed version and any newer release, with its notes, under
+**Settings > Updates**. The app checks GitHub Releases about once an hour and on
+demand with **Check now**.
+
+**By hand.** Pin the new version and recreate the services, adding the
+profiles you deploy with:
+
+```bash
+STOWAGE_VERSION=0.3.0 docker compose -f docker-compose.release.yml --profile pocketbase pull
+STOWAGE_VERSION=0.3.0 docker compose -f docker-compose.release.yml --profile pocketbase up -d
+```
+
+Or set `STOWAGE_VERSION` in `.env` and run the same two commands without the
+prefix. PocketBase migrations bundled with the new image apply on start, and
+`pb_data/` is untouched, but take a backup first.
+
+**From the browser.** Add the `updater` profile and a shared token, and the
+Updates page gets an **Update to x.y.z** button:
+
+```bash
+# .env
+STOWAGE_UPDATER_TOKEN=<output of: openssl rand -hex 32>
+COMPOSE_PROFILES=pocketbase,updater     # the profiles you deploy with, plus updater
+
+docker compose -f docker-compose.release.yml up -d
+```
+
+When an admin confirms an update, the sidecar writes `STOWAGE_VERSION=<new>`
+into the project's `.env`, pulls the images for the services that are running,
+recreates them, and finally recreates itself. The page shows the log and
+reloads when the new version answers. A failed pull leaves everything running
+as it was.
+
+The updater mounts the Docker socket, which is equivalent to root on the host,
+and is only reachable on the compose network with the token. Leave the profile
+out on hosts where that is not acceptable; the Updates page then shows the
+commands above instead.
+
 ### Production deployment
 
 The browser talks to PocketBase directly for realtime subscriptions, so for a public deployment put both services behind a reverse proxy on a single domain (Caddy, nginx, Traefik). Set `NEXT_PUBLIC_POCKETBASE_URL` to the proxy URL the browser should use (e.g. `https://stowage.example.com/pb`), and `POCKETBASE_URL` to the internal address Next uses to reach PB (e.g. `http://pocketbase:8090`). `pb_data/` is the only stateful directory — back it up.
 
 Environment variables:
 
-| Var                                        | Required | Notes                                                   |
-| ------------------------------------------ | -------- | ------------------------------------------------------- |
-| `APP_PORT`                                 | no       | Port the Next.js app listens on inside the container    |
-| `APP_HOST_PORT`                            | no       | Host port mapped to the Next.js container               |
-| `POCKETBASE_HOST_PORT`                     | no       | Host port mapped to PocketBase                          |
-| `APP_DOMAIN`                               | no       | Public domain for the optional built-in TLS profile     |
-| `HTTP_PORT` / `HTTPS_PORT`                 | no       | Host ports published by the optional Caddy TLS service  |
-| `POCKETBASE_URL`                           | yes      | Server-to-PB URL (e.g. `http://pocketbase:8090`)        |
-| `NEXT_PUBLIC_POCKETBASE_URL`               | yes      | Browser-to-PB URL (same origin as the app in prod)      |
-| `POCKETBASE_SUPERUSER_EMAIL` / `_PASSWORD` | yes      | Used by `pnpm pb:bootstrap` and the app's admin client  |
-| `STORAGE_LIMIT_GB`                         | no       | Global cap on total attachment bytes; omit for no limit |
-| `SITE_URL`                                 | no       | Base URL embedded in label QR codes                     |
+| Var                                        | Required | Notes                                                         |
+| ------------------------------------------ | -------- | ------------------------------------------------------------- |
+| `APP_PORT`                                 | no       | Port the Next.js app listens on inside the container          |
+| `APP_HOST_PORT`                            | no       | Host port mapped to the Next.js container                     |
+| `POCKETBASE_HOST_PORT`                     | no       | Host port mapped to PocketBase                                |
+| `APP_DOMAIN`                               | no       | Public domain for the optional built-in TLS profile           |
+| `HTTP_PORT` / `HTTPS_PORT`                 | no       | Host ports published by the optional Caddy TLS service        |
+| `POCKETBASE_URL`                           | yes      | Server-to-PB URL (e.g. `http://pocketbase:8090`)              |
+| `NEXT_PUBLIC_POCKETBASE_URL`               | yes      | Browser-to-PB URL (same origin as the app in prod)            |
+| `POCKETBASE_SUPERUSER_EMAIL` / `_PASSWORD` | yes      | Used by `pnpm pb:bootstrap` and the app's admin client        |
+| `STORAGE_LIMIT_GB`                         | no       | Global cap on total attachment bytes; omit for no limit       |
+| `SITE_URL`                                 | no       | Base URL embedded in label QR codes                           |
+| `STOWAGE_VERSION`                          | no       | Release image tag used by `docker-compose.release.yml`        |
+| `STOWAGE_UPDATER_TOKEN`                    | no       | Shared secret between the app and the `updater` sidecar       |
+| `STOWAGE_UPDATER_URL`                      | no       | Where the app reaches the updater (`http://updater:9876`)     |
+| `COMPOSE_PROFILES`                         | no       | Profiles Compose treats as active (e.g. `pocketbase,updater`) |
 
 ## Tests
 
