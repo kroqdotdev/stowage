@@ -23,6 +23,39 @@ function coerceCheckbox(value: FieldValue) {
   return value === true;
 }
 
+/*
+  Workshop form labels: 14px semibold; optional fields say so in muted text.
+  The marker sits outside the <label> so the accessible name stays the
+  field name.
+*/
+function FieldLabel({
+  htmlFor,
+  definition,
+  inline = false,
+}: {
+  htmlFor: string;
+  definition: Pick<FieldDefinition, "name" | "required">;
+  inline?: boolean;
+}) {
+  return (
+    <div className="flex items-baseline gap-1.5">
+      <label
+        htmlFor={htmlFor}
+        className={
+          inline
+            ? "cursor-pointer text-sm font-semibold"
+            : "text-sm font-semibold"
+        }
+      >
+        {definition.name}
+      </label>
+      {!definition.required && !inline ? (
+        <span className="text-sm text-muted-foreground">optional</span>
+      ) : null}
+    </div>
+  );
+}
+
 export function DynamicField({
   definition,
   value,
@@ -49,17 +82,12 @@ export function DynamicField({
           <input
             id={fieldId}
             type="checkbox"
-            className="h-4 w-4 rounded border border-input"
+            className="size-[18px] cursor-pointer accent-[var(--foreground)]"
             checked={checked}
             disabled={disabled}
             onChange={(event) => onChange(event.target.checked)}
           />
-          <label htmlFor={fieldId} className="text-sm font-medium">
-            {definition.name}
-            {definition.required ? (
-              <span className="ml-1 text-destructive">*</span>
-            ) : null}
-          </label>
+          <FieldLabel htmlFor={fieldId} definition={definition} inline />
         </div>
       </div>
     );
@@ -69,15 +97,10 @@ export function DynamicField({
     const currentValue = coerceString(value);
     return (
       <div className="space-y-1.5">
-        <label htmlFor={fieldId} className="text-sm font-medium">
-          {definition.name}
-          {definition.required ? (
-            <span className="ml-1 text-destructive">*</span>
-          ) : null}
-        </label>
+        <FieldLabel htmlFor={fieldId} definition={definition} />
         <select
           id={fieldId}
-          className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+          className="h-9 w-full cursor-pointer rounded-md border-[1.5px] border-input bg-card px-3 text-sm appearance-none bg-[url('data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%2714%27%20height=%2714%27%20viewBox=%270%200%2024%2024%27%20fill=%27none%27%20stroke=%27%234e524b%27%20stroke-width=%272.5%27%20stroke-linecap=%27round%27%20stroke-linejoin=%27round%27%3E%3Cpath%20d=%27m6%209%206%206%206-6%27/%3E%3C/svg%3E')] bg-[length:14px] bg-[position:right_10px_center] bg-no-repeat pr-8 font-medium text-foreground outline-none focus-visible:border-foreground disabled:cursor-not-allowed disabled:opacity-50"
           value={currentValue}
           onChange={(event) => onChange(event.target.value || null)}
           disabled={disabled}
@@ -98,12 +121,7 @@ export function DynamicField({
     const currentValue = coerceString(value);
     return (
       <div className="space-y-1.5">
-        <label htmlFor={fieldId} className="text-sm font-medium">
-          {definition.name}
-          {definition.required ? (
-            <span className="ml-1 text-destructive">*</span>
-          ) : null}
-        </label>
+        <FieldLabel htmlFor={fieldId} definition={definition} />
         <Input
           id={fieldId}
           type="date"
@@ -119,12 +137,7 @@ export function DynamicField({
   if (definition.fieldType === "number") {
     return (
       <div className="space-y-1.5">
-        <label htmlFor={fieldId} className="text-sm font-medium">
-          {definition.name}
-          {definition.required ? (
-            <span className="ml-1 text-destructive">*</span>
-          ) : null}
-        </label>
+        <FieldLabel htmlFor={fieldId} definition={definition} />
         <Input
           id={fieldId}
           type="number"
@@ -150,12 +163,7 @@ export function DynamicField({
   if (definition.fieldType === "currency") {
     return (
       <div className="space-y-1.5">
-        <label htmlFor={fieldId} className="text-sm font-medium">
-          {definition.name}
-          {definition.required ? (
-            <span className="ml-1 text-destructive">*</span>
-          ) : null}
-        </label>
+        <FieldLabel htmlFor={fieldId} definition={definition} />
         <div className="relative">
           <span className="pointer-events-none absolute inset-y-0 left-3 inline-flex items-center text-sm text-muted-foreground">
             $
@@ -191,12 +199,7 @@ export function DynamicField({
 
     return (
       <div className="space-y-1.5">
-        <label htmlFor={fieldId} className="text-sm font-medium">
-          {definition.name}
-          {definition.required ? (
-            <span className="ml-1 text-destructive">*</span>
-          ) : null}
-        </label>
+        <FieldLabel htmlFor={fieldId} definition={definition} />
         <Input
           id={fieldId}
           type="url"
@@ -223,7 +226,7 @@ export function DynamicField({
           required={definition.required}
         />
         {urlError ? (
-          <p className="text-xs text-destructive">{urlError}</p>
+          <p className="text-sm font-medium text-destructive">{urlError}</p>
         ) : null}
       </div>
     );
@@ -231,12 +234,7 @@ export function DynamicField({
 
   return (
     <div className="space-y-1.5">
-      <label htmlFor={fieldId} className="text-sm font-medium">
-        {definition.name}
-        {definition.required ? (
-          <span className="ml-1 text-destructive">*</span>
-        ) : null}
-      </label>
+      <FieldLabel htmlFor={fieldId} definition={definition} />
       <Input
         id={fieldId}
         type="text"

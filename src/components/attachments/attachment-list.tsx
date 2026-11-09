@@ -40,71 +40,68 @@ export function AttachmentList({ assetId }: { assetId: string }) {
 
   if (attachmentsQuery.isPending) {
     return (
-      <div className="rounded-lg border border-border/60 bg-background p-4 text-sm text-muted-foreground">
+      <p className="py-3 text-sm text-muted-foreground">
         Loading attachments...
-      </div>
+      </p>
     );
   }
 
   if (rows.length === 0) {
-    return (
-      <div className="rounded-lg border border-dashed border-border/70 bg-muted/10 p-5 text-sm text-muted-foreground">
-        No attachments yet.
-      </div>
-    );
+    return <p className="py-3 text-sm text-ink-2">No attachments yet.</p>;
   }
 
   return (
-    <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
+    <ul className="border-t border-border">
       {rows.map((attachment) => (
-        <AttachmentCard
-          key={attachment.id}
-          attachment={attachment}
-          deleting={deletingAttachmentId === attachment.id}
-          retrying={retryingAttachmentId === attachment.id}
-          onDelete={async (attachmentId) => {
-            setDeletingAttachmentId(attachmentId);
-            try {
-              await deleteMutation.mutateAsync(attachmentId);
-              void queryClient.invalidateQueries({
-                queryKey: ["attachments", assetId],
-              });
-              void queryClient.invalidateQueries({
-                queryKey: ["storage-usage"],
-              });
-              toast.success("Attachment deleted");
-            } catch (error) {
-              toast.error(
-                getAttachmentUiErrorMessage(
-                  error,
-                  "Unable to delete attachment",
-                ),
-              );
-            } finally {
-              setDeletingAttachmentId(null);
-            }
-          }}
-          onRetry={async (attachmentId) => {
-            setRetryingAttachmentId(attachmentId);
-            try {
-              await retryMutation.mutateAsync(attachmentId);
-              void queryClient.invalidateQueries({
-                queryKey: ["attachments", assetId],
-              });
-              toast.success("Attachment retry queued");
-            } catch (error) {
-              toast.error(
-                getAttachmentUiErrorMessage(
-                  error,
-                  "Unable to retry attachment",
-                ),
-              );
-            } finally {
-              setRetryingAttachmentId(null);
-            }
-          }}
-        />
+        <li key={attachment.id} className="border-b border-border">
+          <AttachmentCard
+            attachment={attachment}
+            deleting={deletingAttachmentId === attachment.id}
+            retrying={retryingAttachmentId === attachment.id}
+            onDelete={async (attachmentId) => {
+              setDeletingAttachmentId(attachmentId);
+              try {
+                await deleteMutation.mutateAsync(attachmentId);
+                void queryClient.invalidateQueries({
+                  queryKey: ["attachments", assetId],
+                });
+                void queryClient.invalidateQueries({
+                  queryKey: ["storage-usage"],
+                });
+                toast.success("Attachment deleted");
+              } catch (error) {
+                toast.error(
+                  getAttachmentUiErrorMessage(
+                    error,
+                    "Unable to delete attachment",
+                  ),
+                );
+              } finally {
+                setDeletingAttachmentId(null);
+              }
+            }}
+            onRetry={async (attachmentId) => {
+              setRetryingAttachmentId(attachmentId);
+              try {
+                await retryMutation.mutateAsync(attachmentId);
+                void queryClient.invalidateQueries({
+                  queryKey: ["attachments", assetId],
+                });
+                toast.success("Attachment retry queued");
+              } catch (error) {
+                toast.error(
+                  getAttachmentUiErrorMessage(
+                    error,
+                    "Unable to retry attachment",
+                  ),
+                );
+              } finally {
+                setRetryingAttachmentId(null);
+              }
+            }}
+          />
+        </li>
       ))}
-    </div>
+    </ul>
   );
 }

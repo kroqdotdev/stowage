@@ -69,11 +69,11 @@ export function SetupForm() {
         description="Create the first administrator account to start using the app."
       >
         <div className="space-y-3">
-          <div className="h-9 animate-pulse rounded-md bg-muted" />
-          <div className="h-9 animate-pulse rounded-md bg-muted" />
-          <div className="h-9 animate-pulse rounded-md bg-muted" />
-          <div className="h-9 animate-pulse rounded-md bg-muted" />
-          <div className="h-9 animate-pulse rounded-md bg-muted" />
+          <div className="h-11 animate-pulse rounded-md bg-border" />
+          <div className="h-11 animate-pulse rounded-md bg-border" />
+          <div className="h-11 animate-pulse rounded-md bg-border" />
+          <div className="h-11 animate-pulse rounded-md bg-border" />
+          <div className="h-11 animate-pulse rounded-md bg-border" />
         </div>
       </AuthPanel>
     );
@@ -82,6 +82,7 @@ export function SetupForm() {
   return (
     <AuthPanel
       title="Set up Stowage"
+      eyebrow="First run"
       description="Create the first administrator account. You can add more users later in Settings."
       footer={{
         prompt: "Setup already complete?",
@@ -93,7 +94,7 @@ export function SetupForm() {
         {!adminConfigReady ? (
           <p
             role="alert"
-            className="rounded-md border border-destructive/20 bg-destructive/5 px-3 py-2 text-sm text-destructive"
+            className="text-sm font-medium text-destructive"
           >
             Server setup is incomplete. Set{" "}
             <code>POCKETBASE_SUPERUSER_EMAIL</code> and{" "}
@@ -103,7 +104,7 @@ export function SetupForm() {
         ) : null}
 
         <div className="space-y-1.5">
-          <label htmlFor="setup-name" className="text-sm font-medium">
+          <label htmlFor="setup-name" className="block text-[13px] font-semibold text-foreground">
             Full name
           </label>
           <Input
@@ -112,12 +113,13 @@ export function SetupForm() {
             value={name}
             onChange={(event) => setName(event.target.value)}
             placeholder="Alex Morgan"
+            className="h-11"
             required
           />
         </div>
 
         <div className="space-y-1.5">
-          <label htmlFor="setup-email" className="text-sm font-medium">
+          <label htmlFor="setup-email" className="block text-[13px] font-semibold text-foreground">
             Email
           </label>
           <Input
@@ -127,12 +129,13 @@ export function SetupForm() {
             value={email}
             onChange={(event) => setEmail(event.target.value)}
             placeholder="admin@example.com"
+            className="h-11"
             required
           />
         </div>
 
         <div className="space-y-1.5">
-          <label htmlFor="setup-password" className="text-sm font-medium">
+          <label htmlFor="setup-password" className="block text-[13px] font-semibold text-foreground">
             Password
           </label>
           <Input
@@ -142,6 +145,7 @@ export function SetupForm() {
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             placeholder="At least 8 characters"
+            className="h-11"
             required
           />
         </div>
@@ -149,7 +153,7 @@ export function SetupForm() {
         <div className="space-y-1.5">
           <label
             htmlFor="setup-password-confirm"
-            className="text-sm font-medium"
+            className="block text-[13px] font-semibold text-foreground"
           >
             Confirm password
           </label>
@@ -160,6 +164,7 @@ export function SetupForm() {
             value={confirmPassword}
             onChange={(event) => setConfirmPassword(event.target.value)}
             placeholder="Re-enter your password"
+            className="h-11"
             required
           />
         </div>
@@ -167,7 +172,7 @@ export function SetupForm() {
         {error ? (
           <p
             role="alert"
-            className="rounded-md border border-destructive/20 bg-destructive/5 px-3 py-2 text-sm text-destructive"
+            className="text-sm font-medium text-destructive"
           >
             {error}
           </p>
@@ -175,11 +180,12 @@ export function SetupForm() {
 
         <Button
           type="submit"
-          className="w-full cursor-pointer"
+          size="lg"
+          className="mt-2 w-full"
           disabled={submitting || firstRun === false || !adminConfigReady}
         >
           {submitting ? <Loader2 className="animate-spin" /> : null}
-          {submitting ? "Creating account..." : "Create admin account"}
+          {submitting ? "Creating account…" : "Create admin account"}
         </Button>
       </form>
     </AuthPanel>

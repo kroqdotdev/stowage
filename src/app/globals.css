@@ -4,11 +4,21 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/*
+  Workshop design system.
+
+  Concrete grey background, charcoal sidebar, one safety-amber accent.
+  Bright amber is the one primary action per screen and the current item in
+  the charcoal sidebar. The darker amber is the 3px "where you are" mark on
+  light surfaces. Ink is what you have ticked. Status colour appears only on
+  exceptions. Only printable things carry a border.
+*/
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-archivo), system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, monospace;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -16,6 +26,7 @@
   --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
   --color-sidebar-primary: var(--sidebar-primary);
   --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-muted: var(--sidebar-muted);
   --color-sidebar: var(--sidebar);
   --color-chart-5: var(--chart-5);
   --color-chart-4: var(--chart-4);
@@ -25,6 +36,7 @@
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
+  --color-line-2: var(--line-2);
   --color-destructive: var(--destructive);
   --color-scan: var(--scan);
   --color-scan-foreground: var(--scan-foreground);
@@ -36,99 +48,198 @@
   --color-secondary: var(--secondary);
   --color-primary-foreground: var(--primary-foreground);
   --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
   --color-popover-foreground: var(--popover-foreground);
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-  --radius-2xl: calc(var(--radius) + 8px);
-  --radius-3xl: calc(var(--radius) + 12px);
-  --radius-4xl: calc(var(--radius) + 16px);
+  --color-ink: var(--foreground);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--muted-foreground);
+  --color-amber: var(--primary);
+  --color-amber-ink: var(--amber-ink);
+  --color-chip: var(--chip);
+  --color-repair: var(--repair);
+  --color-slate: var(--slate);
+  --color-retired: var(--retired);
+  --color-disposed: var(--disposed);
+  --radius-xs: 2px;
+  --radius-sm: 2px;
+  --radius-md: 3px;
+  --radius-lg: 3px;
+  --radius-xl: 4px;
+  --radius-2xl: 6px;
+  --radius-3xl: 8px;
+  --radius-4xl: 12px;
+  --breakpoint-sm: 640px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 1024px;
+  --breakpoint-xl: 1280px;
+  --breakpoint-2xl: 1536px;
 }
 
 :root {
-  --radius: 0.625rem;
-  --background: #fafaf9;
-  --foreground: #1c1917;
-  --card: #ffffff;
-  --card-foreground: #1c1917;
-  --popover: #ffffff;
-  --popover-foreground: #1c1917;
-  --primary: #c2410c;
-  --primary-foreground: #ffffff;
-  --secondary: #f5f0e8;
-  --secondary-foreground: #1c1917;
-  --muted: #f5f5f4;
-  --muted-foreground: #78716c;
-  --accent: #fff7ed;
-  --accent-foreground: #1c1917;
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: #e7e5e4;
-  --input: #e7e5e4;
-  --ring: #c2410c;
-  --chart-1: #c2410c;
-  --chart-2: #d97706;
-  --chart-3: #6b8e6b;
-  --chart-4: #a0826d;
-  --chart-5: #c2b280;
-  --sidebar: #faf8f5;
-  --sidebar-foreground: #1c1917;
-  --sidebar-primary: #c2410c;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #f5efe8;
-  --sidebar-accent-foreground: #1c1917;
-  --sidebar-border: #e7e5e4;
-  --sidebar-ring: #c2410c;
-  --scan: #c2410c;
-  --scan-foreground: #ffffff;
+  --radius: 3px;
+  --background: #ecede9;
+  --foreground: #1b1d1a;
+  --ink-2: #4e524b;
+  --card: #fbfbf9;
+  --card-foreground: #1b1d1a;
+  --popover: #fbfbf9;
+  --popover-foreground: #1b1d1a;
+  --primary: #e8a80c;
+  --primary-hover: #d39a08;
+  --primary-foreground: #1b1d1a;
+  --amber-ink: #a87700;
+  --secondary: #f2f2ee;
+  --secondary-foreground: #1b1d1a;
+  --muted: #f2f2ee;
+  --muted-foreground: #666a62;
+  --accent: #f2f2ee;
+  --accent-foreground: #1b1d1a;
+  --chip: #e1e2dc;
+  --destructive: #b3261e;
+  --repair: #a4521a;
+  --slate: #4f6475;
+  --retired: #6b7066;
+  --disposed: #a3252d;
+  --border: #d9dad4;
+  --line-2: #bdbfb7;
+  --input: #7a7e76;
+  --ring: #1b1d1a;
+  --chart-1: #1b1d1a;
+  --chart-2: #3a3d39;
+  --chart-3: #595d56;
+  --chart-4: #777a72;
+  --chart-5: #8e918a;
+  --sidebar: #1f2220;
+  --sidebar-foreground: #d9dbd5;
+  --sidebar-muted: #9a9e96;
+  --sidebar-primary: #e8a80c;
+  --sidebar-primary-foreground: #1b1d1a;
+  --sidebar-accent: #2a2d2a;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: #33372f;
+  --sidebar-ring: #ffffff;
+  --scan: #e8a80c;
+  --scan-foreground: #1b1d1a;
 }
 
 .dark {
-  --background: #0c0a09;
-  --foreground: #fafaf9;
-  --card: #1c1917;
-  --card-foreground: #fafaf9;
-  --popover: #1c1917;
-  --popover-foreground: #fafaf9;
-  --primary: #ea580c;
-  --primary-foreground: #ffffff;
-  --secondary: #292524;
-  --secondary-foreground: #fafaf9;
-  --muted: #292524;
-  --muted-foreground: #a8a29e;
-  --accent: #292524;
-  --accent-foreground: #fafaf9;
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: #44403c;
-  --input: #44403c;
-  --ring: #ea580c;
-  --chart-1: #ea580c;
-  --chart-2: #f59e0b;
-  --chart-3: #86a886;
-  --chart-4: #b8977e;
-  --chart-5: #d4c99a;
-  --sidebar: #1c1917;
-  --sidebar-foreground: #fafaf9;
-  --sidebar-primary: #ea580c;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #292524;
-  --sidebar-accent-foreground: #fafaf9;
-  --sidebar-border: #44403c;
-  --sidebar-ring: #ea580c;
-  --scan: #ea580c;
-  --scan-foreground: #ffffff;
+  --background: #1b1d1a;
+  --foreground: #ecede9;
+  --ink-2: #c9ccc5;
+  --card: #242725;
+  --card-foreground: #ecede9;
+  --popover: #242725;
+  --popover-foreground: #ecede9;
+  --primary: #e8a80c;
+  --primary-hover: #f0b526;
+  --primary-foreground: #1b1d1a;
+  --amber-ink: #e8a80c;
+  --secondary: #2a2d2a;
+  --secondary-foreground: #ecede9;
+  --muted: #2a2d2a;
+  --muted-foreground: #9a9e96;
+  --accent: #2a2d2a;
+  --accent-foreground: #ecede9;
+  --chip: #2f3230;
+  --destructive: #e5534b;
+  --repair: #e08a4a;
+  --slate: #8fa6b8;
+  --retired: #9a9e96;
+  --disposed: #e5534b;
+  --border: #33372f;
+  --line-2: #4a4e48;
+  --input: #7a7e76;
+  --ring: #ecede9;
+  --chart-1: #ecede9;
+  --chart-2: #c9ccc5;
+  --chart-3: #9a9e96;
+  --chart-4: #777a72;
+  --chart-5: #595d56;
+  --sidebar: #141615;
+  --sidebar-foreground: #d9dbd5;
+  --sidebar-muted: #9a9e96;
+  --sidebar-primary: #e8a80c;
+  --sidebar-primary-foreground: #1b1d1a;
+  --sidebar-accent: #202321;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: #2a2d2a;
+  --sidebar-ring: #ffffff;
+  --scan: #e8a80c;
+  --scan-foreground: #1b1d1a;
 }
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply border-border;
+  }
+  html {
+    -webkit-font-smoothing: antialiased;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-sm text-foreground;
+    line-height: 1.45;
   }
+  /* Focus: a 2px ink outline plus a 3px ink offset shadow. White on charcoal. */
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+    box-shadow: 3px 3px 0 var(--ring);
+  }
+  .on-charcoal :focus-visible {
+    outline-color: #fff;
+    box-shadow: 3px 3px 0 #fff;
+  }
+}
+
+/*
+  Unlayered on purpose: it beats `outline-none` (outline-style: none) from the
+  utilities layer, so no control can drop the keyboard focus outline, and the
+  outline (unlike the shadow) survives forced-colors mode. Containers that
+  should not show it use `outline-hidden`, whose transparent colour stays.
+*/
+:focus-visible {
+  outline-style: solid;
+}
+
+/* Archivo set wide for headings. */
+@utility wide {
+  font-stretch: 118%;
+  letter-spacing: -0.01em;
+}
+
+/* 13px tracked-caps mono eyebrow (NEXT SERVICE, LABEL, STATUS). */
+@utility eyebrow {
+  font-family: var(--font-jetbrains), "JetBrains Mono", ui-monospace, monospace;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+
+/* The one heavy rule: under page titles, table heads and sheet headings. */
+@utility rule-ink {
+  border-bottom: 2px solid var(--foreground);
+}
+
+/* Long-dash (6 on, 4 off) control-border frame for "add something here". */
+@utility dash-slot {
+  border: 0;
+  background: transparent
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Crect x='1' y='1' width='calc(100%25 - 2px)' height='calc(100%25 - 2px)' fill='none' rx='3' stroke='%237A7E76' stroke-width='1' stroke-dasharray='6 4'/%3E%3C/svg%3E")
+    no-repeat;
+  background-size: 100% 100%;
+}
+
+/* Picker runs: a dotted underline so a control never looks like a link. */
+@utility picker-run {
+  text-decoration: underline dotted;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 3px;
+  text-decoration-color: var(--foreground);
 }
 
 @keyframes scan-detected {

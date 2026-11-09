@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { fillRequiredFields, getLanding, signIn } from "./helpers";
+import { fillRequiredFields, getLanding, pageTitle, signIn } from "./helpers";
 
 function escapeRegex(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -70,13 +70,13 @@ test.describe.serial("phase 7 service scheduling", () => {
 
     await page.goto("/services");
     await expect(
-      page.getByText(
-        "Service scheduling is disabled by an admin. Enable it in Settings to use the planner views.",
-      ),
+      page.getByText("Service scheduling is turned off."),
     ).toBeVisible();
 
     await page.goto("/assets/new");
-    await expect(page.getByText("Preventive schedule")).toHaveCount(0);
+    await expect(
+      page.getByRole("heading", { name: "Service schedule" }),
+    ).toHaveCount(0);
 
     await page.goto("/settings");
     const reenabledSchedulingSwitch = page.getByRole("switch", {
@@ -87,7 +87,9 @@ test.describe.serial("phase 7 service scheduling", () => {
     await expect(page.getByText("Service scheduling enabled")).toBeVisible();
 
     await page.goto("/assets/new");
-    await expect(page.getByText("Preventive schedule")).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Service schedule" }),
+    ).toBeVisible();
 
     const assetName = `PW Service Schedule ${Date.now()}`;
     const dueDate = getUtcIsoDateWithOffset(5);
@@ -99,12 +101,12 @@ test.describe.serial("phase 7 service scheduling", () => {
     await page.getByRole("button", { name: "Create asset" }).click();
 
     await expect(
-      page.getByRole("heading", { name: `${assetName} created` }),
+      page.getByRole("heading", { name: assetName, exact: true }),
     ).toBeVisible({
       timeout: 20_000,
     });
 
-    await page.getByRole("button", { name: "View asset" }).click();
+    await page.getByRole("button", { name: "Open asset" }).click();
     await page.waitForURL(/\/assets\/(?!new$)[^/]+$/, { timeout: 20_000 });
     const detailUrl = page.url();
     const assetId = detailUrl.split("/").filter(Boolean).at(-1);
@@ -113,31 +115,34 @@ test.describe.serial("phase 7 service scheduling", () => {
 
     await page.goto("/services");
     const scheduleRow = page
-      .locator("article")
+      .getByTestId("services-scheduled-list")
+      .getByRole("listitem")
       .filter({ hasText: assetName })
       .first();
     await expect(scheduleRow).toBeVisible({ timeout: 20_000 });
     await expect(scheduleRow).toContainText(getDisplayDatePattern(dueDate));
 
     await page.goto("/dashboard");
-    const upcomingServicesSection = page
-      .locator("section")
-      .filter({ hasText: "Service queue" })
-      .first();
+    const upcomingServicesSection = page.getByRole("region", {
+      name: "Service due",
+    });
     await expect(upcomingServicesSection).toBeVisible();
 
     await page.goto("/services/calendar");
+    await expect(pageTitle(page, /^Services/)).toBeVisible();
+    const servicesTabs = page.getByRole("navigation", {
+      name: "Services sections",
+    });
     await expect(
-      page.getByRole("heading", { name: "Services Calendar" }),
-    ).toBeVisible();
+      servicesTabs.getByRole("link", { name: "Calendar" }),
+    ).toHaveAttribute("aria-current", "page");
     await expect(page.getByText("Loading service calendar...")).not.toBeVisible(
       {
         timeout: 20_000,
       },
     );
-    await expect(page.locator('a[href="/services"]').first()).toBeVisible();
     await expect(
-      page.locator('a[href="/services/calendar"]').first(),
+      servicesTabs.getByRole("link", { name: "Schedule" }),
     ).toBeVisible();
     const targetMonthLabel = getMonthLabelForIsoDate(dueDate);
     const monthHeading = page.locator("[data-testid='calendar-month-heading']");
@@ -147,7 +152,7 @@ test.describe.serial("phase 7 service scheduling", () => {
       if (currentMonth === targetMonthLabel) {
         break;
       }
-      await page.getByRole("button", { name: /^Next$/ }).click();
+      await page.getByRole("button", { name: "Next month" }).click();
     }
     await expect(monthHeading.first()).toHaveText(targetMonthLabel);
 
@@ -159,6 +164,7 @@ test.describe.serial("phase 7 service scheduling", () => {
       })
       .first();
     await expect(dayCell).toBeVisible();
+    // The day lists its due assets (a busy day folds the rest into "+N").
     await expect(dayCell.getByRole("button").first()).toBeVisible();
   });
 });

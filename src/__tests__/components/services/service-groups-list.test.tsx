@@ -66,9 +66,9 @@ describe("ServiceGroupsList", () => {
         "Engine checks",
       ),
     ).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Create group" }));
+    await user.click(screen.getByRole("button", { name: "New service plan…" }));
     expect(
-      screen.getByRole("heading", { name: "Create service group" }),
+      screen.getByRole("heading", { name: "New service plan" }),
     ).toBeVisible();
   });
 });

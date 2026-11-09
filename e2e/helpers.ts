@@ -34,10 +34,41 @@ export async function getLanding(
   return getLeafPathSegment(page.url()) === "setup" ? "setup" : "login";
 }
 
+/*
+  In dev, Next.js draws its dev-tools badge in a corner of the page. On a
+  phone it sits on top of the top bar's user menu and swallows taps, so tests
+  hide it. Production builds have no badge.
+*/
+export async function hideNextDevTools(page: Page) {
+  await page.addInitScript(() => {
+    const style = document.createElement("style");
+    style.textContent = "nextjs-portal { display: none !important; }";
+    document.addEventListener("DOMContentLoaded", () =>
+      document.head.appendChild(style),
+    );
+  });
+  // The page that is already open (client-side navigations keep it).
+  await page
+    .addStyleTag({ content: "nextjs-portal { display: none !important; }" })
+    .catch(() => undefined);
+}
+
+/*
+  A page's name: the h1 on tablet and desktop, the top bar title on phones
+  (where the page header is hidden). Only one of them is visible.
+*/
+export function pageTitle(page: Page, name: string | RegExp) {
+  return page
+    .getByRole("heading", { level: 1, name })
+    .or(page.getByTestId("mobile-top-bar-controls").getByText(name))
+    .filter({ visible: true });
+}
+
 export async function signIn(page: Page, email: string, password: string) {
+  await hideNextDevTools(page);
   await page.goto("/login");
   await page.getByLabel("Email").fill(email);
-  await page.getByLabel("Password").fill(password);
+  await page.getByLabel("Password", { exact: true }).fill(password);
   await page.getByRole("button", { name: "Sign in" }).click();
   await page.waitForURL(
     (url) => getLeafPathSegment(url.toString()) === "dashboard",

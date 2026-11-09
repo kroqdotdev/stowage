@@ -6,6 +6,8 @@ import {
   type ServiceIntervalUnit,
   type ServiceScheduleDraft,
 } from "@/components/assets/types";
+import { Input } from "@/components/ui/input";
+import { SheetHeading } from "@/components/ui/sheet-heading";
 
 type ParsedServiceSchedule =
   | {
@@ -156,27 +158,48 @@ export function ServiceScheduleFields({
   onChange: (next: ServiceScheduleDraft) => void;
   onClear: () => void;
 }) {
-  return (
-    <section className="space-y-3 rounded-lg border border-border/60 bg-muted/10 p-4">
-      <div className="space-y-1">
-        <h3 className="text-sm font-semibold tracking-tight">
-          Preventive schedule
-        </h3>
-        <p className="text-xs text-muted-foreground">
-          Optional. If you set any schedule field, all schedule fields are
-          required.
-        </p>
-      </div>
+  const unitSelect =
+    "h-9 cursor-pointer rounded-md border-[1.5px] border-input bg-card px-2.5 text-sm appearance-none bg-[url('data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%2714%27%20height=%2714%27%20viewBox=%270%200%2024%2024%27%20fill=%27none%27%20stroke=%27%234e524b%27%20stroke-width=%272.5%27%20stroke-linecap=%27round%27%20stroke-linejoin=%27round%27%3E%3Cpath%20d=%27m6%209%206%206%206-6%27/%3E%3C/svg%3E')] bg-[length:14px] bg-[position:right_10px_center] bg-no-repeat pr-8 font-medium text-foreground outline-none focus-visible:border-foreground disabled:cursor-not-allowed disabled:opacity-50";
+  const hasSchedule =
+    Boolean(value.nextServiceDate.trim()) ||
+    Boolean(value.intervalValue.trim()) ||
+    Boolean(value.reminderLeadValue.trim());
 
-      <div className="grid gap-4 lg:grid-cols-3">
-        <div className="space-y-1.5">
-          <label htmlFor="service-next-date" className="text-sm font-medium">
+  return (
+    <section
+      id="service"
+      aria-labelledby="service-schedule-title"
+      className="scroll-mt-20"
+    >
+      <SheetHeading
+        title={<span id="service-schedule-title">Service schedule</span>}
+        aside={
+          hasSchedule ? (
+            <button
+              type="button"
+              className="cursor-pointer text-sm font-medium text-ink-2 underline underline-offset-[3px] hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
+              disabled={disabled}
+              onClick={onClear}
+            >
+              Clear schedule
+            </button>
+          ) : null
+        }
+      />
+      <p className="px-0.5 pt-1.5 text-[13px] text-muted-foreground">
+        Optional. If you set any schedule field, all schedule fields are
+        required.
+      </p>
+
+      <div className="grid gap-x-6 gap-y-4 px-0.5 pt-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="space-y-1.5 sm:col-span-2 lg:col-span-1">
+          <label htmlFor="service-next-date" className="text-sm font-semibold">
             Next service date
           </label>
-          <input
+          <Input
             id="service-next-date"
             type="date"
-            className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+            className="w-full"
             value={value.nextServiceDate}
             disabled={disabled}
             onChange={(event) =>
@@ -186,7 +209,7 @@ export function ServiceScheduleFields({
               })
             }
           />
-          <p className="text-xs text-muted-foreground">
+          <p className="text-[13px] text-muted-foreground">
             Selecting today means service now, and the next due date is
             auto-shifted by interval on save.
           </p>
@@ -195,17 +218,18 @@ export function ServiceScheduleFields({
         <div className="space-y-1.5">
           <label
             htmlFor="service-interval-value"
-            className="text-sm font-medium"
+            className="text-sm font-semibold"
           >
             Interval
           </label>
-          <div className="grid grid-cols-[1fr_auto] gap-2">
-            <input
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
+            <Input
               id="service-interval-value"
               type="number"
+              inputMode="numeric"
               min={1}
               step={1}
-              className="h-9 rounded-md border border-input bg-background px-3 text-sm"
+              placeholder="6"
               value={value.intervalValue}
               disabled={disabled}
               onChange={(event) =>
@@ -216,7 +240,8 @@ export function ServiceScheduleFields({
               }
             />
             <select
-              className="h-9 rounded-md border border-input bg-background px-3 text-sm"
+              aria-label="Interval unit"
+              className={unitSelect}
               value={value.intervalUnit}
               disabled={disabled}
               onChange={(event) =>
@@ -238,17 +263,18 @@ export function ServiceScheduleFields({
         <div className="space-y-1.5">
           <label
             htmlFor="service-reminder-value"
-            className="text-sm font-medium"
+            className="text-sm font-semibold"
           >
             Reminder lead
           </label>
-          <div className="grid grid-cols-[1fr_auto] gap-2">
-            <input
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
+            <Input
               id="service-reminder-value"
               type="number"
+              inputMode="numeric"
               min={0}
               step={1}
-              className="h-9 rounded-md border border-input bg-background px-3 text-sm"
+              placeholder="1"
               value={value.reminderLeadValue}
               disabled={disabled}
               onChange={(event) =>
@@ -259,7 +285,8 @@ export function ServiceScheduleFields({
               }
             />
             <select
-              className="h-9 rounded-md border border-input bg-background px-3 text-sm"
+              aria-label="Reminder unit"
+              className={unitSelect}
               value={value.reminderLeadUnit}
               disabled={disabled}
               onChange={(event) =>
@@ -278,15 +305,6 @@ export function ServiceScheduleFields({
           </div>
         </div>
       </div>
-
-      <button
-        type="button"
-        className="text-xs font-medium text-muted-foreground underline-offset-2 hover:underline disabled:cursor-not-allowed disabled:opacity-60"
-        disabled={disabled}
-        onClick={onClear}
-      >
-        Clear schedule
-      </button>
     </section>
   );
 }

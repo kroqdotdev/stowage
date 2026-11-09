@@ -2,20 +2,26 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { ChevronDown } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { Badge } from "@/components/ui/badge";
+import { CalendarClock } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+import { DueTag } from "@/components/ui/due-tag";
+import { EmptyState } from "@/components/ui/empty-state";
+import { SheetHeading } from "@/components/ui/sheet-heading";
+import { Skeleton } from "@/components/ui/skeleton";
+import { StatusText } from "@/components/ui/status-text";
+import { TagChip } from "@/components/ui/tag-chip";
 import { LogServiceDialog } from "@/components/services/log-service-dialog";
+import {
+  BUCKET_LABELS,
+  BUCKET_ORDER,
+  groupByBucket,
+} from "@/components/services/schedule-buckets";
 import type { ScheduledServiceItem } from "@/components/services/types";
 import { listScheduledAssets } from "@/lib/api/service-schedules";
 import {
   formatDateFromIsoDateOnly,
+  getDaysUntil,
   type AppDateFormat,
 } from "@/lib/date-format";
 import { useAppDateFormat } from "@/lib/use-app-date-format";
@@ -27,117 +33,20 @@ type ActiveTarget = {
   assetName: string;
 };
 
-type BucketKey = "overdue" | "thisWeek" | "thisMonth" | "upcoming";
-
-const BUCKET_ORDER: BucketKey[] = [
-  "overdue",
-  "thisWeek",
-  "thisMonth",
-  "upcoming",
-];
-
-const BUCKET_LABELS: Record<BucketKey, string> = {
-  overdue: "Overdue",
-  thisWeek: "Due this week",
-  thisMonth: "Due this month",
-  upcoming: "Upcoming",
-};
-
-const BUCKET_ACCENTS: Record<BucketKey, string> = {
-  overdue: "text-rose-700 dark:text-rose-300",
-  thisWeek: "text-amber-700 dark:text-amber-300",
-  thisMonth: "text-foreground",
-  upcoming: "text-muted-foreground",
-};
-
-function daysBetween(fromIso: string, toIso: string) {
-  const start = new Date(`${fromIso}T00:00:00Z`).getTime();
-  const end = new Date(`${toIso}T00:00:00Z`).getTime();
-  return Math.round((end - start) / (1000 * 60 * 60 * 24));
-}
-
-function bucketForRow(row: ScheduledServiceItem, today: string): BucketKey {
-  const diff = daysBetween(today, row.nextServiceDate);
-  if (diff < 0) return "overdue";
-  if (row.reminderStartDate > today) return "upcoming";
-  if (diff <= 7) return "thisWeek";
-  if (diff <= 30) return "thisMonth";
-  return "upcoming";
-}
-
-function relativeDueDescription(
-  nextServiceDate: string,
-  today: string,
-): string {
-  const diff = daysBetween(today, nextServiceDate);
-  if (diff < 0) {
-    const overdue = Math.abs(diff);
-    return `${overdue} day${overdue === 1 ? "" : "s"} overdue`;
-  }
-  if (diff === 0) return "Due today";
-  if (diff === 1) return "Due tomorrow";
-  if (diff <= 7) return `Due in ${diff} days`;
-  if (diff <= 30) {
-    const weeks = Math.round(diff / 7);
-    return `Due in ${weeks} week${weeks === 1 ? "" : "s"}`;
-  }
-  const months = Math.round(diff / 30);
-  return `Due in ${months} month${months === 1 ? "" : "s"}`;
-}
-
-function getScheduleStatus({
-  nextServiceDate,
-  reminderStartDate,
-  today,
-}: {
-  nextServiceDate: string;
-  reminderStartDate: string;
-  today: string;
-}) {
-  if (nextServiceDate < today) {
-    return "overdue" as const;
-  }
-
-  if (reminderStartDate <= today) {
-    return "due_soon" as const;
-  }
-
-  return "scheduled" as const;
-}
-
-const STATUS_LABELS: Record<ReturnType<typeof getScheduleStatus>, string> = {
-  overdue: "Overdue",
-  due_soon: "Due soon",
-  scheduled: "Scheduled",
-};
-
-const STATUS_CLASSNAMES: Record<
-  ReturnType<typeof getScheduleStatus>,
-  string
-> = {
-  overdue:
-    "border-rose-300/80 bg-rose-500/10 text-rose-800 dark:border-rose-700/60 dark:text-rose-300",
-  due_soon:
-    "border-amber-300/80 bg-amber-500/10 text-amber-800 dark:border-amber-700/60 dark:text-amber-300",
-  scheduled:
-    "border-emerald-300/80 bg-emerald-500/10 text-emerald-800 dark:border-emerald-700/60 dark:text-emerald-300",
-};
-
-const URGENCY_STRIPE: Record<ReturnType<typeof getScheduleStatus>, string> = {
-  overdue: "border-l-4 border-l-rose-600 dark:border-l-rose-500",
-  due_soon: "border-l-4 border-l-amber-500 dark:border-l-amber-400",
-  scheduled: "border-l-4 border-l-emerald-500 dark:border-l-emerald-400",
-};
-
+/*
+  The service schedule as sheets on the concrete, one per due bucket, most
+  urgent first. A row is the tag, the asset, its last service, the date and
+  the due tag (red filled when overdue), then "Log service…".
+*/
 export function ServicesScheduledList() {
   const dateFormat = useAppDateFormat();
+  const today = useTodayIsoDate();
   const rowsQuery = useQuery({
     queryKey: ["service-schedules", "scheduled"],
     queryFn: listScheduledAssets,
   });
   const [activeTarget, setActiveTarget] = useState<ActiveTarget | null>(null);
 
-  const today = useTodayIsoDate();
   const items = useMemo(
     () => (rowsQuery.data ?? []) as ScheduledServiceItem[],
     [rowsQuery.data],
@@ -146,35 +55,57 @@ export function ServicesScheduledList() {
 
   if (rowsQuery.isPending) {
     return (
-      <div className="rounded-xl border border-border/70 bg-background p-5 text-sm text-muted-foreground">
-        Loading schedules...
+      <div className="space-y-4 py-2" aria-busy="true">
+        <span className="sr-only">Loading schedules...</span>
+        <Skeleton className="h-2.5 w-40" />
+        <Skeleton className="h-2.5 w-2/3" />
+        <Skeleton className="h-2.5 w-1/2" />
       </div>
     );
   }
 
   if (items.length === 0) {
     return (
-      <div className="rounded-xl border border-dashed border-border/70 bg-muted/10 p-5 text-sm text-muted-foreground">
-        No scheduled assets yet.
-      </div>
+      <EmptyState
+        icon={CalendarClock}
+        title="No scheduled assets yet."
+        description="Give an asset a service interval and it shows up here before it is due."
+        action={
+          <Button asChild variant="outline">
+            <Link href="/assets">Open Assets</Link>
+          </Button>
+        }
+      />
     );
   }
 
   return (
     <>
-      <div className="space-y-3" data-testid="services-scheduled-list">
+      <div className="space-y-8" data-testid="services-scheduled-list">
         {BUCKET_ORDER.map((bucket) => {
           const rows = grouped[bucket];
           if (rows.length === 0) return null;
           return (
-            <ServicesGroupSection
-              key={bucket}
-              bucket={bucket}
-              rows={rows}
-              today={today}
-              dateFormat={dateFormat}
-              onLog={setActiveTarget}
-            />
+            <section key={bucket} data-testid={`services-group-${bucket}`}>
+              <SheetHeading title={BUCKET_LABELS[bucket]} count={rows.length} />
+              <ul>
+                {rows.map((row) => (
+                  <ScheduledServiceRow
+                    key={row.scheduleId}
+                    row={row}
+                    today={today}
+                    dateFormat={dateFormat}
+                    onLog={() =>
+                      setActiveTarget({
+                        scheduleId: row.scheduleId,
+                        assetId: row.assetId,
+                        assetName: row.assetName,
+                      })
+                    }
+                  />
+                ))}
+              </ul>
+            </section>
           );
         })}
       </div>
@@ -190,80 +121,7 @@ export function ServicesScheduledList() {
   );
 }
 
-function groupByBucket(rows: ScheduledServiceItem[], today: string) {
-  const groups: Record<BucketKey, ScheduledServiceItem[]> = {
-    overdue: [],
-    thisWeek: [],
-    thisMonth: [],
-    upcoming: [],
-  };
-  for (const row of rows) {
-    groups[bucketForRow(row, today)].push(row);
-  }
-  return groups;
-}
-
-function ServicesGroupSection({
-  bucket,
-  rows,
-  today,
-  dateFormat,
-  onLog,
-}: {
-  bucket: BucketKey;
-  rows: ScheduledServiceItem[];
-  today: string;
-  dateFormat: AppDateFormat;
-  onLog: (target: ActiveTarget) => void;
-}) {
-  const [open, setOpen] = useState(true);
-  return (
-    <Collapsible
-      open={open}
-      onOpenChange={setOpen}
-      className="rounded-xl border border-border/70 bg-background shadow-sm"
-      data-testid={`services-group-${bucket}`}
-    >
-      <CollapsibleTrigger className="flex w-full items-center justify-between px-4 py-3 text-left">
-        <div className="flex items-center gap-2">
-          <span className={`text-sm font-semibold ${BUCKET_ACCENTS[bucket]}`}>
-            {BUCKET_LABELS[bucket]}
-          </span>
-          <Badge className="border border-border/60 bg-muted/30 text-xs text-muted-foreground">
-            {rows.length}
-          </Badge>
-        </div>
-        <ChevronDown
-          className={`h-4 w-4 text-muted-foreground transition-transform ${
-            open ? "rotate-180" : ""
-          }`}
-        />
-      </CollapsibleTrigger>
-      <CollapsibleContent>
-        <ul className="space-y-2 border-t border-border/60 px-3 py-3">
-          {rows.map((row) => (
-            <li key={row.scheduleId}>
-              <ScheduledServiceCard
-                row={row}
-                today={today}
-                dateFormat={dateFormat}
-                onLog={() =>
-                  onLog({
-                    scheduleId: row.scheduleId,
-                    assetId: row.assetId,
-                    assetName: row.assetName,
-                  })
-                }
-              />
-            </li>
-          ))}
-        </ul>
-      </CollapsibleContent>
-    </Collapsible>
-  );
-}
-
-function ScheduledServiceCard({
+function ScheduledServiceRow({
   row,
   today,
   dateFormat,
@@ -274,62 +132,59 @@ function ScheduledServiceCard({
   dateFormat: AppDateFormat;
   onLog: () => void;
 }) {
-  const status = getScheduleStatus({
-    nextServiceDate: row.nextServiceDate,
-    reminderStartDate: row.reminderStartDate,
-    today,
-  });
-  const relative = relativeDueDescription(row.nextServiceDate, today);
+  const days = getDaysUntil(row.nextServiceDate, today);
+  const last = row.lastServiceDate
+    ? `Last ${formatDateFromIsoDateOnly(row.lastServiceDate, dateFormat)}${
+        row.lastServiceProviderName ? ` by ${row.lastServiceProviderName}` : ""
+      }`
+    : "Never serviced";
 
   return (
-    <article
-      className={`rounded-lg border border-border/70 bg-card shadow-sm transition hover:border-primary/30 ${URGENCY_STRIPE[status]}`}
+    <li
+      className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-3 border-b border-border px-0.5 py-3 md:grid-cols-[auto_minmax(0,1fr)_110px_150px_auto]"
       data-testid={`scheduled-service-${row.scheduleId}`}
     >
-      <div className="flex flex-col gap-3 px-3 py-3 sm:flex-row sm:items-start sm:justify-between">
-        <div className="min-w-0 space-y-1.5">
-          <div className="flex flex-wrap items-center gap-2">
-            <Link
-              href={`/assets/${row.assetId}`}
-              className="truncate text-sm font-semibold tracking-tight hover:text-primary"
-            >
-              {row.assetName}
-            </Link>
-            <span className="font-mono text-xs text-muted-foreground">
-              {row.assetTag}
-            </span>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            <span className="font-medium text-foreground">{relative}</span>
-            <span> · </span>
-            {formatDateFromIsoDateOnly(row.nextServiceDate, dateFormat)}
-          </p>
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge className={STATUS_CLASSNAMES[status]}>
-              {STATUS_LABELS[status]}
-            </Badge>
-          </div>
-          {row.lastServiceDate ? (
-            <p className="text-xs text-muted-foreground">
-              Last service{" "}
-              {formatDateFromIsoDateOnly(row.lastServiceDate, dateFormat)}
-              {row.lastServiceProviderName
-                ? ` • ${row.lastServiceProviderName}`
-                : ""}
-            </p>
-          ) : null}
-        </div>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="cursor-pointer sm:self-start"
-          onClick={onLog}
-          data-testid={`log-service-${row.scheduleId}`}
+      <TagChip weight="table" className="max-md:self-start">
+        {row.assetTag}
+      </TagChip>
+      <div className="min-w-0">
+        <Link
+          href={`/assets/${row.assetId}`}
+          className="block truncate text-sm font-semibold text-foreground hover:underline hover:underline-offset-[3px]"
         >
-          Log service
-        </Button>
+          {row.assetName}
+        </Link>
+        <span className="mt-0.5 flex items-center gap-2 md:hidden">
+          <DueTag days={days} />
+          <span className="text-[13px] text-ink-2">
+            {formatDateFromIsoDateOnly(row.nextServiceDate, dateFormat)}
+          </span>
+        </span>
+        <span className="block truncate text-[13px] text-muted-foreground">
+          {last}
+          {row.assetStatus !== "active" ? (
+            <>
+              {" · "}
+              <StatusText status={row.assetStatus} className="text-[13px]" />
+            </>
+          ) : null}
+        </span>
       </div>
-    </article>
+      <span className="text-sm whitespace-nowrap text-ink-2 max-md:hidden">
+        {formatDateFromIsoDateOnly(row.nextServiceDate, dateFormat)}
+      </span>
+      <DueTag days={days} className="justify-self-start max-md:hidden" />
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        onClick={onLog}
+        data-testid={`log-service-${row.scheduleId}`}
+        aria-label={`Log service for ${row.assetName}`}
+      >
+        <span className="md:hidden">Log…</span>
+        <span className="max-md:hidden">Log service…</span>
+      </Button>
+    </li>
   );
 }

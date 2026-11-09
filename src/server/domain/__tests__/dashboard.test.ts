@@ -80,6 +80,17 @@ describe("dashboard domain", () => {
     expect(recents.length).toBeLessThanOrEqual(10);
   });
 
+  it("counts every asset changed in the last day, not just the recent list", async () => {
+    const pb = getHarness().admin;
+    const admin = await seedAdmin(pb);
+    for (let i = 0; i < 12; i++) {
+      await createAsset(ctx(), { name: `Asset ${i}`, actorId: admin.id });
+    }
+    const overview = await getOverview(ctx());
+    expect(overview.recentAssets).toHaveLength(10);
+    expect(overview.changedLastDayCount).toBe(12);
+  });
+
   it("returns an overview with date format, breakdowns, and upcoming", async () => {
     const pb = getHarness().admin;
     const admin = await seedAdmin(pb);
@@ -108,6 +119,7 @@ describe("dashboard domain", () => {
     const overview = await getOverview(ctx());
     expect(overview.dateFormat).toBe("YYYY-MM-DD");
     expect(overview.totalAssets).toBe(2);
+    expect(overview.changedLastDayCount).toBe(2);
     expect(
       overview.categoryBreakdown.find((entry) => entry.name === "IT")?.count,
     ).toBe(2);

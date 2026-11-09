@@ -50,7 +50,6 @@ describe("ServicesListPageClient", () => {
     await waitFor(() => {
       expect(screen.getByText("ScheduledList")).toBeInTheDocument();
     });
-    expect(screen.getByText("NavTabs")).toBeInTheDocument();
   });
 
   it("shows disabled message when service scheduling is off", async () => {
@@ -64,9 +63,8 @@ describe("ServicesListPageClient", () => {
 
     await waitFor(() => {
       expect(
-        screen.getByText(/Service scheduling is disabled/),
+        screen.getByText(/Service scheduling is turned off/),
       ).toBeInTheDocument();
     });
-    expect(screen.getByText("NavTabs")).toBeInTheDocument();
   });
 });

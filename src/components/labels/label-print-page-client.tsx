@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Printer } from "lucide-react";
+import { ArrowLeft, Printer, TriangleAlert } from "lucide-react";
 import { toast } from "sonner";
 import type { FieldDefinition } from "@/components/fields/types";
 import { formatLabelDimensions } from "@/components/labels/helpers";
@@ -13,6 +13,8 @@ import type {
   LabelTemplate,
 } from "@/components/labels/types";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
   SelectContent,
@@ -246,113 +248,88 @@ export function LabelPrintPageClient() {
     (assetIds.length > 0 && assetsQuery.isPending)
   ) {
     return (
-      <div className="rounded-2xl border border-border/70 bg-background p-6 text-sm text-muted-foreground shadow-sm">
-        Loading print preview...
+      <div className="space-y-4">
+        <span className="sr-only">Loading print preview...</span>
+        <Skeleton className="h-9 w-72 rounded-md" aria-hidden="true" />
+        <div
+          className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
+          aria-hidden="true"
+        >
+          {[0, 1, 2].map((index) => (
+            <Skeleton key={index} className="h-40 rounded-md" />
+          ))}
+        </div>
       </div>
     );
   }
 
   if (assetIds.length === 0) {
     return (
-      <div className="rounded-2xl border border-dashed border-border/70 bg-background p-8 text-center shadow-sm">
-        <h2 className="text-lg font-semibold tracking-tight">
-          No assets selected
-        </h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Choose one asset from the detail page or select assets from the assets
-          list first.
-        </p>
-        <div className="mt-4 flex justify-center gap-2">
-          <Button asChild variant="outline" className="cursor-pointer">
+      <EmptyState
+        icon={Printer}
+        title="No assets selected."
+        description="Choose one asset from the detail page or select assets from the assets list first."
+        action={
+          <Button asChild variant="outline">
             <Link href="/assets">
-              <ArrowLeft className="h-4 w-4" />
+              <ArrowLeft />
               Back to assets
             </Link>
           </Button>
-        </div>
-      </div>
+        }
+      />
     );
   }
 
   if (!selectedTemplate) {
     return (
-      <div className="rounded-2xl border border-dashed border-border/70 bg-background p-8 text-center shadow-sm">
-        <h2 className="text-lg font-semibold tracking-tight">
-          No label template available
-        </h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Create a label template first, then return to print preview.
-        </p>
-        <div className="mt-4 flex justify-center gap-2">
-          <Button asChild className="cursor-pointer">
-            <Link href="/labels">Open labels</Link>
+      <EmptyState
+        icon={Printer}
+        title="No label template available."
+        description="Create a label template first, then return to print preview."
+        action={
+          <Button asChild>
+            <Link href="/labels">Open Labels</Link>
           </Button>
-        </div>
-      </div>
+        }
+      />
     );
   }
 
+  const printButton = (
+    <Button
+      type="button"
+      className="max-sm:h-11 max-sm:flex-1"
+      disabled={barcodeRenderState !== "ready"}
+      onClick={() => {
+        if (barcodeRenderState === "loading") {
+          toast.error("Wait for the label codes to finish rendering.");
+          return;
+        }
+
+        if (barcodeRenderState === "error") {
+          toast.error(
+            "Some label codes failed to render. Resolve that before printing.",
+          );
+          return;
+        }
+
+        window.print();
+      }}
+    >
+      <Printer />
+      Print now
+    </Button>
+  );
+
   return (
-    <div className="space-y-4" data-print-page>
-      <section
-        className="flex flex-col gap-4 rounded-2xl border border-border/70 bg-card/80 p-4 shadow-sm print:hidden"
-        data-print-controls
-      >
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <h2 className="text-lg font-semibold tracking-tight">
-              Print preview
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              Review the rendered labels, then use your browser print dialog.
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Button asChild variant="outline" className="cursor-pointer">
-              <Link href="/assets">
-                <ArrowLeft className="h-4 w-4" />
-                Back to assets
-              </Link>
-            </Button>
-            <Button
-              type="button"
-              className="cursor-pointer"
-              disabled={barcodeRenderState !== "ready"}
-              onClick={() => {
-                if (barcodeRenderState === "loading") {
-                  toast.error("Wait for the label codes to finish rendering.");
-                  return;
-                }
-
-                if (barcodeRenderState === "error") {
-                  toast.error(
-                    "Some label codes failed to render. Resolve that before printing.",
-                  );
-                  return;
-                }
-
-                window.print();
-              }}
-            >
-              <Printer className="h-4 w-4" />
-              Print now
-            </Button>
-          </div>
-        </div>
-
-        {barcodeRenderState !== "ready" ? (
-          <p className="text-sm text-muted-foreground">
-            {barcodeRenderState === "loading"
-              ? "Preparing barcode and Data Matrix output before printing."
-              : "Barcode or Data Matrix rendering failed. Printing is blocked until the preview is valid."}
-          </p>
-        ) : null}
-
-        <div className="grid gap-3 lg:grid-cols-[minmax(0,280px)_1fr_1fr]">
-          <div className="space-y-1.5">
+    <div className="space-y-6" data-print-page>
+      <section className="space-y-3 print:hidden" data-print-controls>
+        <div className="flex flex-wrap items-end gap-x-6 gap-y-3">
+          <div className="w-full space-y-1.5 sm:w-72">
             <label
               htmlFor="label-print-template"
-              className="text-sm font-medium"
+              className="text-sm font-semibold"
             >
               Template
             </label>
@@ -373,27 +350,62 @@ export function LabelPrintPageClient() {
             </Select>
           </div>
 
-          <div className="rounded-xl border border-border/70 bg-background/80 px-3 py-2.5">
-            <p className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
-              Dimensions
-            </p>
-            <p className="mt-1 text-sm font-medium">
-              {formatLabelDimensions(
-                selectedTemplate.widthMm,
-                selectedTemplate.heightMm,
-              )}
-            </p>
-          </div>
+          <dl className="flex gap-6 pb-1.5 text-sm">
+            <div>
+              <dt className="eyebrow">Size</dt>
+              <dd className="mt-0.5 font-mono font-medium text-foreground">
+                {formatLabelDimensions(
+                  selectedTemplate.widthMm,
+                  selectedTemplate.heightMm,
+                )}
+              </dd>
+            </div>
+            <div>
+              <dt className="eyebrow">Labels</dt>
+              <dd className="mt-0.5 font-medium text-foreground">
+                {assets.length} {assets.length === 1 ? "asset" : "assets"}
+              </dd>
+            </div>
+          </dl>
 
-          <div className="rounded-xl border border-border/70 bg-background/80 px-3 py-2.5">
-            <p className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
-              Labels
-            </p>
-            <p className="mt-1 text-sm font-medium">
-              {assets.length} {assets.length === 1 ? "asset" : "assets"}
-            </p>
+          <div className="flex w-full gap-2 sm:ml-auto sm:w-auto">
+            <Button
+              asChild
+              variant="secondary"
+              className="max-sm:h-11 max-sm:flex-1"
+            >
+              <Link href="/assets">
+                <ArrowLeft />
+                Back to assets
+              </Link>
+            </Button>
+            {printButton}
           </div>
         </div>
+
+        {barcodeRenderState !== "ready" ? (
+          <p
+            className={
+              barcodeRenderState === "error"
+                ? "flex items-start gap-1.5 text-sm font-medium text-destructive"
+                : "text-sm text-muted-foreground"
+            }
+          >
+            {barcodeRenderState === "error" ? (
+              <TriangleAlert
+                className="mt-0.5 size-4 shrink-0"
+                aria-hidden="true"
+              />
+            ) : null}
+            {barcodeRenderState === "loading"
+              ? "Preparing barcode and Data Matrix output before printing."
+              : "Barcode or Data Matrix rendering failed. Printing is blocked until the preview is valid."}
+          </p>
+        ) : (
+          <p className="text-[13px] text-muted-foreground">
+            Print now opens your browser’s print dialog, one label per page.
+          </p>
+        )}
       </section>
 
       <div ref={previewRef}>

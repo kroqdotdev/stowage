@@ -94,15 +94,68 @@ function renderFilters(overrides: Partial<FilterState> = {}) {
 }
 
 describe("AssetFiltersMobile", () => {
-  it("renders a search input and a filters trigger chip", () => {
+  it("renders a status select and a filters trigger in the row, with search inside the sheet", () => {
     renderFilters();
+    const status = screen.getByRole("combobox", { name: "Filter by status" });
+    expect(status).toHaveAttribute("data-testid", "asset-filters-mobile-status");
+    expect(status).toHaveValue("");
     expect(
-      screen.getByTestId("asset-filters-mobile-search"),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByTestId("asset-filters-mobile-trigger"),
-    ).toBeInTheDocument();
+      screen.getByRole("button", { name: "Filters" }),
+    ).toHaveAttribute("data-testid", "asset-filters-mobile-trigger");
     expect(screen.queryByTestId("asset-filters-mobile-count")).toBeNull();
+
+    // Search moved into the sheet.
+    expect(screen.queryByTestId("asset-filters-mobile-search")).toBeNull();
+    fireEvent.click(screen.getByTestId("asset-filters-mobile-trigger"));
+    expect(screen.getByTestId("asset-filters-mobile-search")).toHaveAccessibleName(
+      "Search assets",
+    );
+  });
+
+  it("emits a status change from the row select", () => {
+    const { handlers } = renderFilters();
+    fireEvent.change(screen.getByRole("combobox", { name: "Filter by status" }), {
+      target: { value: "under_repair" },
+    });
+    expect(handlers.onFiltersChange).toHaveBeenCalledWith({
+      categoryId: null,
+      status: "under_repair",
+      locationId: null,
+      tagIds: [],
+    });
+  });
+
+  it("clears the status back to All from the row select", () => {
+    const { handlers } = renderFilters({
+      filters: {
+        categoryId: null,
+        status: "retired",
+        locationId: null,
+        tagIds: [],
+      },
+    });
+    const select = screen.getByRole("combobox", { name: "Filter by status" });
+    expect(select).toHaveValue("retired");
+    fireEvent.change(select, { target: { value: "" } });
+    expect(handlers.onFiltersChange).toHaveBeenCalledWith(
+      expect.objectContaining({ status: null }),
+    );
+  });
+
+  it("types into the sheet's search field", () => {
+    const { handlers } = renderFilters();
+    fireEvent.click(screen.getByTestId("asset-filters-mobile-trigger"));
+    fireEvent.change(screen.getByTestId("asset-filters-mobile-search"), {
+      target: { value: "drill" },
+    });
+    expect(handlers.onSearchChange).toHaveBeenCalledWith("drill");
+  });
+
+  it("shows the active search under the row with a Clear action", () => {
+    const { handlers } = renderFilters({ search: "drill" });
+    expect(screen.getByText("“drill”")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Clear" }));
+    expect(handlers.onSearchChange).toHaveBeenCalledWith("");
   });
 
   it("shows an active count badge when filters apply", () => {

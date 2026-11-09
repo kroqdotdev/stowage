@@ -3,10 +3,11 @@ import { SettingsPageClient } from "@/components/settings/settings-page-client";
 
 export default function SettingsPage() {
   return (
-    <div className="space-y-6">
+    <div>
       <PageHeader
         title="Settings"
-        description="Manage regional preferences, users, roles, and account security."
+        description="Date format, features, users and your password."
+        className="max-md:hidden"
       />
       <SettingsPageClient />
     </div>

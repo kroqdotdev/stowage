@@ -1,8 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Check } from "lucide-react";
 import { toast } from "sonner";
 import { AttachmentsPanel } from "@/components/attachments/attachments-panel";
 import {
@@ -18,6 +19,9 @@ import type {
 } from "@/components/assets/types";
 import type { FieldDefinition } from "@/components/fields/types";
 import { Button } from "@/components/ui/button";
+import { Panel, PanelBody, PanelFooter } from "@/components/ui/panel";
+import { SheetHeading } from "@/components/ui/sheet-heading";
+import { Skeleton } from "@/components/ui/skeleton";
 import { getAppSettings } from "@/lib/api/app-settings";
 import { createAsset, getAssetFilterOptions } from "@/lib/api/assets";
 import { listCustomFields } from "@/lib/api/custom-fields";
@@ -37,6 +41,12 @@ const INITIAL_VALUES: AssetFormValues = {
 export function AssetCreatePageClient() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  // "Add asset here…" on the Locations page presets the location.
+  const presetLocationId = useSearchParams().get("location");
+  const initialValues = useMemo(
+    () => ({ ...INITIAL_VALUES, locationId: presetLocationId }),
+    [presetLocationId],
+  );
 
   const filterOptionsQuery = useQuery({
     queryKey: ["assets", "filter-options"],
@@ -129,62 +139,70 @@ export function AssetCreatePageClient() {
 
   if (loading) {
     return (
-      <div className="rounded-xl border border-border/70 bg-background p-6 text-sm text-muted-foreground shadow-sm">
-        Loading form...
+      <div className="max-w-[880px]">
+        <span className="sr-only">Loading form...</span>
+        <Skeleton className="mb-5 h-4 w-28 rounded-md" />
+        <div className="grid gap-x-6 gap-y-5 sm:grid-cols-2" aria-hidden="true">
+          {[0, 1, 2, 3].map((index) => (
+            <Skeleton key={index} className="h-9 rounded-md" />
+          ))}
+        </div>
       </div>
     );
   }
 
   if (createdAssetId) {
     return (
-      <div className="space-y-4">
-        <section className="rounded-xl border border-border/70 bg-background p-5 shadow-sm">
-          <h2 className="text-base font-semibold tracking-tight">
-            {createdAssetName} created
-          </h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Upload attachments now, then continue to the asset page.
-          </p>
-          <div className="mt-4 flex flex-wrap gap-2">
+      <div className="max-w-[880px] space-y-10">
+        <Panel>
+          <PanelBody className="py-4">
+            <p className="flex items-center gap-2 text-sm font-medium text-ink-2">
+              <Check className="size-4 text-foreground" aria-hidden="true" />
+              Asset created
+            </p>
+            <h2 className="wide mt-1 text-xl leading-tight font-bold text-foreground">
+              {createdAssetName}
+            </h2>
+            <p className="mt-1 text-sm text-ink-2">
+              Upload attachments now, then continue to the asset page.
+            </p>
+          </PanelBody>
+          <PanelFooter className="flex-wrap">
             <Button
               type="button"
-              className="cursor-pointer"
               onClick={() => router.push(`/assets/${createdAssetId}`)}
             >
-              View asset
+              Open asset
             </Button>
             <Button
               type="button"
               variant="outline"
-              className="cursor-pointer"
               onClick={() => router.push(`/assets/${createdAssetId}/edit`)}
             >
-              Edit details
+              Edit details…
             </Button>
             <Button
               type="button"
               variant="ghost"
-              className="cursor-pointer"
               onClick={() => {
                 setCreatedAssetId(null);
                 setCreatedAssetName("");
                 setServiceScheduleDraft(getDefaultServiceScheduleDraft());
               }}
             >
-              Create another asset
+              Add another asset…
             </Button>
-          </div>
-        </section>
+          </PanelFooter>
+        </Panel>
 
-        <section className="rounded-xl border border-border/70 bg-background p-5 shadow-sm">
-          <div className="mb-4">
-            <h3 className="text-sm font-semibold tracking-tight">
-              Attachments
-            </h3>
-            <p className="text-xs text-muted-foreground">
-              Upload files now. Images and PDFs are optimized in the background.
-            </p>
-          </div>
+        <section aria-labelledby="asset-create-attachments">
+          <SheetHeading
+            title={<span id="asset-create-attachments">Attachments</span>}
+          />
+          <p className="px-0.5 pt-1.5 pb-3 text-[13px] text-muted-foreground">
+            Files upload straight away. Images and PDFs are optimized in the
+            background.
+          </p>
           <AttachmentsPanel assetId={createdAssetId} />
         </section>
       </div>
@@ -192,25 +210,26 @@ export function AssetCreatePageClient() {
   }
 
   return (
-    <section className="rounded-xl border border-border/70 bg-background p-5 shadow-sm">
-      <AssetForm
-        mode="create"
-        categories={options.categories}
-        locations={options.locations}
-        serviceGroups={options.serviceGroups}
-        tags={options.tags}
-        fieldDefinitions={customFieldDefinitions}
-        initialValues={INITIAL_VALUES}
-        submitLabel="Create asset"
-        submitting={submitting}
-        serviceSchedulingEnabled={serviceSchedulingEnabled}
-        serviceScheduleDraft={serviceScheduleDraft}
-        onServiceScheduleChange={setServiceScheduleDraft}
-        onClearServiceSchedule={() =>
-          setServiceScheduleDraft(getDefaultServiceScheduleDraft())
-        }
-        onSubmit={handleSubmit}
-      />
-    </section>
+    <AssetForm
+      mode="create"
+      categories={options.categories}
+      locations={options.locations}
+      serviceGroups={options.serviceGroups}
+      tags={options.tags}
+      fieldDefinitions={customFieldDefinitions}
+      initialValues={initialValues}
+      submitLabel="Create asset"
+      cancelHref={
+        presetLocationId ? `/locations?location=${presetLocationId}` : "/assets"
+      }
+      submitting={submitting}
+      serviceSchedulingEnabled={serviceSchedulingEnabled}
+      serviceScheduleDraft={serviceScheduleDraft}
+      onServiceScheduleChange={setServiceScheduleDraft}
+      onClearServiceSchedule={() =>
+        setServiceScheduleDraft(getDefaultServiceScheduleDraft())
+      }
+      onSubmit={handleSubmit}
+    />
   );
 }

@@ -47,7 +47,7 @@ describe("ServiceGroupFieldsPanel", () => {
     await waitFor(() => {
       expect(
         screen.getAllByText(
-          "No fields yet. Add required service fields for this group.",
+          "No fields yet. A logged service then only asks for the date and a note.",
         ).length,
       ).toBeGreaterThan(0);
     });

@@ -96,7 +96,23 @@ describe("AssetFilters", () => {
     expect(onReset).toHaveBeenCalledOnce();
   });
 
-  it("exposes accessible labels for custom location and tag filters", async () => {
+  it("exposes accessible labels for custom location and keyword filters", () => {
+    render(
+      <AssetFilters
+        options={options}
+        search=""
+        filters={emptyFilters}
+        onSearchChange={vi.fn()}
+        onFiltersChange={vi.fn()}
+        onReset={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByRole("button", { name: "Location" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Keywords" })).toBeInTheDocument();
+  });
+
+  it("shows the one set of dropdowns when More filters is opened", async () => {
     const user = userEvent.setup();
 
     render(
@@ -110,9 +126,89 @@ describe("AssetFilters", () => {
       />,
     );
 
-    await user.click(screen.getByRole("button", { name: "More filters" }));
+    const more = screen.getByRole("button", { name: "More filters" });
+    expect(more).toHaveAttribute("aria-expanded", "false");
+    const row = screen.getByRole("button", { name: "Keywords" }).parentElement!;
+    expect(row).toHaveClass("hidden");
 
-    expect(screen.getByLabelText("Location")).toBeInTheDocument();
-    expect(screen.getByLabelText("Tags")).toBeInTheDocument();
+    await user.click(more);
+    expect(more).toHaveAttribute("aria-expanded", "true");
+    // Rendered once, so ids such as asset-filter-tags stay unique.
+    expect(screen.getAllByRole("button", { name: "Keywords" })).toHaveLength(1);
+    expect(row).not.toHaveClass("hidden");
+  });
+
+  it("toggles a keyword from the keywords picker", async () => {
+    const user = userEvent.setup();
+    const onFiltersChange = vi.fn();
+
+    render(
+      <AssetFilters
+        options={options}
+        search=""
+        filters={emptyFilters}
+        onSearchChange={vi.fn()}
+        onFiltersChange={onFiltersChange}
+        onReset={vi.fn()}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Keywords" }));
+    await user.click(await screen.findByRole("option", { name: /Urgent/ }));
+    expect(onFiltersChange).toHaveBeenCalledWith({
+      ...emptyFilters,
+      tagIds: ["tag1"],
+    });
+  });
+
+  it("shows applied filters as removable chips", async () => {
+    const user = userEvent.setup();
+    const onFiltersChange = vi.fn();
+    const onSearchChange = vi.fn();
+    const filters: AssetFiltersState = {
+      categoryId: "cat1",
+      status: null,
+      locationId: "loc1",
+      tagIds: ["tag1"],
+    };
+
+    render(
+      <AssetFilters
+        options={options}
+        search="router"
+        filters={filters}
+        onSearchChange={onSearchChange}
+        onFiltersChange={onFiltersChange}
+        onReset={vi.fn()}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Remove category filter" }));
+    expect(onFiltersChange).toHaveBeenLastCalledWith({ ...filters, categoryId: null });
+
+    await user.click(screen.getByRole("button", { name: "Remove location filter" }));
+    expect(onFiltersChange).toHaveBeenLastCalledWith({ ...filters, locationId: null });
+
+    await user.click(screen.getByRole("button", { name: "Remove keyword filter" }));
+    expect(onFiltersChange).toHaveBeenLastCalledWith({ ...filters, tagIds: [] });
+
+    await user.click(screen.getByRole("button", { name: "Remove search filter" }));
+    expect(onSearchChange).toHaveBeenLastCalledWith("");
+  });
+
+  it("never shows status as a chip, because status has its own tabs", () => {
+    render(
+      <AssetFilters
+        options={options}
+        search=""
+        filters={{ ...emptyFilters, status: "under_repair" }}
+        onSearchChange={vi.fn()}
+        onFiltersChange={vi.fn()}
+        onReset={vi.fn()}
+      />,
+    );
+
+    expect(screen.queryByRole("button", { name: "Remove status filter" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Reset" })).toBeNull();
   });
 });

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { TemplateDesigner } from "@/components/labels/template-designer";
 import type {
   LabelPreviewAsset,
@@ -139,6 +139,35 @@ describe("TemplateDesigner", () => {
       screen.getAllByText("Thermal 57x32 mm").length,
     ).toBeGreaterThanOrEqual(1);
     expect(screen.getByText("57 x 32 mm")).toBeInTheDocument();
+  });
+
+  it("lists templates as list items holding buttons, marking the active one", () => {
+    renderWithClient(
+      <TemplateDesigner
+        currentUserRole="admin"
+        templates={[
+          sampleTemplate,
+          {
+            ...sampleTemplate,
+            id: "template-2",
+            name: "Small",
+            isDefault: false,
+          },
+        ]}
+        labelUrlBase="http://localhost:3000"
+        sampleAsset={sampleAsset}
+        fieldDefinitions={sampleFieldDefs}
+      />,
+    );
+
+    const list = screen.getByRole("list", { name: "Label templates" });
+    const items = within(list).getAllByRole("listitem");
+    expect(items).toHaveLength(2);
+    const first = within(items[0]).getByRole("button");
+    expect(first).toHaveAttribute("aria-current", "true");
+    expect(within(items[1]).getByRole("button")).not.toHaveAttribute(
+      "aria-current",
+    );
   });
 
   it("shows empty state when no templates exist", () => {

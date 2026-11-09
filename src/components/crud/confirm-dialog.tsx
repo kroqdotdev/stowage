@@ -1,8 +1,13 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { CrudModal } from "@/components/crud/modal";
 
+/*
+  A destructive dialog opens with focus on the safe action, so Enter is never
+  destructive. Actions are verb + object.
+*/
 export function ConfirmDialog({
   open,
   title,
@@ -24,6 +29,14 @@ export function ConfirmDialog({
   onConfirm: () => void;
   onClose: () => void;
 }) {
+  const safeRef = useRef<HTMLButtonElement | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const id = window.setTimeout(() => safeRef.current?.focus(), 0);
+    return () => window.clearTimeout(id);
+  }, [open]);
+
   return (
     <CrudModal
       open={open}
@@ -37,9 +50,9 @@ export function ConfirmDialog({
       footer={
         <>
           <Button
+            ref={safeRef}
             type="button"
             variant="outline"
-            className="cursor-pointer"
             onClick={onClose}
             disabled={busy}
           >
@@ -48,18 +61,15 @@ export function ConfirmDialog({
           <Button
             type="button"
             variant={destructive ? "destructive" : "default"}
-            className="cursor-pointer"
             onClick={onConfirm}
             disabled={busy}
           >
-            {busy ? "Working..." : confirmLabel}
+            {busy ? "Working…" : confirmLabel}
           </Button>
         </>
       }
     >
-      <p className="text-sm text-muted-foreground">
-        This action cannot be undone.
-      </p>
+      <p className="text-sm text-ink-2">This action cannot be undone.</p>
     </CrudModal>
   );
 }

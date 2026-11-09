@@ -21,6 +21,7 @@ import type {
 } from "@/components/services/types";
 import { SERVICE_GROUP_FIELD_TYPE_OPTIONS } from "@/components/services/types";
 import { Badge } from "@/components/ui/badge";
+import { SheetHeading } from "@/components/ui/sheet-heading";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ApiRequestError } from "@/lib/api-client";
@@ -49,7 +50,7 @@ function moveId(ids: string[], fromId: string, toId: string) {
 function mapFieldError(error: unknown, fallback: string) {
   if (error instanceof ApiRequestError) {
     if (error.status === 403) {
-      return "Only admins can manage service group fields.";
+      return "Only admins can manage service plan fields.";
     }
     return error.message || fallback;
   }
@@ -398,13 +399,31 @@ export function ServiceGroupFieldsPanel({
 
   return (
     <>
-      <section className="rounded-xl border border-border/70 bg-background p-5 shadow-sm">
-        <div className="flex items-center justify-between gap-2">
+      <section>
+        <SheetHeading
+          title="Fields to fill in"
+          count={rowsQuery.isPending ? undefined : fields.length}
+          aside={
+            canManage ? (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  setEditorMode("create");
+                  setActiveFieldId(null);
+                  setEditorOpen(true);
+                }}
+              >
+                <Plus />
+                Add field…
+              </Button>
+            ) : null
+          }
+        />
+        <div className="mt-2 mb-1">
           <div>
-            <h3 className="text-sm font-semibold tracking-tight">
-              Required record fields
-            </h3>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-sm text-ink-2">
               <span className="hidden md:inline">
                 Drag to reorder the fields shown when a service record is
                 logged.
@@ -415,21 +434,6 @@ export function ServiceGroupFieldsPanel({
               </span>
             </p>
           </div>
-          {canManage ? (
-            <Button
-              type="button"
-              size="sm"
-              className="cursor-pointer"
-              onClick={() => {
-                setEditorMode("create");
-                setActiveFieldId(null);
-                setEditorOpen(true);
-              }}
-            >
-              <Plus className="h-4 w-4" />
-              Add field
-            </Button>
-          ) : null}
         </div>
 
         {rowsQuery.isPending ? (
@@ -438,7 +442,7 @@ export function ServiceGroupFieldsPanel({
           </p>
         ) : fields.length === 0 ? (
           <p className="mt-4 text-sm text-muted-foreground md:hidden">
-            No fields yet. Add required service fields for this group.
+            No fields yet. A logged service then only asks for the date and a note.
           </p>
         ) : (
           <ul
@@ -449,11 +453,11 @@ export function ServiceGroupFieldsPanel({
               <li
                 key={field.id}
                 data-testid={`service-group-field-card-${field.id}`}
-                className="flex items-start justify-between gap-3 rounded-lg border border-border/70 bg-card p-3 shadow-sm"
+                className="flex items-start justify-between gap-3 border-b border-border py-3"
               >
                 <div className="min-w-0 flex-1 space-y-1.5">
                   <div className="flex min-w-0 items-center gap-2">
-                    <span className="inline-flex shrink-0 items-center rounded-md border border-border/70 bg-muted/20 px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground">
+                    <span className="inline-flex shrink-0 items-center rounded-xs border border-line-2 px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground">
                       {field.sortOrder + 1}
                     </span>
                     <p className="truncate text-sm font-semibold">
@@ -461,7 +465,7 @@ export function ServiceGroupFieldsPanel({
                     </p>
                   </div>
                   <div className="flex flex-wrap items-center gap-1.5">
-                    <Badge className="bg-muted/20 capitalize">
+                    <Badge className="capitalize">
                       {field.fieldType}
                     </Badge>
                     {field.required ? (
@@ -530,18 +534,18 @@ export function ServiceGroupFieldsPanel({
           </ul>
         )}
 
-        <div className="mt-4 hidden overflow-x-auto rounded-lg border border-border/60 md:block">
+        <div className="mt-2 hidden overflow-x-auto md:block">
           <table
             className="min-w-full text-sm"
             data-testid="service-group-fields-table"
           >
-            <thead className="bg-muted/40 text-left">
+            <thead className="text-left text-[13px]">
               <tr>
-                <th className="w-10 px-3 py-2 font-medium">Order</th>
-                <th className="px-3 py-2 font-medium">Label</th>
-                <th className="px-3 py-2 font-medium">Type</th>
-                <th className="px-3 py-2 font-medium">Required</th>
-                <th className="px-3 py-2 font-medium text-right">Actions</th>
+                <th className="w-10 h-10 rule-ink px-3 font-semibold">Order</th>
+                <th className="h-10 rule-ink px-3 font-semibold">Label</th>
+                <th className="h-10 rule-ink px-3 font-semibold">Type</th>
+                <th className="h-10 rule-ink px-3 font-semibold">Required</th>
+                <th className="h-10 rule-ink px-3 font-semibold text-right">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -560,14 +564,14 @@ export function ServiceGroupFieldsPanel({
                     colSpan={5}
                     className="px-3 py-8 text-center text-muted-foreground"
                   >
-                    No fields yet. Add required service fields for this group.
+                    No fields yet. A logged service then only asks for the date and a note.
                   </td>
                 </tr>
               ) : (
                 fields.map((field) => (
                   <tr
                     key={field.id}
-                    className="border-t border-border/50"
+                    className="border-b border-border"
                     draggable={canManage && !reordering}
                     onDragStart={(event) => {
                       setDraggingId(field.id);
@@ -593,20 +597,20 @@ export function ServiceGroupFieldsPanel({
                     }}
                   >
                     <td className="px-3 py-2">
-                      <div className="inline-flex items-center gap-1 rounded-md border border-border/70 bg-muted/20 px-1.5 py-1 text-xs text-muted-foreground">
+                      <div className="inline-flex items-center gap-1 rounded-xs border border-line-2 px-1.5 py-1 text-xs text-muted-foreground">
                         <GripVertical className="h-3.5 w-3.5" />
                         <span className="font-mono">{field.sortOrder + 1}</span>
                       </div>
                     </td>
                     <td className="px-3 py-2 font-medium">{field.label}</td>
                     <td className="px-3 py-2">
-                      <Badge className="bg-muted/20 capitalize">
+                      <Badge className="capitalize">
                         {field.fieldType}
                       </Badge>
                     </td>
                     <td className="px-3 py-2">
                       {field.required ? (
-                        <Badge className="bg-muted/20">Required</Badge>
+                        <Badge>Required</Badge>
                       ) : (
                         <span className="text-muted-foreground">Optional</span>
                       )}

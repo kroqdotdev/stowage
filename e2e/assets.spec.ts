@@ -18,7 +18,13 @@ test.describe.serial("phase 5 assets", () => {
     }
   });
 
-  test("can create, edit, and update status for an asset", async ({ page }) => {
+  test("can create, edit, and update status for an asset", async ({
+    page,
+  }, testInfo) => {
+    test.skip(
+      testInfo.project.name !== "chromium",
+      "Desktop flow: phones use asset cards and the asset back bar",
+    );
     const email = process.env.E2E_AUTH_EMAIL;
     const password = process.env.E2E_AUTH_PASSWORD;
 
@@ -41,16 +47,16 @@ test.describe.serial("phase 5 assets", () => {
     await fillRequiredFields(page);
     await page.getByRole("button", { name: "Create asset" }).click();
     await expect(
-      page.getByRole("heading", { name: `${baseName} created` }),
+      page.getByRole("heading", { name: baseName, exact: true }),
     ).toBeVisible({
       timeout: 20_000,
     });
 
-    await page.getByRole("button", { name: "View asset" }).click();
+    await page.getByRole("button", { name: "Open asset" }).click();
     await page.waitForURL(/\/assets\/[^/]+$/, { timeout: 20_000 });
     await expect(page.getByRole("heading", { name: baseName })).toBeVisible();
 
-    await page.getByRole("link", { name: "Edit" }).click();
+    await page.getByRole("link", { name: "Edit", exact: true }).click();
     await page.waitForURL(/\/assets\/.+\/edit/, { timeout: 15_000 });
 
     const nameInput = page.getByLabel(/Name/i);
@@ -64,12 +70,7 @@ test.describe.serial("phase 5 assets", () => {
 
     await page.getByLabel("Change status").click();
     await page.getByRole("option", { name: "Retired" }).click();
-    await expect(
-      page
-        .locator("[data-slot='badge']")
-        .filter({ hasText: "Retired" })
-        .first(),
-    ).toBeVisible();
+    await expect(page.getByLabel("Change status")).toHaveText("Retired");
 
     await page.goto("/assets");
     await page.getByLabel("Search assets").fill(updatedName);
@@ -77,31 +78,26 @@ test.describe.serial("phase 5 assets", () => {
       page.locator("tbody tr").filter({ hasText: updatedName }),
     ).toBeVisible();
 
-    await page.getByLabel("Filter by status").click();
-    await page.getByRole("option", { name: "Retired" }).click();
+    await page
+      .getByRole("navigation", { name: "Status" })
+      .getByRole("button", { name: /^Retired/ })
+      .click();
     await expect(
       page.locator("tbody tr").filter({ hasText: updatedName }),
     ).toBeVisible();
 
-    await page
-      .locator("tbody tr")
-      .filter({ hasText: updatedName })
-      .first()
-      .click();
+    // Table rows open on click; the name cell is the safest hit target.
+    await page.getByRole("cell", { name: updatedName, exact: true }).click();
     await page.waitForURL(/\/assets\/.+$/, { timeout: 15_000 });
     await expect(
       page.getByRole("heading", { name: updatedName }),
     ).toBeVisible();
-    await expect(
-      page
-        .locator("[data-slot='badge']")
-        .filter({ hasText: "Retired" })
-        .first(),
-    ).toBeVisible();
+    await expect(page.getByLabel("Change status")).toHaveText("Retired");
 
-    await page.getByRole("button", { name: "Delete" }).click();
+    await page.getByRole("button", { name: "More actions" }).click();
+    await page.getByRole("menuitem", { name: "Delete…" }).click();
     await expect(
-      page.getByRole("heading", { name: "Delete asset" }),
+      page.getByRole("heading", { name: "Delete asset?" }),
     ).toBeVisible();
     await page.getByRole("button", { name: "Delete asset" }).click();
     await page.waitForURL(

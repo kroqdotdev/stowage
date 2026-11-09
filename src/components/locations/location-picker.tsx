@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, type ReactElement } from "react";
 import { Check, ChevronDown } from "lucide-react";
 import {
   DropdownMenu,
@@ -104,7 +104,12 @@ export function LocationPicker({
   id,
   labelledBy,
   nullLabel = "No location",
+  compact = false,
+  trigger,
 }: {
+  compact?: boolean;
+  /* A custom trigger button, for example the asset hero's picker run. */
+  trigger?: ReactElement;
   value: string | null;
   options: LocationPickerOption[];
   disabled?: boolean;
@@ -118,9 +123,11 @@ export function LocationPicker({
     [options],
   );
 
-  if (options.length === 0) {
+  // With a custom trigger (the asset hero) keep showing the current value
+  // while the list loads; the menu just has fewer entries until then.
+  if (options.length === 0 && !trigger) {
     return (
-      <div className="rounded-md border border-dashed border-border/70 bg-muted/15 px-3 py-2 text-sm text-muted-foreground">
+      <div className="flex h-9 items-center rounded-md border-[1.5px] border-dashed border-input px-3 text-sm text-muted-foreground">
         No locations available.
       </div>
     );
@@ -164,30 +171,35 @@ export function LocationPicker({
   }
 
   return (
-    <div className="space-y-2">
+    <div className={cn(compact ? "" : "space-y-2")}>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <button
+          {trigger ?? <button
             type="button"
             id={id}
             aria-labelledby={labelledBy}
             disabled={disabled}
-            className="flex h-9 w-full items-center justify-between rounded-md border border-input bg-background px-3 text-sm outline-none transition-colors disabled:cursor-not-allowed disabled:opacity-50 data-[state=open]:border-ring data-[state=open]:ring-[3px] data-[state=open]:ring-ring/40"
+            className="flex h-9 w-full cursor-pointer items-center justify-between gap-2 rounded-md border-[1.5px] border-input bg-card px-3 text-sm font-medium outline-none transition-colors hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-50 data-[state=open]:border-foreground"
           >
             <span
               className={cn(
                 "truncate",
-                selectedPath ? "text-foreground" : "text-muted-foreground",
+                selectedPath || compact ? "text-foreground" : "text-muted-foreground",
               )}
             >
-              {selectedPath ?? nullLabel}
+              {compact
+                ? (value ? (optionsById.get(value)?.name ?? nullLabel) : nullLabel)
+                : (selectedPath ?? nullLabel)}
             </span>
-            <ChevronDown className="size-4 text-muted-foreground" />
-          </button>
+            <ChevronDown className="size-3.5 text-ink-2" />
+          </button>}
         </DropdownMenuTrigger>
         <DropdownMenuContent
           align="start"
-          className="w-[var(--radix-dropdown-menu-trigger-width)] min-w-56"
+          className={cn(
+            "min-w-56",
+            !trigger && "w-[var(--radix-dropdown-menu-trigger-width)]",
+          )}
         >
           <DropdownMenuItem onSelect={() => onChange(null)}>
             <span>{nullLabel}</span>
@@ -199,8 +211,8 @@ export function LocationPicker({
           {roots.map((node) => renderNode(node))}
         </DropdownMenuContent>
       </DropdownMenu>
-      {selectedPath ? (
-        <p className="text-xs text-muted-foreground">
+      {selectedPath && !compact ? (
+        <p className="text-[13px] text-ink-2">
           Selected: {selectedPath}
         </p>
       ) : null}

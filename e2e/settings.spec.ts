@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { getLanding, signIn } from "./helpers";
+import { getLanding, pageTitle, signIn } from "./helpers";
 
 test.describe.serial("settings page", () => {
   test("protected settings page redirects when unauthenticated", async ({
@@ -29,7 +29,7 @@ test.describe.serial("settings page", () => {
     await signIn(page, email!, password!);
 
     await page.goto("/settings");
-    await expect(page.getByRole("heading", { name: "Settings" })).toBeVisible();
+    await expect(pageTitle(page, "Settings")).toBeVisible();
 
     // Admin-only sections
     await expect(

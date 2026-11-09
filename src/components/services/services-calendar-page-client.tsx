@@ -2,7 +2,8 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { ServicesCalendarMonth } from "@/components/services/services-calendar-month";
-import { ServicesNavTabs } from "@/components/services/services-nav-tabs";
+import { SchedulingDisabled } from "@/components/services/scheduling-disabled";
+import { Skeleton } from "@/components/ui/skeleton";
 import { getAppSettings } from "@/lib/api/app-settings";
 
 export function ServicesCalendarPageClient() {
@@ -13,20 +14,18 @@ export function ServicesCalendarPageClient() {
 
   if (appSettingsQuery.isPending) {
     return (
-      <div className="rounded-xl border border-border/70 bg-background p-6 text-sm text-muted-foreground shadow-sm">
-        Loading service calendar...
+      <div className="space-y-4 py-2" aria-busy="true">
+        <span className="sr-only">Loading service calendar...</span>
+        <Skeleton className="h-2.5 w-40" />
+        <Skeleton className="h-2.5 w-2/3" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-4">
-      <ServicesNavTabs />
+    <div>
       {!appSettingsQuery.data?.serviceSchedulingEnabled ? (
-        <div className="rounded-xl border border-dashed border-border/70 bg-muted/10 p-5 text-sm text-muted-foreground">
-          Service scheduling is disabled by an admin. Enable it in Settings to
-          use calendar planning.
-        </div>
+        <SchedulingDisabled />
       ) : (
         <ServicesCalendarMonth />
       )}

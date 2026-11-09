@@ -17,6 +17,8 @@ const eslintConfig = defineConfig([
     "pb_data/**",
     "pb_migrations/**",
     "bin/**",
+    // Local design references (generated mockups, not app code).
+    "docs/design/**",
   ]),
 ]);
 

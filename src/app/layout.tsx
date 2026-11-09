@@ -1,19 +1,21 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Archivo, JetBrains_Mono } from "next/font/google";
 import { PocketBaseClientProvider } from "@/app/PocketBaseClientProvider";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const archivo = Archivo({
+  variable: "--font-archivo",
   subsets: ["latin"],
+  axes: ["wdth"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const jetbrainsMono = JetBrains_Mono({
+  variable: "--font-jetbrains",
   subsets: ["latin"],
+  weight: ["500", "600", "700"],
 });
 
 export const metadata: Metadata = {
@@ -23,7 +25,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     title: "Stowage",
-    statusBarStyle: "default",
+    statusBarStyle: "black",
     startupImage: ["/images/web/apple-touch-icon.png"],
   },
   icons: {
@@ -56,7 +58,7 @@ export const metadata: Metadata = {
       {
         rel: "mask-icon",
         url: "/images/web/safari-pinned-tab.svg",
-        color: "#c2410c",
+        color: "#1f2220",
       },
     ],
   },
@@ -67,8 +69,8 @@ export const viewport: Viewport = {
   initialScale: 1,
   viewportFit: "cover",
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#c2410c" },
-    { media: "(prefers-color-scheme: dark)", color: "#ea580c" },
+    { media: "(prefers-color-scheme: light)", color: "#1f2220" },
+    { media: "(prefers-color-scheme: dark)", color: "#141615" },
   ],
 };
 
@@ -83,13 +85,13 @@ export default async function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${archivo.variable} ${jetbrainsMono.variable} font-sans antialiased`}
       >
         <PocketBaseClientProvider pocketbaseUrl={pocketbaseUrl}>
           <ThemeProvider>
             <TooltipProvider>
               {children}
-              <Toaster richColors closeButton />
+              <Toaster closeButton />
             </TooltipProvider>
           </ThemeProvider>
         </PocketBaseClientProvider>

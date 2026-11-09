@@ -13,7 +13,6 @@ import {
 import { getLabelElementLabel } from "@/components/labels/helpers";
 import type { LabelElementType } from "@/components/labels/types";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 
 const ELEMENT_OPTIONS: Array<{
   type: LabelElementType;
@@ -52,15 +51,14 @@ export function ElementToolbar({
   onAddElement: (type: LabelElementType) => void;
 }) {
   return (
-    <section className="space-y-3 rounded-2xl border border-border/70 bg-card/70 p-4 shadow-sm">
-      <div>
-        <h3 className="text-sm font-semibold tracking-tight">Elements</h3>
-        <p className="text-xs text-muted-foreground">
-          Add fields and codes, then position them on the canvas.
-        </p>
-      </div>
-
-      <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
+    <section
+      aria-labelledby="label-element-toolbar-title"
+      className="border-t border-border px-[18px] py-3.5"
+    >
+      <h3 id="label-element-toolbar-title" className="eyebrow mb-2.5">
+        Add to label
+      </h3>
+      <div className="flex flex-wrap gap-1.5">
         {ELEMENT_OPTIONS.map((option) => {
           const disabled =
             !canEdit || (option.type === "customField" && !canAddCustomField);
@@ -68,30 +66,28 @@ export function ElementToolbar({
             <Button
               key={option.type}
               type="button"
-              variant="outline"
-              className={cn(
-                "h-auto min-h-11 justify-start gap-3 rounded-xl px-3 py-3 text-left",
-                disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer",
-              )}
+              variant="secondary"
+              size="sm"
               onClick={() => onAddElement(option.type)}
               disabled={disabled}
               data-label-element={option.type}
+              title={
+                option.type === "customField" && !canAddCustomField
+                  ? "Create a custom field first"
+                  : option.description
+              }
             >
-              <option.icon className="mt-0.5 h-4 w-4 shrink-0" />
-              <span className="min-w-0">
-                <span className="block text-sm font-medium">
-                  {getLabelElementLabel(option.type)}
-                </span>
-                <span className="block text-xs text-muted-foreground">
-                  {option.type === "customField" && !canAddCustomField
-                    ? "Create a custom field first"
-                    : option.description}
-                </span>
-              </span>
+              <option.icon className="size-3.5" />
+              {getLabelElementLabel(option.type)}
             </Button>
           );
         })}
       </div>
+      {canEdit && !canAddCustomField ? (
+        <p className="mt-2 text-[13px] text-muted-foreground">
+          Custom field needs a field first. Add one under Taxonomy.
+        </p>
+      ) : null}
     </section>
   );
 }

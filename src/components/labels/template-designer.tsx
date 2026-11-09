@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Sparkles } from "lucide-react";
+import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/crud/confirm-dialog";
 import { getApiErrorMessage } from "@/components/crud/error-messages";
@@ -28,6 +28,8 @@ import type {
   LabelTemplateElement,
 } from "@/components/labels/types";
 import { Button } from "@/components/ui/button";
+import { Panel } from "@/components/ui/panel";
+import { SheetHeading } from "@/components/ui/sheet-heading";
 import {
   createLabelTemplate,
   deleteLabelTemplate,
@@ -362,123 +364,146 @@ export function TemplateDesigner({
 
   return (
     <>
-      <div className="grid gap-4 xl:grid-cols-[280px_minmax(0,1fr)_340px]">
-        <div className="space-y-4">
-          <section className="space-y-3 rounded-2xl border border-border/70 bg-card/70 p-4 shadow-sm">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <h2 className="text-sm font-semibold tracking-tight">
-                  Templates
-                </h2>
-                <p className="text-xs text-muted-foreground">
-                  Pick a saved layout or create a new one.
-                </p>
-              </div>
-              {canManage ? (
-                <Button
-                  type="button"
-                  size="sm"
-                  className="cursor-pointer"
-                  onClick={handleCreateTemplate}
-                >
-                  <Plus className="h-4 w-4" />
-                  New
-                </Button>
-              ) : null}
-            </div>
-
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_300px] xl:grid-cols-[minmax(0,1fr)_320px] xl:gap-7">
+        <div className="min-w-0 space-y-6">
+          <section aria-labelledby="label-templates-title">
+            <h2 id="label-templates-title" className="sr-only">
+              Templates
+            </h2>
             {templates.length === 0 ? (
-              <div className="rounded-xl border border-dashed border-border/70 bg-background/60 px-4 py-6 text-sm text-muted-foreground">
-                No label templates yet.
+              <div className="flex items-center justify-between gap-3 border-b border-border pb-2.5">
+                <p className="text-sm text-ink-2">No label templates yet.</p>
+                {canManage ? (
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    onClick={handleCreateTemplate}
+                  >
+                    <Plus />
+                    New template
+                  </Button>
+                ) : null}
               </div>
             ) : (
-              <div className="space-y-2">
-                {templates.map((template) => {
-                  const active = activeTemplate.id === template.id;
-                  return (
-                    <button
-                      key={template.id}
-                      type="button"
-                      className={cn(
-                        "flex w-full cursor-pointer items-start justify-between gap-3 rounded-xl border px-3 py-3 text-left transition-colors",
-                        active
-                          ? "border-slate-600 bg-slate-100 shadow-sm dark:bg-slate-900"
-                          : "border-border/70 bg-background/80 hover:border-slate-400 hover:bg-accent/50",
-                      )}
-                      onClick={() => handleSelectTemplate(template)}
-                    >
-                      <span className="min-w-0">
-                        <span className="block truncate text-sm font-medium">
-                          {template.name}
-                        </span>
-                        <span className="block text-xs text-muted-foreground">
-                          {formatLabelDimensions(
-                            template.widthMm,
-                            template.heightMm,
+              <div className="flex items-stretch gap-3 border-b border-border">
+                <ul
+                  className="-mb-px flex min-w-0 flex-1 items-stretch gap-0.5 overflow-x-auto"
+                  aria-label="Label templates"
+                >
+                  {templates.map((template) => {
+                    const active = activeTemplate.id === template.id;
+                    return (
+                      <li
+                        key={template.id}
+                        className="flex shrink-0 first:[&>button]:pl-0.5"
+                      >
+                        <button
+                          type="button"
+                          aria-current={active ? "true" : undefined}
+                          className={cn(
+                            "flex shrink-0 cursor-pointer flex-col items-start border-b-[3px] px-3 pt-1 pb-2 text-left transition-colors",
+                            active
+                              ? "border-amber-ink text-foreground"
+                              : "border-transparent text-ink-2 hover:text-foreground",
                           )}
-                        </span>
+                          onClick={() => handleSelectTemplate(template)}
+                        >
+                          <span
+                            className={cn(
+                              "text-sm whitespace-nowrap",
+                              active ? "font-semibold" : "font-medium",
+                            )}
+                          >
+                            {template.name}
+                          </span>
+                          <span className="text-[13px] whitespace-nowrap text-muted-foreground">
+                            <span className="font-mono font-medium">
+                              {formatLabelDimensions(
+                                template.widthMm,
+                                template.heightMm,
+                              )}
+                            </span>
+                            {template.isDefault ? (
+                              <span> · Default</span>
+                            ) : null}
+                          </span>
+                        </button>
+                      </li>
+                    );
+                  })}
+                  {selectedTemplateId === "new" ? (
+                    <li
+                      aria-current="true"
+                      className="flex shrink-0 flex-col items-start border-b-[3px] border-amber-ink px-3 pt-1 pb-2"
+                    >
+                      <span className="text-sm font-semibold whitespace-nowrap text-foreground">
+                        {activeTemplate.name.trim() || "New template"}
                       </span>
-                      {template.isDefault ? (
-                        <span className="rounded-full border border-emerald-300/70 bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-emerald-700 dark:border-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
-                          Default
-                        </span>
-                      ) : null}
-                    </button>
-                  );
-                })}
+                      <span className="text-[13px] whitespace-nowrap text-muted-foreground">
+                        Not saved yet
+                      </span>
+                    </li>
+                  ) : null}
+                </ul>
+                {canManage ? (
+                  <div className="flex shrink-0 items-center pb-2">
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={handleCreateTemplate}
+                    >
+                      <Plus />
+                      New template
+                    </Button>
+                  </div>
+                ) : null}
               </div>
             )}
           </section>
 
-          <ElementToolbar
-            canEdit={canManage}
-            canAddCustomField={fieldDefinitions.length > 0}
-            onAddElement={handleAddElement}
-          />
-        </div>
+          <Panel className="overflow-hidden">
+            <TemplateCanvas
+              template={activeTemplate}
+              sampleAsset={sampleAsset}
+              fieldDefinitions={fieldDefinitions}
+              origin={labelUrlBase ?? undefined}
+              selectedElementId={selectedElementId}
+              readOnly={!canManage}
+              onSelectElement={setSelectedElementId}
+              onDeleteElement={handleDeleteElement}
+              onChangeElement={handleChangeElement}
+            />
+            <ElementToolbar
+              canEdit={canManage}
+              canAddCustomField={fieldDefinitions.length > 0}
+              onAddElement={handleAddElement}
+            />
+          </Panel>
 
-        <div className="space-y-4">
-          <TemplateCanvas
-            template={activeTemplate}
-            sampleAsset={sampleAsset}
-            fieldDefinitions={fieldDefinitions}
-            origin={labelUrlBase ?? undefined}
-            selectedElementId={selectedElementId}
-            readOnly={!canManage}
-            onSelectElement={setSelectedElementId}
-            onDeleteElement={handleDeleteElement}
-            onChangeElement={handleChangeElement}
-          />
-
-          <section className="space-y-3 rounded-2xl border border-border/70 bg-card/70 p-4 shadow-sm">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <h3 className="text-sm font-semibold tracking-tight">
-                  Live preview
-                </h3>
-                <p className="text-xs text-muted-foreground">
-                  Real asset data rendered with the current template.
-                </p>
-              </div>
-              <Sparkles className="h-4 w-4 text-muted-foreground" />
-            </div>
-
-            <div className="overflow-x-auto rounded-2xl border border-border/70 bg-muted/20 p-4">
+          <section aria-labelledby="label-preview-title">
+            <SheetHeading
+              title={<span id="label-preview-title">Preview</span>}
+              as="h3"
+            />
+            <p className="px-0.5 pt-1.5 text-[13px] text-muted-foreground">
+              {sampleAsset
+                ? `Close to printed size, with ${sampleAsset.name}. Print preview uses the same renderer.`
+                : "No assets yet. Placeholder values are shown until an asset exists."}
+            </p>
+            <div className="mt-3 overflow-x-auto rounded-md bg-secondary p-5">
               <div className="mx-auto w-max">
                 <LabelPreview
                   template={activeTemplate}
                   asset={sampleAsset}
                   fieldDefinitions={fieldDefinitions}
                   origin={labelUrlBase ?? undefined}
-                  scale={2.35}
+                  scale={1}
+                  surfaceClassName="border-line-2 shadow-none"
                 />
               </div>
             </div>
-            <p className="text-xs text-muted-foreground">
-              {sampleAsset
-                ? `Previewing with ${sampleAsset.name}. Print preview uses the same renderer.`
-                : "No assets yet. Placeholder values are shown until an asset exists."}
-            </p>
           </section>
         </div>
 
@@ -508,8 +533,8 @@ export function TemplateDesigner({
 
       <ConfirmDialog
         open={deleteOpen}
-        title="Delete label template"
-        description={`Delete ${activeTemplate.name || "this template"}?`}
+        title="Delete label template?"
+        description={`${activeTemplate.name || "This template"} is deleted. Printed labels are not affected.`}
         confirmLabel="Delete template"
         busy={deleting}
         onConfirm={() => {

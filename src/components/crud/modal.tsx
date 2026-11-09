@@ -2,9 +2,12 @@
 
 import { useEffect, useRef } from "react";
 import { X } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
+/*
+  A dialog on the charcoal scrim. The title carries the 2px ink rule; the
+  footer is a band under a 1px line with verb + object actions.
+*/
 export function CrudModal({
   open,
   title,
@@ -79,9 +82,9 @@ export function CrudModal({
   return (
     <div
       className={cn(
-        "fixed inset-0 z-50 flex bg-black/50",
+        "fixed inset-0 z-50 flex bg-[#1f2220]/80",
         // Mobile: bottom-sheet alignment
-        "items-end justify-center px-0 pb-0 pt-10",
+        "items-end justify-center px-0 pt-10 pb-0",
         // Desktop: centered modal
         "md:items-center md:justify-center md:px-4 md:py-6",
       )}
@@ -99,42 +102,38 @@ export function CrudModal({
         data-testid="crud-modal-surface"
         tabIndex={-1}
         className={cn(
-          "flex w-full flex-col border border-border bg-background shadow-xl",
-          // Mobile: attached to bottom, rounded only at top, safe-area padding
-          "max-h-[90svh] rounded-t-2xl animate-in slide-in-from-bottom-8 duration-200",
+          "flex w-full flex-col border border-border bg-card shadow-[0_24px_48px_rgba(0,0,0,.18)] outline-hidden",
+          "max-h-[90svh] rounded-t-md animate-in slide-in-from-bottom-8 duration-200",
           "pb-[env(safe-area-inset-bottom)]",
-          // Desktop: centered card, rounded, bounded
-          "md:max-h-[calc(100dvh-3rem)] md:max-w-lg md:rounded-xl md:pb-0 md:slide-in-from-bottom-0 md:zoom-in-95",
+          "md:max-h-[calc(100dvh-3rem)] md:max-w-lg md:rounded-md md:pb-0 md:slide-in-from-bottom-0 md:zoom-in-95",
         )}
       >
-        <div className="flex shrink-0 items-start justify-between gap-3 border-b border-border/60 px-5 py-4">
-          <div className="space-y-1">
+        <div className="flex shrink-0 items-start justify-between gap-3 px-5 pt-4">
+          <div className="min-w-0 flex-1 rule-ink pb-2.5">
             <h2
               id="crud-modal-title"
-              className="text-lg font-semibold tracking-tight"
+              className="wide text-lg leading-tight font-bold text-foreground"
             >
               {title}
             </h2>
             {description ? (
-              <p className="text-sm text-muted-foreground">{description}</p>
+              <p className="mt-1 text-sm text-ink-2">{description}</p>
             ) : null}
           </div>
-          <Button
+          <button
             type="button"
-            variant="ghost"
-            size="icon-sm"
-            className="cursor-pointer"
+            className="-mr-2 grid size-9 shrink-0 cursor-pointer place-items-center rounded-md text-ink-2 hover:bg-secondary hover:text-foreground"
             onClick={onClose}
             aria-label="Close dialog"
           >
-            <X className="h-4 w-4" />
-          </Button>
+            <X className="size-4" />
+          </button>
         </div>
 
         <div className="flex-1 overflow-y-auto px-5 py-4">{children}</div>
 
         {footer ? (
-          <div className="flex shrink-0 flex-wrap items-center justify-end gap-2 border-t border-border/60 px-5 py-4">
+          <div className="flex shrink-0 flex-wrap items-center justify-end gap-2 border-t border-border px-5 py-3.5">
             {footer}
           </div>
         ) : null}

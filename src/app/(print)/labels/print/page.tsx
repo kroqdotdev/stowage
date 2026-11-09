@@ -3,15 +3,14 @@ import { PageHeader } from "@/components/layout/page-header";
 
 export default function LabelPrintPage() {
   return (
-    <div className="space-y-6">
+    <div>
       <div className="print:hidden">
         <PageHeader
           title="Print labels"
-          description="Review label output before sending it to your printer."
+          description="Check the labels, then print them from your browser."
           breadcrumbs={[
-            { label: "Stowage", href: "/dashboard" },
             { label: "Labels", href: "/labels" },
-            { label: "Print" },
+            { label: "Print labels" },
           ]}
         />
       </div>

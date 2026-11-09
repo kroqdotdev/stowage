@@ -27,12 +27,17 @@ vi.mock("@/lib/api/auth", () => ({
   logout: vi.fn(),
 }));
 
+vi.mock("@/hooks/use-overdue-count", () => ({
+  useOverdueCount: () => 0,
+}));
+
 vi.mock("@/components/search/global-search", () => ({
   GlobalSearch: () => (
     <button type="button" aria-label="Open global search">
       Search assets...
     </button>
   ),
+  GlobalSearchDialog: () => null,
 }));
 
 import { AppShell } from "@/components/layout/app-shell";
@@ -55,18 +60,23 @@ describe("AppShell", () => {
     expect(screen.getByText("Hello Stowage")).toBeInTheDocument();
   });
 
-  it("renders sidebar and topbar together", () => {
+  it("renders the sidebar, tablet rail, phone top bar and bottom nav around main", () => {
     renderWithClient(
       <AppShell>
         <div>Content</div>
       </AppShell>,
     );
-    const brands = screen.getAllByText("Stowage");
-    expect(brands.length).toBeGreaterThanOrEqual(1);
-    const triggers = screen.getAllByRole("button", {
-      name: "Open global search",
-    });
-    expect(triggers.length).toBeGreaterThanOrEqual(1);
-    expect(screen.getByText("Content")).toBeInTheDocument();
+    // Desktop sidebar and tablet rail are both "Main" complementary landmarks;
+    // CSS decides which one shows.
+    expect(screen.getAllByRole("complementary", { name: "Main" })).toHaveLength(
+      2,
+    );
+    expect(screen.getByRole("banner")).toBeInTheDocument();
+    expect(screen.getByRole("navigation", { name: "Primary" })).toBeInTheDocument();
+    expect(screen.getByRole("main")).toHaveTextContent("Content");
+    // Sidebar, rail and phone top bar each carry a search trigger.
+    expect(
+      screen.getAllByRole("button", { name: "Open global search" }),
+    ).toHaveLength(3);
   });
 });

@@ -13,6 +13,8 @@ import type {
   LabelTemplate,
 } from "@/components/labels/types";
 import { Button } from "@/components/ui/button";
+import { SheetHeading } from "@/components/ui/sheet-heading";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { getLabelPreviewAsset } from "@/lib/api/assets";
@@ -89,8 +91,10 @@ export function LabelsPageClient() {
     fieldDefinitionsQuery.isPending
   ) {
     return (
-      <div className="rounded-2xl border border-border/70 bg-background p-6 text-sm text-muted-foreground shadow-sm">
-        Loading label designer...
+      <div className="space-y-6">
+        <span className="sr-only">Loading label designer...</span>
+        <Skeleton className="h-10 w-80 rounded-md" aria-hidden="true" />
+        <Skeleton className="h-72 rounded-md" aria-hidden="true" />
       </div>
     );
   }
@@ -139,19 +143,22 @@ function MobileLabelList({
   labelUrlBase: string | null;
 }) {
   return (
-    <div className="flex flex-col gap-4" data-testid="labels-mobile-view">
+    <div className="space-y-6" data-testid="labels-mobile-view">
       <div
-        className="flex items-start gap-3 rounded-xl border border-amber-300/70 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-400/40 dark:bg-amber-500/10 dark:text-amber-200"
+        className="flex items-start gap-3 text-sm"
         data-testid="labels-desktop-banner"
       >
-        <Monitor className="mt-0.5 h-5 w-5 shrink-0" aria-hidden="true" />
-        <div className="space-y-1">
-          <p className="font-medium">
+        <Monitor
+          className="mt-0.5 size-5 shrink-0 text-ink-2"
+          aria-hidden="true"
+        />
+        <div>
+          <p className="font-semibold text-foreground">
             {currentUserRole === "admin"
               ? "Open Stowage on desktop to edit"
               : "Label previews are read-only"}
           </p>
-          <p>
+          <p className="mt-0.5 text-ink-2">
             {currentUserRole === "admin"
               ? "The label designer is a drag-and-drop canvas and really only works with a mouse. You can still preview templates and print labels from a phone."
               : "You can preview templates and print labels from a phone. Ask an admin to change label templates."}
@@ -159,51 +166,56 @@ function MobileLabelList({
         </div>
       </div>
 
-      <Button asChild className="w-full cursor-pointer">
+      <Button asChild className="h-11 w-full md:hidden">
         <Link href="/labels/print">
-          <Printer className="h-4 w-4" />
-          Print labels
+          <Printer />
+          Print labels…
         </Link>
       </Button>
 
-      {templates.length === 0 ? (
-        <p className="rounded-xl border border-dashed border-border/70 bg-muted/10 p-6 text-center text-sm text-muted-foreground">
-          No templates yet.
-        </p>
-      ) : (
-        <ul
-          className="flex flex-col gap-3"
-          data-testid="labels-mobile-template-list"
-        >
-          {templates.map((template) => (
-            <li
-              key={template.id}
-              className="rounded-xl border border-border/70 bg-background p-4 shadow-sm"
-              data-testid={`labels-mobile-template-${template.id}`}
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0 space-y-0.5">
-                  <p className="truncate text-sm font-semibold">
+      <section aria-labelledby="labels-mobile-templates">
+        <SheetHeading
+          title={<span id="labels-mobile-templates">Templates</span>}
+          count={templates.length}
+        />
+        {templates.length === 0 ? (
+          <p className="py-4 text-sm text-ink-2">No templates yet.</p>
+        ) : (
+          <ul data-testid="labels-mobile-template-list">
+            {templates.map((template) => (
+              <li
+                key={template.id}
+                className="border-b border-border py-4"
+                data-testid={`labels-mobile-template-${template.id}`}
+              >
+                <div className="flex items-baseline justify-between gap-3">
+                  <p className="min-w-0 truncate text-sm font-semibold text-foreground">
                     {template.name}
+                    {template.isDefault ? (
+                      <span className="ml-2 font-normal text-muted-foreground">
+                        Default
+                      </span>
+                    ) : null}
                   </p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="shrink-0 font-mono text-[13px] font-medium text-ink-2">
                     {template.widthMm} × {template.heightMm} mm
                   </p>
                 </div>
-              </div>
-              <div className="mt-3 flex items-center justify-center overflow-hidden rounded-md bg-white p-2">
-                <LabelPreview
-                  template={template}
-                  asset={sampleAsset}
-                  fieldDefinitions={fieldDefinitions}
-                  origin={labelUrlBase ?? undefined}
-                  scale={0.7}
-                />
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
+                <div className="mt-3 flex items-center justify-center overflow-hidden rounded-md bg-secondary p-4">
+                  <LabelPreview
+                    template={template}
+                    asset={sampleAsset}
+                    fieldDefinitions={fieldDefinitions}
+                    origin={labelUrlBase ?? undefined}
+                    scale={0.7}
+                    surfaceClassName="border-line-2 shadow-none"
+                  />
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
     </div>
   );
 }

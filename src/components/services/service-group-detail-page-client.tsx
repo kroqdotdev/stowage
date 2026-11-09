@@ -1,13 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import { ArrowLeft, Pencil } from "lucide-react";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { ServiceGroupAssetsPanel } from "@/components/services/service-group-assets-panel";
 import { ServiceGroupEditor } from "@/components/services/service-group-editor";
 import { ServiceGroupFieldsPanel } from "@/components/services/service-group-fields-panel";
-import { ServicesNavTabs } from "@/components/services/services-nav-tabs";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { getApiErrorMessage } from "@/components/crud/error-messages";
@@ -17,7 +18,7 @@ import { getServiceGroup, updateServiceGroup } from "@/lib/api/service-groups";
 function mapGroupError(error: unknown, fallback: string) {
   if (error instanceof ApiRequestError) {
     if (error.status === 403) {
-      return "Only admins can manage service groups.";
+      return "Only admins can manage service plans.";
     }
     return error.message || fallback;
   }
@@ -42,8 +43,10 @@ export function ServiceGroupDetailPageClient({ groupId }: { groupId: string }) {
 
   if (groupQuery.isPending || currentUserPending) {
     return (
-      <div className="rounded-xl border border-border/70 bg-background p-6 text-sm text-muted-foreground shadow-sm">
-        Loading group...
+      <div className="space-y-4 py-2" aria-busy="true">
+        <span className="sr-only">Loading group...</span>
+        <Skeleton className="h-4 w-56" />
+        <Skeleton className="h-2.5 w-80 max-w-full" />
       </div>
     );
   }
@@ -52,19 +55,14 @@ export function ServiceGroupDetailPageClient({ groupId }: { groupId: string }) {
 
   if (!group) {
     return (
-      <div className="space-y-4">
-        <ServicesNavTabs />
-        <div className="rounded-xl border border-border/70 bg-background p-6 shadow-sm">
-          <h2 className="text-base font-semibold tracking-tight">
-            Group not found
-          </h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            The selected service group no longer exists.
-          </p>
-          <Button asChild variant="outline" className="mt-4 cursor-pointer">
-            <Link href="/services/groups">Back to groups</Link>
-          </Button>
-        </div>
+      <div className="max-w-xl py-4">
+        <h2 className="wide text-2xl font-bold text-foreground">Plan not found</h2>
+        <p className="mt-1.5 text-[15px] text-ink-2">
+          The service plan was deleted, or the link is wrong.
+        </p>
+        <Button asChild variant="outline" className="mt-5">
+          <Link href="/services/groups">Back to service plans</Link>
+        </Button>
       </div>
     );
   }
@@ -75,43 +73,44 @@ export function ServiceGroupDetailPageClient({ groupId }: { groupId: string }) {
         name: values.name,
         description: values.description.trim() ? values.description : null,
       });
-      toast.success("Service group updated");
+      toast.success("Service plan updated");
       setEditorOpen(false);
       void queryClient.invalidateQueries({
         queryKey: ["service-groups", groupId],
       });
       void queryClient.invalidateQueries({ queryKey: ["service-groups"] });
     } catch (error) {
-      toast.error(mapGroupError(error, "Unable to update service group"));
+      toast.error(mapGroupError(error, "Unable to update service plan"));
     }
   }
 
   return (
-    <div className="space-y-4">
-      <ServicesNavTabs />
-
-      <section className="rounded-xl border border-border/70 bg-background p-5 shadow-sm">
-        <div className="flex items-center justify-between gap-2">
-          <div>
-            <h2 className="text-base font-semibold tracking-tight">
+    <div className="space-y-8">
+      <div>
+        <Link
+          href="/services/groups"
+          className="mb-2 inline-flex items-center gap-1 text-[13px] font-medium text-ink-2 hover:text-foreground"
+        >
+          <ArrowLeft className="size-3.5" aria-hidden="true" />
+          Service plans
+        </Link>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h2 className="wide text-2xl leading-tight font-bold text-foreground">
               {group.name}
             </h2>
-            <p className="text-sm text-muted-foreground">
-              {group.description ?? "No description provided."}
+            <p className="mt-1 max-w-[70ch] text-sm text-ink-2">
+              {group.description ?? "No description."}
             </p>
           </div>
           {canManage ? (
-            <Button
-              type="button"
-              variant="outline"
-              className="cursor-pointer"
-              onClick={() => setEditorOpen(true)}
-            >
-              Edit group
+            <Button type="button" variant="outline" onClick={() => setEditorOpen(true)}>
+              <Pencil />
+              Edit…
             </Button>
           ) : null}
         </div>
-      </section>
+      </div>
 
       <ServiceGroupFieldsPanel groupId={groupId} canManage={canManage} />
       <ServiceGroupAssetsPanel groupId={groupId} />

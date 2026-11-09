@@ -1,12 +1,12 @@
 "use client";
 
 import type { FieldDefinition } from "@/components/fields/types";
-import { formatLabelDimensions } from "@/components/labels/helpers";
 import { LabelPreview } from "@/components/labels/label-preview";
 import type {
   LabelPreviewAsset,
   LabelTemplate,
 } from "@/components/labels/types";
+import { TagChip } from "@/components/ui/tag-chip";
 
 export function LabelPrint({
   template,
@@ -32,20 +32,20 @@ export function LabelPrint({
             background: white !important;
           }
 
+          /* The Workshop shell: sidebar, rail, phone top and bottom bars. */
+          body aside,
+          body header,
+          body nav,
           [data-slot="sidebar-gap"],
           [data-slot="sidebar-container"],
           [data-slot="sidebar-inset"] > header {
             display: none !important;
           }
 
-          [data-slot="sidebar-inset"] {
-            margin: 0 !important;
-            border-radius: 0 !important;
-            box-shadow: none !important;
-          }
-
+          body main,
           [data-slot="sidebar-inset"] > main {
             padding: 0 !important;
+            max-width: none !important;
             overflow: visible !important;
           }
 
@@ -78,41 +78,33 @@ export function LabelPrint({
         }
       `}</style>
 
-      <div className="space-y-4" data-print-label-sheet>
+      <ul
+        className="grid gap-x-6 gap-y-7 sm:grid-cols-[repeat(auto-fill,minmax(260px,1fr))] print:block"
+        data-print-label-sheet
+      >
         {assets.map((asset) => (
-          <section
-            key={asset.id}
-            className="rounded-2xl border border-border/70 bg-card/70 p-4 shadow-sm print:border-0 print:bg-transparent print:p-0 print:shadow-none"
-            data-print-label
-          >
-            <div className="mb-3 flex items-start justify-between gap-3 print:hidden">
-              <div>
-                <h2 className="text-sm font-semibold tracking-tight">
-                  {asset.name}
-                </h2>
-                <p className="text-xs text-muted-foreground">
-                  {asset.assetTag}
-                </p>
-              </div>
-              <span className="rounded-full border border-border/70 bg-background px-2.5 py-1 text-xs text-muted-foreground">
-                {formatLabelDimensions(template.widthMm, template.heightMm)}
-              </span>
+          <li key={asset.id} className="min-w-0 print:p-0" data-print-label>
+            <div className="mb-2 flex items-center gap-2 print:hidden">
+              <TagChip weight="table">{asset.assetTag}</TagChip>
+              <h2 className="min-w-0 truncate text-sm font-medium text-foreground">
+                {asset.name}
+              </h2>
             </div>
 
-            <div className="flex justify-center print:block">
+            <div className="flex justify-center overflow-x-auto rounded-md bg-secondary p-4 print:block print:overflow-visible print:bg-transparent print:p-0">
               <LabelPreview
                 template={template}
                 asset={asset}
                 fieldDefinitions={fieldDefinitions}
                 origin={origin}
                 scale={1}
-                className="print:!h-auto print:!w-auto"
-                surfaceClassName="print:rounded-none print:border-0 print:shadow-none"
+                className="shrink-0 print:!h-auto print:!w-auto"
+                surfaceClassName="border-line-2 shadow-none print:rounded-none print:border-0"
               />
             </div>
-          </section>
+          </li>
         ))}
-      </div>
+      </ul>
     </>
   );
 }

@@ -1,6 +1,18 @@
-import { describe, expect, it } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
+import { render, screen, within } from "@testing-library/react";
 import { DashboardStatsBar } from "@/components/dashboard/dashboard-stats-bar";
+
+vi.mock("next/link", () => ({
+  default: ({
+    children,
+    href,
+    ...props
+  }: React.AnchorHTMLAttributes<HTMLAnchorElement> & { href: string }) => (
+    <a href={href} {...props}>
+      {children}
+    </a>
+  ),
+}));
 
 const statusCounts = {
   active: 10,
@@ -11,64 +23,75 @@ const statusCounts = {
 };
 
 describe("DashboardStatsBar", () => {
-  it("renders all 6 stat cards with correct labels and values", () => {
-    render(<DashboardStatsBar totalAssets={21} statusCounts={statusCounts} />);
+  it("renders five cells: assets, overdue, under repair, in storage, retired", () => {
+    render(
+      <DashboardStatsBar
+        totalAssets={21}
+        statusCounts={statusCounts}
+        overdueCount={4}
+      />,
+    );
 
-    expect(screen.getByText("Total Assets")).toBeVisible();
-    expect(screen.getByText("21")).toBeVisible();
-
-    expect(screen.getByText("Active")).toBeVisible();
-    expect(screen.getByText("10")).toBeVisible();
-
-    expect(screen.getByText("In Storage")).toBeVisible();
-    expect(screen.getByText("5")).toBeVisible();
-
-    expect(screen.getByText("Under Repair")).toBeVisible();
-    expect(screen.getByText("3")).toBeVisible();
-
-    expect(screen.getByText("Retired")).toBeVisible();
-    expect(screen.getByText("2")).toBeVisible();
-
-    expect(screen.getByText("Disposed")).toBeVisible();
-    expect(screen.getByText("1")).toBeVisible();
-  });
-
-  it("renders zero counts correctly", () => {
-    const zeroCounts = {
-      active: 0,
-      in_storage: 0,
-      under_repair: 0,
-      retired: 0,
-      disposed: 0,
-    };
-
-    render(<DashboardStatsBar totalAssets={0} statusCounts={zeroCounts} />);
-
-    const zeros = screen.getAllByText("0");
-    expect(zeros).toHaveLength(6);
-  });
-
-  it("renders data-dashboard-stat attributes for each card", () => {
-    render(<DashboardStatsBar totalAssets={21} statusCounts={statusCounts} />);
-
-    const keys = [
-      "total",
-      "active",
-      "in_storage",
-      "under_repair",
-      "retired",
-      "disposed",
-    ];
-    for (const key of keys) {
-      expect(
-        document.querySelector(`[data-dashboard-stat="${key}"]`),
-      ).toBeTruthy();
-    }
-  });
-
-  it("is horizontally scrollable on mobile and a grid from sm up", () => {
-    render(<DashboardStatsBar totalAssets={21} statusCounts={statusCounts} />);
     const bar = screen.getByTestId("dashboard-stats-bar");
-    expect(bar).toHaveAttribute("data-layout", "horizontal-scroll-to-grid");
+    const links = within(bar).getAllByRole("link");
+    expect(links).toHaveLength(5);
+
+    const expected: Array<[RegExp, string, string]> = [
+      [/Assets/, "21", "/assets"],
+      [/Overdue/, "4", "/services"],
+      [/Under repair/, "3", "/assets?status=under_repair"],
+      [/In storage/, "5", "/assets?status=in_storage"],
+      [/Retired/, "2", "/assets?status=retired"],
+    ];
+    expected.forEach(([name, value, href], index) => {
+      const link = links[index];
+      expect(link).toHaveAccessibleName(name);
+      expect(link).toHaveAttribute("href", href);
+      expect(within(link).getByText(value)).toBeInTheDocument();
+    });
+  });
+
+  it("does not show active or disposed counts", () => {
+    render(
+      <DashboardStatsBar
+        totalAssets={21}
+        statusCounts={statusCounts}
+        overdueCount={4}
+      />,
+    );
+
+    expect(screen.queryByText("Active")).not.toBeInTheDocument();
+    expect(screen.queryByText("Disposed")).not.toBeInTheDocument();
+  });
+
+  it("keeps short phone labels next to the full labels", () => {
+    render(
+      <DashboardStatsBar
+        totalAssets={21}
+        statusCounts={statusCounts}
+        overdueCount={0}
+      />,
+    );
+
+    expect(screen.getByText("In repair")).toBeInTheDocument();
+    expect(screen.getByText("Stored")).toBeInTheDocument();
+  });
+
+  it("renders zero counts", () => {
+    render(
+      <DashboardStatsBar
+        totalAssets={0}
+        statusCounts={{
+          active: 0,
+          in_storage: 0,
+          under_repair: 0,
+          retired: 0,
+          disposed: 0,
+        }}
+        overdueCount={0}
+      />,
+    );
+
+    expect(screen.getAllByText("0")).toHaveLength(5);
   });
 });

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { FieldDefinition } from "@/components/fields/types";
 import { BarcodeRenderer } from "@/components/labels/barcode-renderer";
 import {
@@ -110,16 +110,32 @@ export function TemplateCanvas({
   onDeleteElement,
 }: TemplateCanvasProps) {
   const surfaceRef = useRef<HTMLDivElement | null>(null);
+  const frameRef = useRef<HTMLDivElement | null>(null);
   const interactionRef = useRef<ActiveInteraction | null>(null);
+  // The canvas scales to the width it has, up to 560px, so it fits the
+  // designer column instead of scrolling sideways.
+  const [frameWidth, setFrameWidth] = useState<number | null>(null);
+  useEffect(() => {
+    const frame = frameRef.current;
+    if (!frame || typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(([entry]) => {
+      if (entry) setFrameWidth(Math.floor(entry.contentRect.width));
+    });
+    observer.observe(frame);
+    return () => observer.disconnect();
+  }, []);
   const scale = useMemo(() => {
-    const maxWidthPx = 560;
+    const maxWidthPx = frameWidth ? Math.min(560, frameWidth) : 560;
     const maxHeightPx = 360;
     const widthScale = maxWidthPx / (template.widthMm * MM_TO_PX);
     const heightScale = maxHeightPx / (template.heightMm * MM_TO_PX);
     return Number(
-      Math.max(1.65, Math.min(widthScale, heightScale, 4.5)).toFixed(2),
+      Math.max(
+        frameWidth ? 1 : 1.65,
+        Math.min(widthScale, heightScale, 4.5),
+      ).toFixed(2),
     );
-  }, [template.heightMm, template.widthMm]);
+  }, [frameWidth, template.heightMm, template.widthMm]);
   const wrapperWidth = template.widthMm * MM_TO_PX * scale;
   const wrapperHeight = template.heightMm * MM_TO_PX * scale;
   const resolvedOrigin = useLabelOrigin(origin);
@@ -200,21 +216,23 @@ export function TemplateCanvas({
   );
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <h3 className="text-sm font-semibold tracking-tight">Canvas</h3>
-          <p className="text-xs text-muted-foreground">
-            Drag elements to move them. Use the handle to resize in{" "}
-            {LABEL_GRID_STEP_MM} mm steps.
+    <div>
+      <div className="flex items-baseline justify-between gap-3 border-b border-border px-[18px] py-3">
+        <div className="min-w-0">
+          <h3 className="eyebrow">Canvas</h3>
+          <p className="mt-0.5 text-[13px] text-ink-2">
+            {readOnly
+              ? "Only admins can change label templates."
+              : `Drag to move, use the corner handle to resize in ${LABEL_GRID_STEP_MM} mm steps. Arrow keys nudge.`}
           </p>
         </div>
-        <div className="rounded-full border border-border/70 bg-background px-2.5 py-1 text-xs text-muted-foreground">
+        <span className="shrink-0 font-mono text-[13px] font-medium text-ink-2">
           {template.widthMm} x {template.heightMm} mm
-        </div>
+        </span>
       </div>
 
-      <div className="overflow-x-auto rounded-2xl border border-border/70 bg-gradient-to-br from-slate-100/80 via-white to-slate-50 p-4 shadow-sm dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
+      <div className="overflow-x-auto bg-secondary px-4 py-6 md:px-6 md:py-8">
+        <div ref={frameRef} className="w-full" aria-hidden="true" />
         <div
           className="relative mx-auto"
           style={{ width: `${wrapperWidth}px`, height: `${wrapperHeight}px` }}
@@ -229,12 +247,12 @@ export function TemplateCanvas({
             }}
           >
             <div
-              className="relative overflow-hidden rounded-[2.4mm] border border-slate-300 bg-white shadow-lg"
+              className="relative overflow-hidden rounded-[2.4mm] border border-[#bdbfb7] bg-white"
               style={{
                 width: `${template.widthMm}mm`,
                 height: `${template.heightMm}mm`,
                 backgroundImage:
-                  "linear-gradient(to right, rgba(148,163,184,0.12) 1px, transparent 1px), linear-gradient(to bottom, rgba(148,163,184,0.12) 1px, transparent 1px)",
+                  "linear-gradient(to right, rgba(27,29,26,0.07) 1px, transparent 1px), linear-gradient(to bottom, rgba(27,29,26,0.07) 1px, transparent 1px)",
                 backgroundSize: "2mm 2mm",
               }}
               onPointerDown={() => onSelectElement(null)}
@@ -257,8 +275,8 @@ export function TemplateCanvas({
                         ? "rounded-none"
                         : "rounded-[1.6mm]",
                       isSelected
-                        ? "border-slate-600 shadow-[0_0_0_0.8mm_rgba(100,116,139,0.18)]"
-                        : "border-slate-300 shadow-[0_0_0_0.2mm_rgba(148,163,184,0.2)] hover:border-slate-400 hover:shadow-[0_0_0_0.6mm_rgba(148,163,184,0.18)]",
+                        ? "border-[#1b1d1a] shadow-[0_0_0_0.6mm_rgba(27,29,26,0.14)]"
+                        : "border-dashed border-[#bdbfb7] hover:border-solid hover:border-[#7a7e76]",
                       readOnly ? "cursor-default" : "cursor-move",
                     )}
                     style={{
@@ -363,7 +381,7 @@ export function TemplateCanvas({
                     {!readOnly ? (
                       <span
                         className={cn(
-                          "absolute right-[0.45mm] bottom-[0.45mm] block h-[1.2mm] w-[1.2mm] rounded-full border border-white bg-slate-600 shadow-sm",
+                          "absolute right-[0.45mm] bottom-[0.45mm] block h-[1.2mm] w-[1.2mm] cursor-nwse-resize rounded-[0.3mm] border border-white bg-[#1b1d1a]",
                           isSelected ? "opacity-100" : "opacity-0",
                         )}
                         onPointerDown={(event) => {

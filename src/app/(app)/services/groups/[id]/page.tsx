@@ -1,4 +1,3 @@
-import { PageHeader } from "@/components/layout/page-header";
 import { ServiceGroupDetailPageClient } from "@/components/services/service-group-detail-page-client";
 
 export default async function ServiceGroupDetailPage({
@@ -8,19 +7,5 @@ export default async function ServiceGroupDetailPage({
 }) {
   const { id } = await params;
 
-  return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Service Group"
-        description="Configure required service fields and review assigned assets."
-        breadcrumbs={[
-          { label: "Stowage", href: "/dashboard" },
-          { label: "Services", href: "/services" },
-          { label: "Groups", href: "/services/groups" },
-          { label: "Group detail" },
-        ]}
-      />
-      <ServiceGroupDetailPageClient groupId={id} />
-    </div>
-  );
+  return <ServiceGroupDetailPageClient groupId={id} />;
 }

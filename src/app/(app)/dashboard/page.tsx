@@ -1,26 +1,38 @@
 "use client";
 
-import { useState } from "react";
+import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronDown } from "lucide-react";
+import { Plus } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { DashboardStatsBar } from "@/components/dashboard/dashboard-stats-bar";
 import { CategoryBreakdown } from "@/components/dashboard/category-breakdown";
-import { LocationBreakdown } from "@/components/dashboard/location-breakdown";
-import { QuickActions } from "@/components/dashboard/quick-actions";
 import { RecentAssetsCard } from "@/components/dashboard/recent-assets-card";
 import { UpcomingServicesWidget } from "@/components/dashboard/upcoming-services-widget";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useCurrentUser } from "@/hooks/use-current-user";
-import { useMediaQuery } from "@/hooks/use-media-query";
+import { useHydrated } from "@/hooks/use-hydrated";
 import { getDashboardOverview } from "@/lib/api/dashboard";
 
+function partOfDay(date: Date) {
+  const hour = date.getHours();
+  if (hour < 12) return "Morning";
+  if (hour < 18) return "Afternoon";
+  return "Evening";
+}
+
+function todayTitle(date: Date) {
+  return date.toLocaleDateString("en-GB", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  });
+}
+
 export default function DashboardPage() {
-  const isDesktop = useMediaQuery("(min-width: 1024px)");
+  // The date and greeting depend on the viewer's clock and time zone, so the
+  // server renders the loading state and the client fills them in.
+  const hydrated = useHydrated();
   const { data: currentUser } = useCurrentUser();
   const {
     data: overview,
@@ -31,134 +43,91 @@ export default function DashboardPage() {
     queryFn: getDashboardOverview,
   });
 
-  const greeting = currentUser?.name
-    ? `Welcome back, ${currentUser.name}`
-    : "Dashboard";
+  const now = hydrated ? new Date() : null;
+  const title = now ? todayTitle(now) : "Today";
+  const firstName = currentUser?.name?.split(/\s+/)[0];
+  const actions = (
+    <Button asChild>
+      <Link href="/assets/new">
+        <Plus />
+        New asset…
+      </Link>
+    </Button>
+  );
 
-  if (isPending) {
+  if (!now || isPending) {
     return (
-      <div className="flex h-full flex-col gap-4">
-        <PageHeader
-          title={greeting}
-          description="Overview of your assets and upcoming services."
-          breadcrumbs={[{ label: "Stowage", href: "/dashboard" }]}
-        />
-        <div className="rounded-xl border border-border/70 bg-card p-8 text-center text-sm text-muted-foreground">
-          Loading dashboard...
-        </div>
+      <div>
+        <PageHeader title={title} description="Loading…" actions={actions} />
+        <Skeleton className="h-[88px] rounded-md" />
       </div>
     );
   }
 
   if (isError || !overview) {
     return (
-      <div className="flex h-full flex-col gap-4">
-        <PageHeader
-          title={greeting}
-          description="Overview of your assets and upcoming services."
-          breadcrumbs={[{ label: "Stowage", href: "/dashboard" }]}
-        />
-        <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-8 text-center text-sm text-destructive">
-          Could not load the dashboard. Please try again.
-        </div>
+      <div>
+        <PageHeader title={title} actions={actions} />
+        <p role="alert" className="text-sm font-medium text-destructive">
+          Could not load the dashboard. Reload to try again.
+        </p>
       </div>
     );
   }
 
-  const recent = (
-    <RecentAssetsCard
-      items={overview.recentAssets}
-      dateFormat={overview.dateFormat}
-    />
-  );
-  const upcoming = (
-    <UpcomingServicesWidget
-      items={overview.upcomingServices}
-      overdueCount={overview.overdueServiceCount}
-      serviceSchedulingEnabled={overview.serviceSchedulingEnabled}
-      dateFormat={overview.dateFormat}
-    />
-  );
-  const categoryBreakdown = (
-    <CategoryBreakdown items={overview.categoryBreakdown} />
-  );
-  const locationBreakdown = (
-    <LocationBreakdown items={overview.locationBreakdown} />
-  );
+  const changedToday = overview.changedLastDayCount;
+  const overdue = overview.serviceSchedulingEnabled
+    ? overview.overdueServiceCount
+    : 0;
 
-  return (
-    <div className="flex h-full flex-col gap-4 lg:overflow-hidden">
-      <div className="flex shrink-0 flex-wrap items-end justify-between gap-4 [&>div:first-child]:mb-0">
-        <PageHeader
-          title={greeting}
-          description="Overview of your assets and upcoming services."
-          breadcrumbs={[{ label: "Stowage", href: "/dashboard" }]}
-        />
-        <div className="hidden lg:block">
-          <QuickActions />
-        </div>
-      </div>
-
-      <div className="shrink-0">
-        <DashboardStatsBar
-          totalAssets={overview.totalAssets}
-          statusCounts={overview.statusCounts}
-        />
-      </div>
-
-      {isDesktop ? (
-        <div className="grid min-h-0 flex-1 gap-4 grid-cols-2 grid-rows-2">
-          {recent}
-          {upcoming}
-          {categoryBreakdown}
-          {locationBreakdown}
-        </div>
-      ) : (
-        <div
-          className="flex flex-col gap-4"
-          data-testid="dashboard-mobile-feed"
-        >
-          {upcoming}
-          {recent}
-          <QuickActions />
-          <MobileCollapsibleBlock title="By category">
-            {categoryBreakdown}
-          </MobileCollapsibleBlock>
-          <MobileCollapsibleBlock title="By location">
-            {locationBreakdown}
-          </MobileCollapsibleBlock>
-        </div>
+  const summary = (
+    <>
+      {partOfDay(now)}
+      {firstName ? `, ${firstName}` : ""}.{" "}
+      {overdue > 0 ? (
+        <>
+          <Link href="/services">
+            {overdue} {overdue === 1 ? "service" : "services"} overdue
+          </Link>
+          {changedToday > 0 ? " and " : "."}
+        </>
+      ) : changedToday > 0 ? null : (
+        "Nothing is overdue."
       )}
-    </div>
+      {changedToday > 0 ? (
+        <>
+          <Link href="/assets">
+            {changedToday} {changedToday === 1 ? "asset" : "assets"} changed
+          </Link>{" "}
+          in the last day.
+        </>
+      ) : null}
+    </>
   );
-}
 
-function MobileCollapsibleBlock({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
-  const [open, setOpen] = useState(false);
   return (
-    <Collapsible
-      open={open}
-      onOpenChange={setOpen}
-      className="rounded-xl border border-border/70 bg-card shadow-sm"
-      data-testid={`dashboard-collapsible-${title.toLowerCase().replace(/\s+/g, "-")}`}
-    >
-      <CollapsibleTrigger className="flex w-full cursor-pointer items-center justify-between px-4 py-3 text-left">
-        <span className="text-sm font-semibold">{title}</span>
-        <ChevronDown
-          className={`h-4 w-4 text-muted-foreground transition-transform ${
-            open ? "rotate-180" : ""
-          }`}
+    <div>
+      <PageHeader title={title} description={summary} actions={actions} />
+
+      <DashboardStatsBar
+        totalAssets={overview.totalAssets}
+        statusCounts={overview.statusCounts}
+        overdueCount={overdue}
+      />
+
+      <div className="mt-7 grid gap-7 min-[861px]:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:gap-8">
+        <UpcomingServicesWidget
+          items={overview.upcomingServices}
+          overdueCount={overdue}
+          scheduledCount={overview.scheduledServiceCount}
+          serviceSchedulingEnabled={overview.serviceSchedulingEnabled}
+          dateFormat={overview.dateFormat}
         />
-      </CollapsibleTrigger>
-      <CollapsibleContent>
-        <div className="border-t border-border/60">{children}</div>
-      </CollapsibleContent>
-    </Collapsible>
+        <div className="grid content-start gap-7">
+          <CategoryBreakdown items={overview.categoryBreakdown} />
+          <RecentAssetsCard items={overview.recentAssets} />
+        </div>
+      </div>
+    </div>
   );
 }

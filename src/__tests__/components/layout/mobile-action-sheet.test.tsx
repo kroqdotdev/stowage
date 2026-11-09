@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 
 import { MobileActionSheet } from "@/components/layout/mobile-action-sheet";
 
@@ -71,5 +71,39 @@ describe("MobileActionSheet", () => {
     );
     fireEvent.keyDown(document.body, { key: "Escape" });
     expect(onOpenChange).toHaveBeenCalledWith(false);
+  });
+
+  it("focuses the sheet itself by default so the phone keyboard stays down", async () => {
+    render(
+      <MobileActionSheet open={true} onOpenChange={() => {}} title="Actions">
+        <input aria-label="Plain field" />
+      </MobileActionSheet>,
+    );
+    await waitFor(() => {
+      expect(screen.getByTestId("mobile-action-sheet")).toHaveFocus();
+    });
+  });
+
+  it("keeps focus on a field that asks for it with autoFocus", async () => {
+    render(
+      <MobileActionSheet open={true} onOpenChange={() => {}} title="Type the tag">
+        <input aria-label="Asset tag" autoFocus />
+      </MobileActionSheet>,
+    );
+    await waitFor(() => {
+      expect(screen.getByLabelText("Asset tag")).toHaveFocus();
+    });
+  });
+
+  it("focuses a field marked data-autofocus", async () => {
+    render(
+      <MobileActionSheet open={true} onOpenChange={() => {}} title="Rename">
+        <input aria-label="First" />
+        <input aria-label="Name" data-autofocus="" />
+      </MobileActionSheet>,
+    );
+    await waitFor(() => {
+      expect(screen.getByLabelText("Name")).toHaveFocus();
+    });
   });
 });

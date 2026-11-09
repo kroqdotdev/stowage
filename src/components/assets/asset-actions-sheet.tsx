@@ -630,7 +630,7 @@ function LogServiceView({
       toast.success("Service logged");
       onDone();
       void queryClient.invalidateQueries({
-        queryKey: ["service-records", "asset", asset.id],
+        queryKey: ["service-records", "by-asset", asset.id],
       });
       void queryClient.invalidateQueries({ queryKey: ["service-schedules"] });
       void queryClient.invalidateQueries({ queryKey: ["dashboard"] });

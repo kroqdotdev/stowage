@@ -6,6 +6,10 @@ import {
   signIn,
 } from "./helpers";
 
+// The dashboard title is today's date, e.g. "Saturday 7 November".
+const DATE_HEADING =
+  /^(Mon|Tues|Wednes|Thurs|Fri|Satur|Sun)day \d{1,2} [A-Z][a-z]+$/;
+
 function getStatusLabel(status: "active" | "retired") {
   return status === "retired" ? "Retired" : "Active";
 }
@@ -38,11 +42,11 @@ async function createAsset(
 
   await page.getByRole("button", { name: "Create asset" }).click();
   await expect(
-    page.getByRole("heading", { name: `${options.name} created` }),
+    page.getByRole("heading", { name: options.name, exact: true }),
   ).toBeVisible({
     timeout: 20_000,
   });
-  await page.getByRole("button", { name: "View asset" }).click();
+  await page.getByRole("button", { name: "Open asset" }).click();
   await page.waitForURL(/\/assets\/(?!new$)[^/]+$/, { timeout: 20_000 });
 }
 
@@ -69,7 +73,7 @@ test.describe.serial("phase 10 dashboard", () => {
     await page.goto("/");
     await page.waitForURL(/\/dashboard$/, { timeout: 20_000 });
     await expect(
-      page.getByRole("heading", { name: /Welcome back|Dashboard/ }),
+      page.getByRole("heading", { level: 1, name: DATE_HEADING }),
     ).toBeVisible();
   });
 
@@ -108,35 +112,23 @@ test.describe.serial("phase 10 dashboard", () => {
 
     await page.goto("/dashboard");
     await expect(
-      page.getByRole("heading", { name: /Welcome back|Dashboard/ }),
+      page.getByRole("heading", { level: 1, name: DATE_HEADING }),
     ).toBeVisible();
-    await expect(
-      page.locator('[data-dashboard-stat="total"] [data-dashboard-stat-value]'),
-    ).toHaveText(/\d+/);
-    await expect(
-      page.locator(
-        '[data-dashboard-stat="active"] [data-dashboard-stat-value]',
-      ),
-    ).toHaveText(/\d+/);
-    await expect(
-      page.locator(
-        '[data-dashboard-stat="retired"] [data-dashboard-stat-value]',
-      ),
-    ).toHaveText(/\d+/);
+    const stats = page.getByTestId("dashboard-stats-bar");
+    await expect(stats).toContainText(/\d+\s*Assets/);
+    await expect(stats).toContainText(/\d+\s*Retired/);
 
-    const recentAssetsSection = page
-      .locator("section")
-      .filter({ hasText: "Recent assets" })
-      .first();
+    const recentAssetsSection = page.getByRole("region", {
+      name: "Recently updated",
+    });
     await expect(
       recentAssetsSection.getByText(scheduledAssetName),
     ).toBeVisible();
     await expect(recentAssetsSection.getByText(retiredAssetName)).toBeVisible();
 
-    const serviceQueueSection = page
-      .locator("section")
-      .filter({ hasText: "Service queue" })
-      .first();
+    const serviceQueueSection = page.getByRole("region", {
+      name: "Service due",
+    });
     await expect(serviceQueueSection).toBeVisible();
     await expect(
       serviceQueueSection.getByText(scheduledAssetName),

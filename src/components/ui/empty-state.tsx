@@ -1,5 +1,10 @@
 import { cn } from "@/lib/utils";
 
+/*
+  Empty states sit on the concrete: a glyph aligned to the first line, a bold
+  sentence that says what is true, a support line, and the next step under
+  the copy.
+*/
 export function EmptyState({
   icon: Icon,
   title,
@@ -15,23 +20,24 @@ export function EmptyState({
 }) {
   return (
     <div
+      data-slot="empty-state"
       className={cn(
-        "flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-border/70 bg-muted/10 px-6 py-10 text-center",
+        "flex min-h-28 items-start gap-4 px-0.5 py-6 text-left",
         className,
       )}
     >
       {Icon ? (
-        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted/40">
-          <Icon className="h-5 w-5 text-muted-foreground" />
+        <div className="grid w-8 shrink-0 place-items-center pt-0.5 text-muted-foreground">
+          <Icon className="size-6" />
         </div>
       ) : null}
-      <div className="space-y-1">
-        <p className="text-sm font-medium">{title}</p>
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-semibold text-foreground">{title}</p>
         {description ? (
-          <p className="text-sm text-muted-foreground">{description}</p>
+          <p className="mt-0.5 text-sm text-ink-2">{description}</p>
         ) : null}
+        {action ? <div className="mt-3">{action}</div> : null}
       </div>
-      {action ?? null}
     </div>
   );
 }

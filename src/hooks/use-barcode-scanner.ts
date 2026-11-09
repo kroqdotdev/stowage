@@ -309,6 +309,15 @@ function mapGetUserMediaError(err: unknown): {
     if (err.name === "NotAllowedError" || err.name === "SecurityError") {
       return { state: "denied", message: err.message };
     }
+    if (err.name === "NotFoundError" || err.name === "OverconstrainedError") {
+      return { state: "error", message: "No camera found on this device. Type the tag instead." };
+    }
+    if (err.name === "NotReadableError") {
+      return {
+        state: "error",
+        message: "Another app is using the camera. Close it and try again, or type the tag.",
+      };
+    }
     return { state: "error", message: err.message };
   }
   return { state: "error", message: "Unknown scanner error." };

@@ -43,6 +43,7 @@ export type UpcomingServiceItem = {
 export type UpcomingServicesPreview = {
   serviceSchedulingEnabled: boolean;
   overdueCount: number;
+  scheduledCount: number;
   items: UpcomingServiceItem[];
 };
 
@@ -51,10 +52,13 @@ export type DashboardOverview = {
   totalAssets: number;
   statusCounts: StatusCounts;
   recentAssets: RecentAsset[];
+  /** Assets updated in the 24 hours before the overview was built. */
+  changedLastDayCount: number;
   categoryBreakdown: CategoryBreakdownItem[];
   locationBreakdown: LocationBreakdownItem[];
   serviceSchedulingEnabled: boolean;
   overdueServiceCount: number;
+  scheduledServiceCount: number;
   upcomingServices: UpcomingServiceItem[];
 };
 
@@ -140,6 +144,14 @@ function buildRecentAssets(assets: AssetRow[]): RecentAsset[] {
     }));
 }
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+function countChangedSince(assets: AssetRow[], since: number) {
+  let count = 0;
+  for (const asset of assets) if (asset.updatedAt >= since) count += 1;
+  return count;
+}
+
 function compareBreakdown<T extends { count: number; name: string }>(
   a: T,
   b: T,
@@ -217,6 +229,7 @@ async function buildUpcomingServicesPreview(
     return {
       serviceSchedulingEnabled: false,
       overdueCount: 0,
+      scheduledCount: 0,
       items: [],
     };
   }
@@ -232,11 +245,12 @@ async function buildUpcomingServicesPreview(
     return {
       serviceSchedulingEnabled: true,
       overdueCount: 0,
+      scheduledCount: 0,
       items: [],
     };
   }
 
-  const previewSchedules = schedules.slice(0, 5);
+  const previewSchedules = schedules.slice(0, 7);
   const assets = await Promise.all(
     previewSchedules.map((schedule) =>
       ctx.pb
@@ -263,6 +277,7 @@ async function buildUpcomingServicesPreview(
   return {
     serviceSchedulingEnabled: true,
     overdueCount: schedules.filter((s) => s.nextServiceDate < todayIso).length,
+    scheduledCount: schedules.length,
     items,
   };
 }
@@ -319,10 +334,12 @@ export async function getOverview(ctx: Ctx): Promise<DashboardOverview> {
     totalAssets: assets.length,
     statusCounts: buildStatusCounts(assets),
     recentAssets: buildRecentAssets(assets),
+    changedLastDayCount: countChangedSince(assets, Date.now() - DAY_MS),
     categoryBreakdown,
     locationBreakdown,
     serviceSchedulingEnabled: upcomingPreview.serviceSchedulingEnabled,
     overdueServiceCount: upcomingPreview.overdueCount,
+    scheduledServiceCount: upcomingPreview.scheduledCount,
     upcomingServices: upcomingPreview.items,
   };
 }

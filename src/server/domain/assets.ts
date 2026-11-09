@@ -73,7 +73,9 @@ export const ListAssetsInput = z.object({
   status: assetStatusSchema.optional(),
   tagIds: z.array(z.string()).optional(),
   search: z.string().optional(),
-  sortBy: z.enum(["createdAt", "name", "assetTag", "status"]).optional(),
+  sortBy: z
+    .enum(["createdAt", "updatedAt", "name", "assetTag", "status"])
+    .optional(),
   sortDirection: z.enum(["asc", "desc"]).optional(),
 });
 
@@ -431,6 +433,7 @@ function pickSort(
   const multiplier = direction === "asc" ? 1 : -1;
   return (a: AssetListView, b: AssetListView) => {
     if (by === "createdAt") return (a.createdAt - b.createdAt) * multiplier;
+    if (by === "updatedAt") return (a.updatedAt - b.updatedAt) * multiplier;
     if (by === "name") {
       return (
         a.name.localeCompare(b.name, undefined, { sensitivity: "base" }) *

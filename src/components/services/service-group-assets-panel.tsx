@@ -4,9 +4,13 @@ import Link from "next/link";
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { ServiceGroupAsset } from "@/components/services/types";
-import { StatusBadge } from "@/components/assets/status-badge";
+import { SheetHeading } from "@/components/ui/sheet-heading";
+import { Skeleton } from "@/components/ui/skeleton";
+import { StatusText } from "@/components/ui/status-text";
+import { TagChip } from "@/components/ui/tag-chip";
 import { listServiceGroupAssets } from "@/lib/api/service-groups";
 
+/* The plan's assets as a sheet: tag, name, status (exceptions only). */
 export function ServiceGroupAssetsPanel({ groupId }: { groupId: string }) {
   const rowsQuery = useQuery({
     queryKey: ["service-groups", groupId, "assets"],
@@ -18,111 +22,40 @@ export function ServiceGroupAssetsPanel({ groupId }: { groupId: string }) {
   );
 
   return (
-    <section className="rounded-xl border border-border/70 bg-background p-5 shadow-sm">
-      <div>
-        <h3 className="text-sm font-semibold tracking-tight">
-          Assigned assets
-        </h3>
-        <p className="text-xs text-muted-foreground">
-          Assets assigned to this service group are maintained from asset
-          create/edit.
-        </p>
-      </div>
-
+    <section>
+      <SheetHeading
+        title="Assets on this plan"
+        count={rowsQuery.isPending ? undefined : assets.length}
+      />
       {rowsQuery.isPending ? (
-        <p className="mt-4 text-sm text-muted-foreground md:hidden">
-          Loading assets...
-        </p>
+        <div className="space-y-3 py-4" aria-busy="true">
+          <span className="sr-only">Loading assets...</span>
+          <Skeleton className="h-2.5 w-1/2" />
+          <Skeleton className="h-2.5 w-1/3" />
+        </div>
       ) : assets.length === 0 ? (
-        <p className="mt-4 text-sm text-muted-foreground md:hidden">
-          No assets are currently assigned to this group.
+        <p className="px-0.5 py-4 text-sm text-ink-2">
+          No assets are on this plan yet. Choose the plan when you edit an
+          asset.
         </p>
       ) : (
-        <ul
-          className="mt-4 flex flex-col gap-2 md:hidden"
-          data-testid="service-group-assets-card-list"
-        >
+        <ul data-testid="service-group-assets-card-list">
           {assets.map((asset) => (
-            <li
-              key={asset.id}
-              data-testid={`service-group-asset-card-${asset.id}`}
-              className="rounded-lg border border-border/70 bg-card shadow-sm transition hover:border-primary/30 hover:bg-accent/40"
-            >
+            <li key={asset.id} data-testid={`service-group-asset-card-${asset.id}`}>
               <Link
                 href={`/assets/${asset.id}`}
-                className="flex items-start justify-between gap-3 p-3"
+                className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 border-b border-border px-0.5 py-3 hover:bg-card/60"
               >
-                <div className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-semibold">
-                    {asset.name}
-                  </span>
-                  <p className="mt-0.5 truncate font-mono text-xs text-muted-foreground">
-                    {asset.assetTag}
-                  </p>
-                </div>
-                <StatusBadge status={asset.status} />
+                <TagChip weight="table">{asset.assetTag}</TagChip>
+                <span className="truncate text-sm font-semibold text-foreground">
+                  {asset.name}
+                </span>
+                <StatusText status={asset.status} hideActive className="text-[13px]" />
               </Link>
             </li>
           ))}
         </ul>
       )}
-
-      <div className="mt-4 hidden overflow-x-auto rounded-lg border border-border/60 md:block">
-        <table
-          className="min-w-full text-sm"
-          data-testid="service-group-assets-table"
-        >
-          <thead className="bg-muted/40 text-left">
-            <tr>
-              <th className="px-3 py-2 font-medium">Asset</th>
-              <th className="px-3 py-2 font-medium">Tag</th>
-              <th className="px-3 py-2 font-medium">Status</th>
-              <th className="px-3 py-2 font-medium text-right">Open</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rowsQuery.isPending ? (
-              <tr>
-                <td
-                  colSpan={4}
-                  className="px-3 py-8 text-center text-muted-foreground"
-                >
-                  Loading assets...
-                </td>
-              </tr>
-            ) : assets.length === 0 ? (
-              <tr>
-                <td
-                  colSpan={4}
-                  className="px-3 py-8 text-center text-muted-foreground"
-                >
-                  No assets are currently assigned to this group.
-                </td>
-              </tr>
-            ) : (
-              assets.map((asset) => (
-                <tr key={asset.id} className="border-t border-border/50">
-                  <td className="px-3 py-2 font-medium">{asset.name}</td>
-                  <td className="px-3 py-2 font-mono text-xs">
-                    {asset.assetTag}
-                  </td>
-                  <td className="px-3 py-2">
-                    <StatusBadge status={asset.status} />
-                  </td>
-                  <td className="px-3 py-2 text-right">
-                    <Link
-                      href={`/assets/${asset.id}`}
-                      className="text-primary underline-offset-2 hover:underline"
-                    >
-                      Open asset
-                    </Link>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
     </section>
   );
 }

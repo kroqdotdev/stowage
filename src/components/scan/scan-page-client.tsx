@@ -163,26 +163,27 @@ export function ScanPageClient() {
 
   return (
     <div
-      className="relative -m-4 flex min-h-[calc(100svh-8rem)] flex-col items-center gap-5 bg-background px-4 pt-4 pb-10 lg:-m-6 lg:min-h-[calc(100svh-4rem)]"
+      className="on-charcoal relative -mx-4 -mt-4 -mb-24 flex min-h-[calc(100svh-56px)] flex-col items-center gap-5 bg-sidebar px-4 pt-3 pb-28 text-white md:-mx-6 md:-mt-6 md:-mb-14 md:min-h-svh md:border-l md:border-sidebar-border md:pb-12 lg:-mx-9 lg:-mt-8 lg:-mb-10"
       data-testid="scan-page"
     >
-      <div className="flex w-full items-center justify-between">
-        <Button
+      <div className="grid w-full max-w-md grid-cols-[1fr_auto_1fr] items-center">
+        <button
           type="button"
-          variant="ghost"
-          size="sm"
-          className="cursor-pointer"
+          className="inline-flex h-10 w-fit cursor-pointer items-center gap-1.5 rounded-md px-2 text-sm font-medium text-sidebar-foreground hover:bg-sidebar-accent hover:text-white"
           data-testid="scan-back"
           onClick={() => router.back()}
         >
-          <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+          <ArrowLeft className="size-4" aria-hidden="true" />
           Back
-        </Button>
+        </button>
+        <h1 className="wide text-base font-bold text-white">Scan a label</h1>
+        <div className="flex justify-end">
         <TorchButton
           supported={scanner.torch.supported}
           on={scanner.torch.on}
           onToggle={scanner.torch.toggle}
         />
+        </div>
       </div>
 
       <ScannerBody scanner={scanner} videoRef={videoRef} detected={detected} />
@@ -190,11 +191,13 @@ export function ScanPageClient() {
       <Button
         type="button"
         variant="outline"
+        size="lg"
+        className="border-white bg-transparent text-white hover:bg-sidebar-accent hover:text-white"
         data-testid="scan-manual-entry"
         onClick={() => setManualOpen(true)}
       >
-        <Keyboard className="h-4 w-4" aria-hidden="true" />
-        Enter asset tag
+        <Keyboard aria-hidden="true" />
+        Type the tag…
       </Button>
 
       <ManualEntrySheet
@@ -273,12 +276,12 @@ function ScannerBody({
         active={scanner.state === "scanning"}
         detected={detected}
       />
-      <p className="text-sm text-muted-foreground">
+      <p className="text-sm text-sidebar-foreground" aria-live="polite">
         {detected?.phase === "confirmed"
-          ? "Got it — opening…"
+          ? "Got it. Opening…"
           : detected?.phase === "detecting"
-            ? "Barcode detected — reading…"
-            : "Point at a Stowage label"}
+            ? "Found a code. Reading…"
+            : "Point the camera at a Stowage label."}
       </p>
     </>
   );
@@ -297,14 +300,12 @@ function ScannerState({
 }) {
   return (
     <div
-      className="flex aspect-square w-full max-w-md flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-border bg-muted/30 px-6 text-center"
+      className="flex aspect-square w-full max-w-md flex-col items-center justify-center gap-2.5 rounded-md border border-dashed border-sidebar-muted px-8 text-center"
       data-testid={testId}
     >
-      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted/60">
-        <Icon className="h-6 w-6 text-muted-foreground" />
-      </div>
-      <p className="text-base font-medium">{title}</p>
-      <p className="text-sm text-muted-foreground">{description}</p>
+      <Icon className="mb-1 size-8 text-sidebar-foreground" />
+      <p className="wide text-lg font-bold text-white">{title}</p>
+      <p className="max-w-[36ch] text-sm text-sidebar-foreground">{description}</p>
     </div>
   );
 }
@@ -321,18 +322,19 @@ function TorchButton({
   if (!supported) return null;
   const Icon = on ? Flashlight : FlashlightOff;
   return (
-    <Button
+    <button
       type="button"
-      variant="ghost"
-      size="sm"
       aria-label={on ? "Turn off flashlight" : "Turn on flashlight"}
       aria-pressed={on}
-      className={cn("cursor-pointer", on && "text-[var(--scan)]")}
+      className={cn(
+        "grid size-10 cursor-pointer place-items-center rounded-md text-sidebar-foreground hover:bg-sidebar-accent hover:text-white",
+        on && "text-[var(--scan)] hover:text-[var(--scan)]",
+      )}
       data-testid="scan-torch"
       onClick={onToggle}
     >
-      <Icon className="h-4 w-4" aria-hidden="true" />
-    </Button>
+      <Icon className="size-5" aria-hidden="true" />
+    </button>
   );
 }
 
@@ -355,8 +357,8 @@ function ManualEntrySheet({
     <MobileActionSheet
       open={open}
       onOpenChange={onOpenChange}
-      title="Enter asset tag"
-      description="Type the tag printed on the label (or paste a Stowage asset URL)."
+      title="Type the tag"
+      description="The tag printed on the label, or a Stowage asset link."
     >
       <form
         onSubmit={onSubmit}
@@ -365,7 +367,8 @@ function ManualEntrySheet({
       >
         <Input
           autoFocus
-          placeholder="AST-0047"
+          placeholder="PT-0042"
+          className="h-11 font-mono"
           value={value}
           onChange={(event) => onChange(event.target.value)}
           data-testid="scan-manual-input"
@@ -386,7 +389,7 @@ function ManualEntrySheet({
             disabled={busy || !value.trim()}
             data-testid="scan-manual-submit"
           >
-            {busy ? "Looking up…" : "Go"}
+            {busy ? "Looking up…" : "Open asset"}
           </Button>
         </div>
       </form>

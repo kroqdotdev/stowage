@@ -1,6 +1,8 @@
-import { describe, it, expect, vi } from "vitest";
+import { afterEach, beforeEach, describe, it, expect, vi } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { act, render, screen, fireEvent, within } from "@testing-library/react";
+
+const pushSpy = vi.fn();
 
 vi.mock("@/lib/api/assets", async () => {
   const actual =
@@ -11,8 +13,31 @@ vi.mock("@/lib/api/assets", async () => {
 });
 
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push: vi.fn() }),
+  useRouter: () => ({ push: pushSpy }),
 }));
+
+vi.mock("@/components/assets/asset-actions-sheet", () => ({
+  AssetActionsSheet: ({
+    open,
+    asset,
+    onOpenChange,
+  }: {
+    open: boolean;
+    asset: { name: string } | null;
+    onOpenChange: (open: boolean) => void;
+  }) =>
+    open ? (
+      <div role="dialog" aria-label="Asset actions">
+        {asset?.name}
+        <button type="button" onClick={() => onOpenChange(false)}>
+          Close
+        </button>
+      </div>
+    ) : null,
+}));
+
+const NOW = new Date(2026, 10, 6, 12, 0, 0).getTime();
+const DAY = 24 * 60 * 60 * 1000;
 
 import { AssetCardList } from "@/components/assets/asset-card-list";
 import type { AssetListItem } from "@/components/assets/types";
@@ -33,7 +58,7 @@ function makeRow(overrides: Partial<AssetListItem> = {}): AssetListItem {
     tagIds: ["t1", "t2"],
     tagNames: ["electric", "cordless"],
     createdAt: 0,
-    updatedAt: 0,
+    updatedAt: NOW - DAY,
     ...overrides,
   };
 }
@@ -50,6 +75,16 @@ function renderList(rows: AssetListItem[], loading = false) {
 }
 
 describe("AssetCardList", () => {
+  beforeEach(() => {
+    pushSpy.mockReset();
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(NOW);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it("renders skeleton rows while loading with no data", () => {
     renderList([], true);
     expect(screen.getByTestId("asset-card-list-loading")).toBeInTheDocument();
@@ -60,7 +95,7 @@ describe("AssetCardList", () => {
     expect(screen.getByText(/no assets match/i)).toBeInTheDocument();
   });
 
-  it("renders one card per row with name, tag, location, and tag chips", () => {
+  it("renders one card link per row with tag and name", () => {
     renderList([
       makeRow(),
       makeRow({
@@ -68,50 +103,155 @@ describe("AssetCardList", () => {
         name: "Lathe",
         assetTag: "AST-0048",
         locationPath: "Workshop / Bench 5",
-        tagNames: ["legacy"],
       }),
     ]);
-    expect(screen.getByTestId("asset-card-a1")).toBeInTheDocument();
-    expect(screen.getByTestId("asset-card-a2")).toBeInTheDocument();
-    expect(screen.getByText("Drill #47")).toBeInTheDocument();
-    expect(screen.getByText("AST-0047")).toBeInTheDocument();
-    expect(screen.getByText("Workshop / Bench 3")).toBeInTheDocument();
-    expect(screen.getByText("Workshop / Bench 5")).toBeInTheDocument();
-    expect(screen.getByText("electric")).toBeInTheDocument();
-    expect(screen.getByText("cordless")).toBeInTheDocument();
-    expect(screen.getByText("legacy")).toBeInTheDocument();
+
+    const drill = screen.getByRole("link", { name: "AST-0047, Drill #47" });
+    expect(drill).toHaveAttribute("href", "/assets/a1");
+    expect(drill).toHaveAttribute("data-testid", "asset-card-a1");
+    expect(
+      screen.getByRole("link", { name: "AST-0048, Lathe" }),
+    ).toHaveAttribute("href", "/assets/a2");
   });
 
-  it("shows an overflow count when more than three tags", () => {
-    renderList([
-      makeRow({
-        tagNames: ["one", "two", "three", "four", "five"],
-      }),
-    ]);
-    // three shown + overflow +2
-    expect(screen.getByText("one")).toBeInTheDocument();
-    expect(screen.getByText("two")).toBeInTheDocument();
-    expect(screen.getByText("three")).toBeInTheDocument();
-    expect(screen.getByText("+2")).toBeInTheDocument();
-    expect(screen.queryByText("four")).toBeNull();
-  });
-
-  it("renders an always-visible kebab that opens the actions sheet", async () => {
+  it("shows the location path and short relative time on line two", () => {
     renderList([makeRow()]);
-    const kebab = screen.getByTestId("asset-card-kebab-a1");
-    expect(kebab).toBeVisible();
-    fireEvent.click(kebab);
-    // The sheet opens via AssetActionsSheet; since the fetched asset is null
-    // it doesn't render the action grid but the sheet is open.
-    // We verify the kebab handler fired by seeing the list still mounted.
-    expect(screen.getByTestId("asset-card-a1")).toBeInTheDocument();
+    expect(screen.getByTestId("asset-card-a1")).toHaveTextContent(
+      "Workshop / Bench 3 · 1d",
+    );
   });
 
-  it("includes a linked overlay for tapping the whole card to open details", () => {
+  it("leads line two with the category when asked", () => {
+    const qc = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    render(
+      <QueryClientProvider client={qc}>
+        <AssetCardList
+          rows={[makeRow()]}
+          loading={false}
+          secondary="category"
+        />
+      </QueryClientProvider>,
+    );
+    const card = screen.getByTestId("asset-card-a1");
+    expect(card).toHaveTextContent("Power tools · 1d");
+    expect(card).not.toHaveTextContent("Bench 3");
+  });
+
+  it("says No location when an asset has none", () => {
+    renderList([makeRow({ locationPath: null, locationId: null })]);
+    expect(
+      within(screen.getByTestId("asset-card-a1")).getByText("No location"),
+    ).toBeInTheDocument();
+  });
+
+  it("does not show keyword chips on cards", () => {
+    renderList([makeRow()]);
+    expect(screen.queryByText("electric")).toBeNull();
+    expect(screen.queryByText("cordless")).toBeNull();
+  });
+
+  it("adds a status line only for non-active assets", () => {
+    renderList([
+      makeRow(),
+      makeRow({ id: "a2", name: "Lathe", status: "under_repair" }),
+    ]);
+    expect(
+      within(screen.getByTestId("asset-card-a1")).queryByText("Active"),
+    ).toBeNull();
+    expect(
+      within(screen.getByTestId("asset-card-a2")).getByText("Under repair"),
+    ).toBeInTheDocument();
+  });
+
+  it("navigates to the asset on a plain tap", () => {
+    renderList([makeRow()]);
+    fireEvent.click(screen.getByTestId("asset-card-a1"));
+    expect(pushSpy).toHaveBeenCalledWith("/assets/a1");
+    expect(screen.queryByRole("dialog", { name: "Asset actions" })).toBeNull();
+  });
+
+  it("leaves modifier and middle clicks to the browser so new tabs work", () => {
     renderList([makeRow()]);
     const card = screen.getByTestId("asset-card-a1");
-    const link = card.querySelector("a") as HTMLAnchorElement;
-    expect(link).not.toBeNull();
-    expect(link.getAttribute("href")).toBe("/assets/a1");
+    for (const init of [
+      { metaKey: true },
+      { ctrlKey: true },
+      { shiftKey: true },
+      { button: 1 },
+    ]) {
+      const notCancelled = fireEvent.click(card, init);
+      expect(notCancelled).toBe(true);
+    }
+    expect(pushSpy).not.toHaveBeenCalled();
+  });
+
+  it("opens the actions sheet from a named button on each card", () => {
+    renderList([makeRow()]);
+    fireEvent.click(
+      screen.getByRole("button", { name: "Asset actions, AST-0047" }),
+    );
+    expect(
+      screen.getByRole("dialog", { name: "Asset actions" }),
+    ).toHaveTextContent("Drill #47");
+    expect(pushSpy).not.toHaveBeenCalled();
+  });
+
+  it("press and hold also opens the actions sheet", () => {
+    vi.useFakeTimers({ toFake: ["Date", "setTimeout", "clearTimeout"] });
+    vi.setSystemTime(NOW);
+    try {
+      renderList([makeRow()]);
+
+      const card = screen.getByTestId("asset-card-a1");
+      fireEvent.pointerDown(card);
+      act(() => {
+        vi.advanceTimersByTime(450);
+      });
+      fireEvent.pointerUp(card);
+
+      const sheet = screen.getByRole("dialog", { name: "Asset actions" });
+      expect(sheet).toHaveTextContent("Drill #47");
+
+      // The click that ends the long press must not navigate.
+      fireEvent.click(card);
+      expect(pushSpy).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("a short press does not open the actions sheet", () => {
+    vi.useFakeTimers({ toFake: ["Date", "setTimeout", "clearTimeout"] });
+    vi.setSystemTime(NOW);
+    try {
+      renderList([makeRow()]);
+      const card = screen.getByTestId("asset-card-a1");
+      fireEvent.pointerDown(card);
+      act(() => {
+        vi.advanceTimersByTime(200);
+      });
+      fireEvent.pointerUp(card);
+      act(() => {
+        vi.advanceTimersByTime(1000);
+      });
+      expect(
+        screen.queryByRole("dialog", { name: "Asset actions" }),
+      ).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("opens the actions sheet on right-click", () => {
+    renderList([makeRow()]);
+    fireEvent.contextMenu(screen.getByTestId("asset-card-a1"));
+    expect(
+      screen.getByRole("dialog", { name: "Asset actions" }),
+    ).toHaveTextContent("Drill #47");
+
+    fireEvent.click(screen.getByRole("button", { name: "Close" }));
+    expect(screen.queryByRole("dialog", { name: "Asset actions" })).toBeNull();
   });
 });

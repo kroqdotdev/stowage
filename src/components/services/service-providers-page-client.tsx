@@ -2,14 +2,16 @@
 
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { Pencil, Plus, Trash2, Truck } from "lucide-react";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/crud/confirm-dialog";
 import { getApiErrorMessage } from "@/components/crud/error-messages";
 import { CrudModal } from "@/components/crud/modal";
-import { ServicesNavTabs } from "@/components/services/services-nav-tabs";
 import type { ServiceProvider } from "@/components/services/types";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
+import { SheetHeading } from "@/components/ui/sheet-heading";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useCurrentUser } from "@/hooks/use-current-user";
@@ -123,104 +125,113 @@ export function ServiceProvidersPageClient() {
 
   const submitting = createMutation.isPending || updateMutation.isPending;
 
-  if (currentUserPending || providersQuery.isPending) {
-    return (
-      <div className="space-y-4">
-        <ServicesNavTabs />
-        <div className="rounded-xl border border-border/70 bg-background p-6 text-sm text-muted-foreground shadow-sm">
-          Loading service providers...
-        </div>
-      </div>
-    );
-  }
+  const loading = currentUserPending || providersQuery.isPending;
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between gap-3">
-        <ServicesNavTabs />
-        {canManage ? (
-          <Button type="button" className="cursor-pointer" onClick={openCreate}>
-            <Plus className="h-4 w-4" />
-            Add provider
-          </Button>
-        ) : null}
-      </div>
+    <div>
+      <SheetHeading
+        title="Providers"
+        count={loading ? undefined : providers.length}
+        aside={
+          canManage ? (
+            <Button type="button" size="sm" onClick={openCreate}>
+              <Plus />
+              New provider…
+            </Button>
+          ) : null
+        }
+      />
 
-      {providers.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-border/70 bg-muted/10 p-5 text-sm text-muted-foreground">
-          No service providers yet.
+      {loading ? (
+        <div className="space-y-3 py-4" aria-busy="true">
+          <span className="sr-only">Loading service providers...</span>
+          <Skeleton className="h-2.5 w-1/2" />
+          <Skeleton className="h-2.5 w-1/3" />
         </div>
+      ) : providers.length === 0 ? (
+        <EmptyState
+          icon={Truck}
+          title="No service providers yet."
+          description="Add the firms and people who service your assets, then pick them when you log a service."
+          action={
+            canManage ? (
+              <Button type="button" onClick={openCreate}>
+                <Plus />
+                New provider…
+              </Button>
+            ) : null
+          }
+        />
       ) : (
-        <div className="grid gap-3 lg:grid-cols-2">
+        <ul>
           {providers.map((provider) => (
-            <article
+            <li
               key={provider.id}
-              className="rounded-xl border border-border/70 bg-background p-4 shadow-sm"
+              className="flex items-start gap-3 border-b border-border px-0.5 py-3.5"
             >
-              <div className="flex items-start justify-between gap-3">
-                <div className="space-y-1">
-                  <h3 className="text-sm font-semibold tracking-tight">
-                    {provider.name}
-                  </h3>
-                  {provider.contactEmail ? (
-                    <p className="text-sm text-muted-foreground">
-                      {provider.contactEmail}
-                    </p>
-                  ) : null}
-                  {provider.contactPhone ? (
-                    <p className="text-sm text-muted-foreground">
-                      {provider.contactPhone}
-                    </p>
-                  ) : null}
-                </div>
-
-                {canManage ? (
-                  <div className="flex items-center gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="cursor-pointer"
-                      onClick={() => openEdit(provider)}
-                    >
-                      <Pencil className="h-4 w-4" />
-                      Edit
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="cursor-pointer"
-                      onClick={() => setDeleteProviderId(provider.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                      Delete
-                    </Button>
-                  </div>
+              <div className="min-w-0 flex-1">
+                <h3 className="text-[15px] font-semibold text-foreground">{provider.name}</h3>
+                {provider.contactEmail || provider.contactPhone ? (
+                  <p className="mt-0.5 text-sm text-ink-2">
+                    {provider.contactEmail ? (
+                      <a
+                        href={`mailto:${provider.contactEmail}`}
+                        className="underline underline-offset-[3px] hover:text-foreground"
+                      >
+                        {provider.contactEmail}
+                      </a>
+                    ) : null}
+                    {provider.contactEmail && provider.contactPhone ? " · " : null}
+                    {provider.contactPhone ? (
+                      <a href={`tel:${provider.contactPhone}`} className="whitespace-nowrap hover:text-foreground">
+                        {provider.contactPhone}
+                      </a>
+                    ) : null}
+                  </p>
+                ) : null}
+                {provider.notes ? (
+                  <p className="mt-1 max-w-[70ch] text-sm text-muted-foreground">{provider.notes}</p>
                 ) : null}
               </div>
 
-              {provider.notes ? (
-                <p className="mt-3 text-sm text-muted-foreground">
-                  {provider.notes}
-                </p>
+              {canManage ? (
+                <div className="flex shrink-0 items-center gap-1">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => openEdit(provider)}
+                  >
+                    <Pencil />
+                    Edit…
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label={`Delete ${provider.name}`}
+                    className="text-destructive hover:text-destructive"
+                    onClick={() => setDeleteProviderId(provider.id)}
+                  >
+                    <Trash2 />
+                  </Button>
+                </div>
               ) : null}
-            </article>
+            </li>
           ))}
-        </div>
+        </ul>
       )}
 
       <CrudModal
         open={modalOpen}
         onClose={() => setModalOpen(false)}
-        title={editingProvider ? "Edit provider" : "Add provider"}
-        description="Manage service providers used in lifecycle records."
+        title={editingProvider ? "Edit provider" : "New provider"}
       >
-        <form className="space-y-3" onSubmit={handleSubmit}>
+        <form className="space-y-4" onSubmit={handleSubmit}>
           <div className="space-y-1.5">
             <label
               htmlFor="service-provider-name"
-              className="text-sm font-medium"
+              className="text-sm font-semibold"
             >
               Name
             </label>
@@ -237,7 +248,7 @@ export function ServiceProvidersPageClient() {
           <div className="space-y-1.5">
             <label
               htmlFor="service-provider-email"
-              className="text-sm font-medium"
+              className="text-sm font-semibold"
             >
               Contact email
             </label>
@@ -257,7 +268,7 @@ export function ServiceProvidersPageClient() {
           <div className="space-y-1.5">
             <label
               htmlFor="service-provider-phone"
-              className="text-sm font-medium"
+              className="text-sm font-semibold"
             >
               Contact phone
             </label>
@@ -276,7 +287,7 @@ export function ServiceProvidersPageClient() {
           <div className="space-y-1.5">
             <label
               htmlFor="service-provider-notes"
-              className="text-sm font-medium"
+              className="text-sm font-semibold"
             >
               Notes
             </label>
@@ -290,12 +301,11 @@ export function ServiceProvidersPageClient() {
               className="min-h-24"
             />
           </div>
-          <div className="flex justify-end">
-            <Button
-              type="submit"
-              className="cursor-pointer"
-              disabled={submitting}
-            >
+          <div className="flex justify-end gap-2 pt-1">
+            <Button type="button" variant="outline" onClick={() => setModalOpen(false)} disabled={submitting}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={submitting}>
               {editingProvider ? "Save provider" : "Create provider"}
             </Button>
           </div>
@@ -304,8 +314,8 @@ export function ServiceProvidersPageClient() {
 
       <ConfirmDialog
         open={deleteProviderId !== null}
-        title="Delete provider"
-        description="Delete this service provider?"
+        title="Delete provider?"
+        description="The provider is deleted. A provider named on a service record cannot be deleted."
         confirmLabel="Delete provider"
         busy={deleteMutation.isPending}
         onConfirm={handleDelete}

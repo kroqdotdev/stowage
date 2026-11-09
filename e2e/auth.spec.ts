@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { getLeafPathSegment, type Landing } from "./helpers";
+import { getLeafPathSegment, hideNextDevTools, type Landing } from "./helpers";
 
 async function getUnauthenticatedLanding(page: Page): Promise<Landing> {
   await page.goto("/dashboard");
@@ -70,7 +70,9 @@ test.describe.serial("auth flow", () => {
 
     const email = `playwright-invalid-${Date.now()}@example.com`;
     await page.getByLabel("Email").fill(email);
-    await page.getByLabel("Password").fill("not-the-right-password");
+    await page
+      .getByLabel("Password", { exact: true })
+      .fill("not-the-right-password");
 
     await expectNoLocalAuthProxyRequests(page, async () => {
       await page.getByRole("button", { name: "Sign in" }).click();
@@ -98,8 +100,9 @@ test.describe.serial("auth flow", () => {
     );
 
     await expect.poll(() => getLeafPathSegment(page.url())).toBe("login");
+    await hideNextDevTools(page);
     await page.getByLabel("Email").fill(email!);
-    await page.getByLabel("Password").fill(password!);
+    await page.getByLabel("Password", { exact: true }).fill(password!);
 
     await expectNoLocalAuthProxyRequests(page, async () => {
       await page.getByRole("button", { name: "Sign in" }).click();
@@ -111,14 +114,16 @@ test.describe.serial("auth flow", () => {
       );
     });
 
-    await page.getByLabel("Open user menu").click();
+    // The shell mounts a user menu per layout (sidebar, rail, phone bar);
+    // only the one for this viewport is visible.
+    await page.getByLabel("Open user menu").filter({ visible: true }).click();
     const logoutResponse = page.waitForResponse(
       (res) =>
         res.url().endsWith("/api/auth/logout") &&
         res.request().method() === "POST",
       { timeout: 10_000 },
     );
-    await page.getByRole("menuitem", { name: "Log out" }).click();
+    await page.getByRole("menuitem", { name: "Sign out" }).click();
     await logoutResponse;
     await page.waitForURL(
       (url) => getLeafPathSegment(url.toString()) === "login",

@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { Loader2 } from "lucide-react";
+import { Check, Loader2, TriangleAlert } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { SheetHeading } from "@/components/ui/sheet-heading";
 import { ApiRequestError } from "@/lib/api-client";
 import { changePassword } from "@/lib/api/users";
 
@@ -60,25 +61,17 @@ export function PasswordChangeSection() {
   }
 
   return (
-    <section
-      aria-labelledby="settings-password-title"
-      className="rounded-xl border border-border/70 bg-background p-5 shadow-sm"
-    >
-      <div className="space-y-1">
-        <h2
-          id="settings-password-title"
-          className="text-lg font-semibold tracking-tight"
-        >
-          Change password
-        </h2>
-        <p className="text-sm text-muted-foreground">
-          Update your password and keep this account secure.
-        </p>
-      </div>
+    <section aria-labelledby="settings-password-title">
+      <SheetHeading
+        title={<span id="settings-password-title">Change password</span>}
+      />
 
-      <form onSubmit={onSubmit} className="mt-4 grid gap-4 sm:grid-cols-2">
+      <form
+        onSubmit={onSubmit}
+        className="grid max-w-[560px] gap-4 px-0.5 pt-4 sm:grid-cols-2"
+      >
         <div className="space-y-1.5 sm:col-span-2">
-          <label htmlFor="current-password" className="text-sm font-medium">
+          <label htmlFor="current-password" className="text-sm font-semibold">
             Current password
           </label>
           <Input
@@ -92,7 +85,7 @@ export function PasswordChangeSection() {
         </div>
 
         <div className="space-y-1.5">
-          <label htmlFor="new-password" className="text-sm font-medium">
+          <label htmlFor="new-password" className="text-sm font-semibold">
             New password
           </label>
           <Input
@@ -107,7 +100,10 @@ export function PasswordChangeSection() {
         </div>
 
         <div className="space-y-1.5">
-          <label htmlFor="confirm-new-password" className="text-sm font-medium">
+          <label
+            htmlFor="confirm-new-password"
+            className="text-sm font-semibold"
+          >
             Confirm new password
           </label>
           <Input
@@ -123,27 +119,29 @@ export function PasswordChangeSection() {
         {error ? (
           <p
             role="alert"
-            className="sm:col-span-2 rounded-md border border-destructive/20 bg-destructive/5 px-3 py-2 text-sm text-destructive"
+            className="flex items-start gap-1.5 text-sm font-medium text-destructive sm:col-span-2"
           >
-            {error}
+            <TriangleAlert
+              className="mt-0.5 size-4 shrink-0"
+              aria-hidden="true"
+            />
+            <span>{error}</span>
           </p>
         ) : null}
 
         {success ? (
-          <p className="sm:col-span-2 rounded-md border border-emerald-500/20 bg-emerald-500/5 px-3 py-2 text-sm text-emerald-700 dark:text-emerald-300">
+          <p
+            role="status"
+            className="flex items-center gap-1.5 text-sm font-medium text-foreground sm:col-span-2"
+          >
+            <Check className="size-4 shrink-0" aria-hidden="true" />
             {success}
           </p>
         ) : null}
 
-        <div className="sm:col-span-2 flex justify-end">
-          <Button
-            type="submit"
-            className="cursor-pointer"
-            disabled={mutation.isPending}
-          >
-            {mutation.isPending ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : null}
+        <div className="sm:col-span-2">
+          <Button type="submit" variant="outline" disabled={mutation.isPending}>
+            {mutation.isPending ? <Loader2 className="animate-spin" /> : null}
             {mutation.isPending ? "Updating..." : "Update password"}
           </Button>
         </div>

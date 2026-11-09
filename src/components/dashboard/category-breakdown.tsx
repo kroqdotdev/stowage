@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { SheetHeading } from "@/components/ui/sheet-heading";
 
 type CategoryItem = {
   id: string;
@@ -9,52 +10,44 @@ type CategoryItem = {
   count: number;
 };
 
+/*
+  Assets by category: one ink bar on a faint track (capped at 320px, kept
+  short of full so every row shows its track) with the count right after it.
+  Categories carry no colour; length does the work.
+*/
 export function CategoryBreakdown({ items }: { items: CategoryItem[] }) {
   const maxCount = Math.max(...items.map((i) => i.count), 1);
 
   return (
-    <section className="flex min-h-0 flex-col rounded-xl border border-border/70 bg-card p-5 shadow-sm">
-      <h2 className="shrink-0 text-base font-semibold tracking-tight">
-        By Category
-      </h2>
+    <section aria-labelledby="category-heading">
+      <SheetHeading
+        title={<span id="category-heading">Assets by category</span>}
+        aside={<Link href="/taxonomy">Open Taxonomy</Link>}
+      />
       {items.length === 0 ? (
-        <p className="mt-3 text-sm text-muted-foreground">
-          No categories with assets yet.
-        </p>
+        <p className="py-6 text-sm text-ink-2">No categories with assets yet.</p>
       ) : (
-        <div className="mt-3 min-h-0 flex-1 space-y-2.5 overflow-y-auto">
+        <ul>
           {items.map((item) => (
-            <Link
-              key={item.id}
-              href={`/assets?category=${item.id}`}
-              className="group block"
-            >
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2 text-sm">
-                  <span
-                    className="inline-block h-3 w-3 shrink-0 rounded-full"
-                    style={{ backgroundColor: item.color }}
+            <li key={item.id} className="border-b border-border">
+              <Link
+                href={`/assets?category=${item.id}`}
+                className="grid grid-cols-[minmax(0,1fr)_minmax(64px,200px)_32px] lg:grid-cols-[minmax(0,1fr)_minmax(64px,180px)_32px] items-center gap-3 px-0.5 py-[9px] text-sm hover:bg-card/60"
+              >
+                <span className="truncate text-foreground">{item.name}</span>
+                <span className="relative block h-1.5 bg-border" aria-hidden="true">
+                  <i
+                    className="absolute inset-y-0 left-0 bg-foreground"
+                    style={{ width: `${(item.count / maxCount) * 96}%` }}
                   />
-                  <span className="font-medium group-hover:text-primary transition-colors">
-                    {item.name}
-                  </span>
-                </div>
-                <span className="text-sm tabular-nums text-muted-foreground">
-                  {item.count}
                 </span>
-              </div>
-              <div className="mt-1 h-1.5 rounded-full bg-muted">
-                <div
-                  className="h-full rounded-full transition-all"
-                  style={{
-                    width: `${(item.count / maxCount) * 100}%`,
-                    backgroundColor: item.color,
-                  }}
-                />
-              </div>
-            </Link>
+                <b className="text-right font-mono font-medium tabular-nums">
+                  {item.count}
+                </b>
+              </Link>
+            </li>
           ))}
-        </div>
+        </ul>
       )}
     </section>
   );

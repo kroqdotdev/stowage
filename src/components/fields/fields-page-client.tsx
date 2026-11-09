@@ -19,7 +19,6 @@ import { ConfirmDialog } from "@/components/crud/confirm-dialog";
 import { getApiErrorMessage } from "@/components/crud/error-messages";
 import { FieldDefinitionForm } from "@/components/fields/field-definition-form";
 import type { FieldDefinition } from "@/components/fields/types";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   ContextMenu,
@@ -32,14 +31,12 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { EmptyState } from "@/components/ui/empty-state";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { SheetHeading } from "@/components/ui/sheet-heading";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import {
   createCustomField,
@@ -48,6 +45,17 @@ import {
   reorderCustomFields,
   updateCustomField,
 } from "@/lib/api/custom-fields";
+import { cn } from "@/lib/utils";
+
+const FIELD_TYPE_LABELS: Record<FieldDefinition["fieldType"], string> = {
+  text: "Text",
+  number: "Number",
+  date: "Date",
+  dropdown: "Dropdown",
+  checkbox: "Checkbox",
+  url: "URL",
+  currency: "Currency",
+};
 
 const FIELDS_QUERY_KEY = ["custom-fields"] as const;
 
@@ -205,99 +213,103 @@ export function FieldsPageClient() {
     }
   }
 
+  const th =
+    "h-10 border-b border-border px-3 text-left text-[13px] font-semibold whitespace-nowrap text-foreground";
+  const newFieldButton = (size: "sm" | "default") =>
+    canManage ? (
+      <Button
+        type="button"
+        variant={size === "sm" ? "secondary" : "default"}
+        size={size}
+        onClick={openCreate}
+      >
+        <Plus />
+        New field…
+      </Button>
+    ) : undefined;
+
+  function fieldMenuItems(definition: FieldDefinition) {
+    return (
+      <>
+        <DropdownMenuItem onSelect={() => openEdit(definition.id)}>
+          <Pencil />
+          Edit…
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          variant="destructive"
+          onSelect={() => setDeleteId(definition.id)}
+        >
+          <Trash2 />
+          Delete…
+        </DropdownMenuItem>
+      </>
+    );
+  }
+
   return (
     <>
-      <section className="rounded-xl border border-border/70 bg-background p-5 shadow-sm">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div className="space-y-1">
-            <h2 className="text-lg font-semibold tracking-tight">
-              Field definitions
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              Define reusable custom fields for assets.
-            </p>
-            {!canManage ? (
-              <p className="text-xs text-muted-foreground">
-                Only admins can manage fields.
-              </p>
-            ) : null}
-          </div>
+      <section aria-labelledby="taxonomy-fields-title">
+        <SheetHeading
+          title={<span id="taxonomy-fields-title">Custom fields</span>}
+          count={loading ? undefined : rows.length}
+          aside={loading || rows.length > 0 ? newFieldButton("sm") : undefined}
+        />
+        <p className="px-0.5 pt-1.5 text-[13px] text-muted-foreground">
+          Extra details every asset form asks for, in this order.
           {canManage ? (
-            <Button
-              type="button"
-              variant="outline"
-              className="cursor-pointer"
-              onClick={openCreate}
-            >
-              <Plus className="h-4 w-4" />
-              Add field
-            </Button>
-          ) : null}
-        </div>
+            <span className="max-md:hidden"> Drag a row to reorder.</span>
+          ) : (
+            <span className="block">Only admins can manage fields.</span>
+          )}
+        </p>
 
         {loading ? (
-          <p className="mt-4 text-sm text-muted-foreground md:hidden">
-            Loading...
-          </p>
+          <div className="space-y-4 py-5" aria-hidden="true">
+            {[50, 38, 44].map((width) => (
+              <Skeleton
+                key={width}
+                className="h-2.5"
+                style={{ width: `${width}%` }}
+              />
+            ))}
+          </div>
         ) : null}
+        {loading ? <span className="sr-only">Loading...</span> : null}
 
         {!loading && rows.length === 0 ? (
-          <div className="mt-4 md:hidden">
-            <EmptyState
-              icon={SlidersHorizontal}
-              title="No custom fields"
-              description="Define reusable fields to capture extra asset data."
-              action={
-                canManage ? (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="cursor-pointer"
-                    onClick={openCreate}
-                  >
-                    <Plus className="h-4 w-4" />
-                    Add field
-                  </Button>
-                ) : undefined
-              }
-            />
-          </div>
+          <EmptyState
+            className="mt-2"
+            icon={SlidersHorizontal}
+            title="No custom fields yet."
+            description="Add fields such as serial number or purchase date to capture extra asset details."
+            action={newFieldButton("default")}
+          />
         ) : null}
 
         {rows.length > 0 ? (
-          <ul
-            className="mt-4 flex flex-col gap-2 md:hidden"
-            data-testid="field-card-list"
-          >
+          <ul className="mt-2 md:hidden" data-testid="field-card-list">
             {rows.map((definition, index) => (
               <li
                 key={definition.id}
                 data-testid={`field-card-${definition.id}`}
-                className="flex items-start justify-between gap-3 rounded-lg border border-border/70 bg-card p-3 shadow-sm"
+                className="flex items-center justify-between gap-3 border-b border-border px-0.5 py-2.5"
               >
-                <div className="min-w-0 flex-1 space-y-1.5">
-                  <div className="flex min-w-0 items-center gap-2">
-                    <span className="inline-flex shrink-0 items-center rounded-md border border-border/70 bg-muted/20 px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground">
-                      {definition.sortOrder + 1}
+                <span className="w-5 shrink-0 font-mono text-[13px] font-medium text-muted-foreground">
+                  {definition.sortOrder + 1}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-semibold text-foreground">
+                    {definition.name}
+                  </span>
+                  <span className="block text-[13px] text-ink-2">
+                    {FIELD_TYPE_LABELS[definition.fieldType]}
+                    {definition.required ? " · Required" : null}
+                    <span className="text-muted-foreground">
+                      {" "}
+                      · Used by {definition.usageCount}
                     </span>
-                    <span className="truncate text-sm font-semibold">
-                      {definition.name}
-                    </span>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    <Badge className="bg-muted/20 capitalize">
-                      {definition.fieldType}
-                    </Badge>
-                    {definition.required ? (
-                      <Badge className="border-amber-300/70 bg-amber-100 text-amber-900 dark:border-amber-400/30 dark:bg-amber-500/15 dark:text-amber-200">
-                        Required
-                      </Badge>
-                    ) : null}
-                    <span className="text-[11px] text-muted-foreground">
-                      Used by {definition.usageCount}
-                    </span>
-                  </div>
+                  </span>
                 </div>
                 {canManage ? (
                   <DropdownMenu>
@@ -305,17 +317,16 @@ export function FieldsPageClient() {
                       <Button
                         type="button"
                         variant="ghost"
-                        size="icon-sm"
-                        className="cursor-pointer"
+                        size="icon"
                         aria-label={`Actions for ${definition.name}`}
                       >
-                        <MoreHorizontal className="h-4 w-4" />
+                        <MoreHorizontal />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
+                    <DropdownMenuContent align="end" className="w-44">
                       <DropdownMenuItem
                         disabled={reordering || index === 0}
-                        onClick={() => {
+                        onSelect={() => {
                           const next = rows.map((row) => row.id);
                           [next[index - 1], next[index]] = [
                             next[index],
@@ -324,12 +335,12 @@ export function FieldsPageClient() {
                           void saveOrder(next);
                         }}
                       >
-                        <ArrowUp className="h-4 w-4" />
+                        <ArrowUp />
                         Move up
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         disabled={reordering || index === rows.length - 1}
-                        onClick={() => {
+                        onSelect={() => {
                           const next = rows.map((row) => row.id);
                           [next[index], next[index + 1]] = [
                             next[index + 1],
@@ -338,84 +349,43 @@ export function FieldsPageClient() {
                           void saveOrder(next);
                         }}
                       >
-                        <ArrowDown className="h-4 w-4" />
+                        <ArrowDown />
                         Move down
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => openEdit(definition.id)}>
-                        <Pencil className="h-4 w-4" />
-                        Edit
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        variant="destructive"
-                        onClick={() => setDeleteId(definition.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                        Delete
-                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      {fieldMenuItems(definition)}
                     </DropdownMenuContent>
                   </DropdownMenu>
-                ) : (
-                  <span className="text-xs text-muted-foreground">
-                    Read only
-                  </span>
-                )}
+                ) : null}
               </li>
             ))}
           </ul>
         ) : null}
 
-        <div className="mt-4 hidden overflow-x-auto rounded-lg border border-border/60 md:block">
-          <table className="min-w-full text-sm">
-            <thead className="bg-muted/40 text-left">
-              <tr>
-                <th className="w-10 px-3 py-2 font-medium">Order</th>
-                <th className="px-3 py-2 font-medium">Name</th>
-                <th className="px-3 py-2 font-medium">Type</th>
-                <th className="px-3 py-2 font-medium">Required</th>
-                <th className="px-3 py-2 font-medium">In use</th>
-                <th className="px-3 py-2 font-medium text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
+        {!loading && rows.length > 0 ? (
+          <div className="mt-2 hidden md:block">
+            <table className="w-full border-collapse text-sm">
+              <thead>
                 <tr>
-                  <td
-                    colSpan={6}
-                    className="px-3 py-8 text-center text-muted-foreground"
-                  >
-                    Loading...
-                  </td>
+                  <th className={cn(th, "w-14 pl-0.5")}>Order</th>
+                  <th className={th}>Name</th>
+                  <th className={th}>Type</th>
+                  <th className={th}>Required</th>
+                  <th className={cn(th, "text-right")}>In use</th>
+                  <th className={cn(th, "w-10 p-0")}>
+                    <span className="sr-only">Actions</span>
+                  </th>
                 </tr>
-              ) : rows.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="p-0">
-                    <EmptyState
-                      icon={SlidersHorizontal}
-                      title="No custom fields"
-                      description="Define reusable fields to capture extra asset data."
-                      action={
-                        canManage ? (
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            className="cursor-pointer"
-                            onClick={openCreate}
-                          >
-                            <Plus className="h-4 w-4" />
-                            Add field
-                          </Button>
-                        ) : undefined
-                      }
-                      className="rounded-none border-0"
-                    />
-                  </td>
-                </tr>
-              ) : (
-                rows.map((definition) => {
+              </thead>
+              <tbody>
+                {rows.map((definition) => {
                   const rowContent = (
                     <tr
-                      className="border-t border-border/50"
+                      className={cn(
+                        "border-b border-border",
+                        canManage && "cursor-grab active:cursor-grabbing",
+                        draggingId === definition.id && "bg-secondary",
+                      )}
                       draggable={canManage && !reordering}
                       onDragStart={(event) => {
                         setDraggingId(definition.id);
@@ -435,74 +405,55 @@ export function FieldsPageClient() {
                         void saveOrder(orderedIds);
                       }}
                     >
-                      <td className="px-3 py-2">
-                        <div className="inline-flex items-center gap-1 rounded-md border border-border/70 bg-muted/20 px-1.5 py-1 text-xs text-muted-foreground">
-                          <GripVertical className="h-3.5 w-3.5" />
-                          <span className="font-mono">
-                            {definition.sortOrder + 1}
-                          </span>
-                        </div>
+                      <td className="py-2.5 pr-3 pl-0.5">
+                        <span className="inline-flex items-center gap-1 font-mono text-[13px] font-medium text-muted-foreground">
+                          {canManage ? (
+                            <GripVertical
+                              className="size-3.5"
+                              aria-hidden="true"
+                            />
+                          ) : null}
+                          {definition.sortOrder + 1}
+                        </span>
                       </td>
-                      <td className="px-3 py-2 font-medium">
+                      <td className="px-3 py-2.5 font-semibold text-foreground">
                         {definition.name}
                       </td>
-                      <td className="px-3 py-2">
-                        <Badge className="bg-muted/20 capitalize">
-                          {definition.fieldType}
-                        </Badge>
+                      <td className="px-3 py-2.5 text-ink-2">
+                        {FIELD_TYPE_LABELS[definition.fieldType]}
                       </td>
-                      <td className="px-3 py-2">
+                      <td className="px-3 py-2.5">
                         {definition.required ? (
-                          <Badge className="bg-muted/20">Required</Badge>
+                          <span className="font-medium text-foreground">
+                            Required
+                          </span>
                         ) : (
                           <span className="text-muted-foreground">
                             Optional
                           </span>
                         )}
                       </td>
-                      <td className="px-3 py-2 text-muted-foreground">
+                      <td className="px-3 py-2.5 text-right font-mono text-[13px] font-medium text-ink-2">
                         {definition.usageCount}
                       </td>
-                      <td className="px-3 py-2 text-right">
+                      <td className="w-10 py-1.5 pr-0.5 text-right">
                         {canManage ? (
                           <DropdownMenu>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <DropdownMenuTrigger asChild>
-                                  <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon-sm"
-                                    className="cursor-pointer"
-                                    aria-label={`Actions for ${definition.name}`}
-                                  >
-                                    <MoreHorizontal className="h-4 w-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                              </TooltipTrigger>
-                              <TooltipContent>Actions</TooltipContent>
-                            </Tooltip>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem
-                                onClick={() => openEdit(definition.id)}
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon-sm"
+                                aria-label={`Actions for ${definition.name}`}
                               >
-                                <Pencil className="h-4 w-4" />
-                                Edit
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                variant="destructive"
-                                onClick={() => setDeleteId(definition.id)}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                                Delete
-                              </DropdownMenuItem>
+                                <MoreHorizontal />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-40">
+                              {fieldMenuItems(definition)}
                             </DropdownMenuContent>
                           </DropdownMenu>
-                        ) : (
-                          <span className="text-xs text-muted-foreground">
-                            Read only
-                          </span>
-                        )}
+                        ) : null}
                       </td>
                     </tr>
                   );
@@ -516,16 +467,16 @@ export function FieldsPageClient() {
                         <ContextMenuItem
                           onClick={() => openEdit(definition.id)}
                         >
-                          <Pencil className="h-4 w-4" />
-                          Edit
+                          <Pencil />
+                          Edit…
                         </ContextMenuItem>
                         <ContextMenuSeparator />
                         <ContextMenuItem
                           variant="destructive"
                           onClick={() => setDeleteId(definition.id)}
                         >
-                          <Trash2 className="h-4 w-4" />
-                          Delete
+                          <Trash2 />
+                          Delete…
                         </ContextMenuItem>
                       </ContextMenuContent>
                     </ContextMenu>
@@ -534,14 +485,14 @@ export function FieldsPageClient() {
                       {rowContent}
                     </React.Fragment>
                   );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
+                })}
+              </tbody>
+            </table>
+          </div>
+        ) : null}
         {reordering ? (
-          <p className="mt-3 inline-flex items-center gap-2 text-xs text-muted-foreground">
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          <p className="mt-3 inline-flex items-center gap-2 text-[13px] text-muted-foreground">
+            <Loader2 className="size-3.5 animate-spin" />
             Saving order...
           </p>
         ) : null}
@@ -564,11 +515,11 @@ export function FieldsPageClient() {
 
       <ConfirmDialog
         open={deleteId !== null}
-        title="Delete field"
+        title="Delete field?"
         description={
           activeDeleteDefinition
-            ? `Delete "${activeDeleteDefinition.name}"?`
-            : "Delete this field?"
+            ? `${activeDeleteDefinition.name} is removed from the asset form.`
+            : "This field is removed from the asset form."
         }
         confirmLabel="Delete field"
         busy={deleting}
